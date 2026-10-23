@@ -25,9 +25,13 @@ a{color:#7aa7ff}a:hover{color:#a9c6ff}
 .pos-top .plus{margin-left:4px}
 .pos-left .plus{margin-top:4px}
 /* tab button */
-.tabbtn{position:relative;display:flex;align-items:center;justify-content:center;padding:5px;border:0;border-radius:14px;background:transparent;cursor:pointer;flex:none}
-.tabbtn:hover{background:#2c2e35}
-.tabbtn.active{background:#363944}
+.tabbtn{position:relative;display:flex;align-items:center;justify-content:center;padding:5px;border:0;border-radius:14px;background:var(--cut);cursor:pointer;flex:none;--cut:#22242a}
+.tabbtn:hover{--cut:#2c2e35}
+.tabbtn.active{--cut:#363944}
+/* account: a light tint of its color */
+.tabbtn.acct{--cut:color-mix(in srgb,var(--ac) 8%,#22242a)}
+.tabbtn.acct:hover{--cut:color-mix(in srgb,var(--ac) 14%,#22242a)}
+.tabbtn.acct.active{--cut:color-mix(in srgb,var(--ac) 16%,#363944)}
 .slot{position:relative;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:50%;border:2px solid transparent}
 .badge{position:absolute;right:-2px;bottom:-2px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#1c1d21;border:1.5px solid #5ca0ff;color:#d7e7ff;font:700 10px Inter,system-ui,sans-serif;display:flex;align-items:center;justify-content:center}
 /* faces */
@@ -52,7 +56,7 @@ a{color:#7aa7ff}a:hover{color:#a9c6ff}
 .f-done .eye{top:15px;width:9px;height:5px;background:transparent;border:2.5px solid #15161b;border-bottom:0;border-radius:6px 6px 0 0;box-sizing:border-box}
 .f-done .eye.l{left:9px}.f-done .eye.r{right:9px}
 .f-done .mouth{top:22px;width:16px;height:8px;margin-left:-8px;background:transparent;border:2.5px solid #15161b;border-top:0;border-radius:0 0 10px 10px;box-sizing:border-box}
-.f-done::after{content:"";position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;background:#f1f2f4;border:2px solid #22242a}
+.f-done::after{content:"";position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;background:#f1f2f4;border:2px solid var(--cut,#22242a)}
 .f-error{--c:#f85149}
 .f-error .eye{top:13px;width:8px;height:8px;background:transparent}
 .f-error .eye::before,.f-error .eye::after{content:"";position:absolute;left:3px;top:-1px;width:2.5px;height:10px;background:#15161b;border-radius:1px;transform:rotate(45deg)}
@@ -87,8 +91,8 @@ a{color:#7aa7ff}a:hover{color:#a9c6ff}
     <div class="body">
       <div class="bar" role="tablist" aria-label="Tabs">
         <sc-for list="{{tabs}}" as="t" hint-placeholder-count="6">
-          <button class="{{t.cls}}" onClick="{{t.pick}}" role="tab" aria-label="{{t.aria}}">
-            <span class="slot" style="width: {{slotPx}}px; height: {{slotPx}}px; border-color: {{t.ring}}">
+          <button class="{{t.cls}}" style="--ac: {{t.acctColor}}" onClick="{{t.pick}}" role="tab" aria-label="{{t.aria}}">
+            <span class="slot" style="width: {{slotPx}}px; height: {{slotPx}}px">
               <span style="display: block; transform: scale({{scale}})">
                 <span class="face {{t.faceCls}}" aria-hidden="true"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></span>
               </span>
@@ -138,7 +142,7 @@ a{color:#7aa7ff}a:hover{color:#a9c6ff}
         <button class="{{s.cls}}" onClick="{{s.pick}}">{{s.label}}</button>
       </sc-for>
     </div>
-    <span style="margin-left: auto">Ring = account · hover a face for details · click to focus</span>
+    <span style="margin-left: auto">Tint = account · hover a face for details · click to focus</span>
   </div>
 </div>
 </x-dc>
@@ -174,8 +178,8 @@ class Component extends DCLogic {
       if (st === 'done' && this.state.read[i]) st = 'idle';
       const isAgent = st !== 'shell';
       return {
-        title: b.title, cls: 'tabbtn' + (i === this.state.active ? ' active' : ''),
-        faceCls: 'f-' + st, ring: isAgent ? b.color : 'transparent',
+        title: b.title, cls: 'tabbtn' + (isAgent ? ' acct' : '') + (i === this.state.active ? ' active' : ''),
+        faceCls: 'f-' + st,
         hasSub: st === 'working' && !!b.sub, sub: b.sub || 0,
         stateLabel: labels[st], stateColor: colors[st], detail: b.detail, elapsed: b.elapsed,
         isAgent, ctx: b.ctx || 0, ctxColor: (b.ctx || 0) > 70 ? '#f5a524' : '#7db4ff', last: b.last || '',

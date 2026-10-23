@@ -16,7 +16,8 @@ Faces are drawn on a 40×40 grid. Each state differs in color, expression
 
 ## Rules
 
-- **Ring = account.** The colored ring around a face shows the Claude account.
+- **Tint = account.** The tab takes a light tint of its Claude account's
+  color.
 - **Badge = subagents.** A small number shows running subagents.
 - **White dot = unread.** Done stays happy until you open the tab, then
   goes back to idle.

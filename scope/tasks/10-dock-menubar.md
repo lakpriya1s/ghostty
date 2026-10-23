@@ -1,11 +1,26 @@
 # 10 · Dock badge and menu bar summary
 
-**Phase:** P2 · **Status:** ⬜ not started
+**Phase:** P2 · **Status:** 🟡 built, needs checking
 
 Design: [../designs/04-notifications.md](../designs/04-notifications.md)
 
-## To do
+Code: `macos/Sources/Features/Agent Tabs/AgentSummary.swift`
 
-- [ ] Dock badge: count of agents waiting or done-unread.
-- [ ] Optional menu bar item: "● 1 waiting ● 1 working", click to jump.
-- [ ] Setting to turn each off.
+## Done
+
+- [x] `AgentSummary` follows every tab (through
+      `AgentTabBarModel.changesPublisher`, debounced) and lists the tabs with
+      an agent, most urgent first.
+- [x] Dock badge: agents waiting or done-unread, added to Ghostty's own bell
+      count in `AppDelegate.setDockBadge` (which already handles badge
+      permission).
+- [x] Menu bar item while any agent runs: "● 1 waiting  ● 1 working" with
+      state-colored dots (also lists error / done / idle when present). Its
+      menu has one row per agent; choosing it selects the tab and focuses the
+      split whose status the tab shows. "Hide Menu Bar Summary" at the end.
+- [x] Settings: tab bar right-click → Dock Badge, Menu Bar Summary (both on
+      by default, remembered).
+
+## Verify
+
+- [ ] On screen: badge count, menu bar item, jump to tab.

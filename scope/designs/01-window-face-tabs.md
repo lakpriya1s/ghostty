@@ -16,8 +16,11 @@ Source: [source/Main.dc.html](source/Main.dc.html) (interactive on the canvas)
 
 - Face only. **No title text.**
 - Face is 40px at M (S = 0.8×, L = 1.25×), inside a round slot of
-  face + 18px. The slot's 2px border is the **account color** (transparent
-  for plain shells).
+  face + 18px.
+- **Account color** (agent tabs only; plain shells stay gray): the tab's
+  background is a light tint of it (8% over the bar, 14% on hover, 16% over
+  the selected gray). This replaced a 2px ring around the face (a stripe
+  along the tab's edge was tried too, and dropped).
 - Button padding 5px, corner radius 14px.
   - Selected: background `#363944`
   - Hover: background `#2c2e35`
