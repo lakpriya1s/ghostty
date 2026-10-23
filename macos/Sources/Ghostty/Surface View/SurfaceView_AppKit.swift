@@ -1803,6 +1803,7 @@ extension Ghostty {
                 programStatus = nil
                 programChildren = [:]
                 programReportsOwnStatus = false
+                programWorkStartedAt = nil
                 return
             }
 
@@ -1837,24 +1838,58 @@ extension Ghostty {
 
             programStatus = status
 
+            // A new request starts working from rest; coming back from
+            // waiting on the user is the same request.
+            if status.state == .working, previous?.state != .working, previous?.state != .blocked {
+                programWorkStartedAt = status.since
+            }
+
             // Tell the user when the program needs them or finished, unless
             // they're already looking at it.
             guard previous?.state != status.state else { return }
             let isVisible = focused && NSApp.isActive && (window?.isKeyWindow ?? false)
             guard !isVisible else { return }
+            guard derivedConfig.desktopNotifications else { return }
 
-            let name = status.appDisplayName
-            let body = status.msg ?? ""
+            // Named after the tab, like "web · refactor nav needs you".
+            let tab = title.isEmpty ? status.appDisplayName : title
+            var body = status.msg ?? ""
             switch status.state {
             case .blocked:
-                showUserNotification(title: "\(name) needs you", body: body, requireFocus: false)
+                showAgentNotification(title: "\(tab) needs you", body: body, state: .blocked)
             case .done:
-                showUserNotification(title: "\(name) finished", body: body, requireFocus: false)
+                if let started = programWorkStartedAt {
+                    let took = "took \(Self.notificationDuration(since: started))"
+                    body = body.isEmpty ? took : "\(body) · \(took)"
+                }
+                showAgentNotification(title: "\(tab) finished", body: body, state: .done)
             case .error:
-                showUserNotification(title: "\(name) stopped with an error", body: body, requireFocus: false)
+                showAgentNotification(title: "\(tab) stopped with an error", body: body, state: .error)
             default:
                 break
             }
+        }
+
+        /// "4m 02s", "12s" or "1h 05m", for "took …" in a notification.
+        private static func notificationDuration(since start: Date) -> String {
+            let total = max(0, Int(Date().timeIntervalSince(start)))
+            let hours = total / 3600, minutes = (total % 3600) / 60, seconds = total % 60
+            if hours > 0 { return String(format: "%dh %02dm", hours, minutes) }
+            if minutes > 0 { return String(format: "%dm %02ds", minutes, seconds) }
+            return "\(seconds)s"
+        }
+
+        /// Notify about the agent in this terminal, as in the design: no
+        /// subtitle, "Open tab" and "Dismiss", and a `>_` image with a dot in
+        /// the state's color. Clicking it focuses this split.
+        private func showAgentNotification(title: String, body: String, state: Action.ProgramStatus.State) {
+            showUserNotification(
+                title: title,
+                body: body,
+                requireFocus: false,
+                showsTerminalTitle: false,
+                category: Ghostty.agentNotificationCategory,
+                attachments: [AgentNotificationIcon.attachment(for: state)].compactMap { $0 })
         }
 
         /// A finished program goes back to idle once the user has seen it.
@@ -1880,13 +1915,21 @@ extension Ghostty {
         }
 
         /// Show a user notification and associate it with this surface
-        func showUserNotification(title: String, body: String, requireFocus: Bool = true) {
+        func showUserNotification(
+            title: String,
+            body: String,
+            requireFocus: Bool = true,
+            showsTerminalTitle: Bool = true,
+            category: String = Ghostty.userNotificationCategory,
+            attachments: [UNNotificationAttachment] = []
+        ) {
             let content = UNMutableNotificationContent()
             content.title = title
-            content.subtitle = self.title
+            if showsTerminalTitle { content.subtitle = self.title }
             content.body = body
             content.sound = UNNotificationSound.default
-            content.categoryIdentifier = Ghostty.userNotificationCategory
+            content.categoryIdentifier = category
+            content.attachments = attachments
             content.userInfo = [
                 "surface": self.id.uuidString,
                 "requireFocus": requireFocus,
@@ -1953,6 +1996,7 @@ extension Ghostty {
             let windowTitleFontFamily: String?
             let windowAppearance: NSAppearance?
             let scrollbar: Ghostty.Config.Scrollbar
+            let desktopNotifications: Bool
 
             init() {
                 self.backgroundColor = Color(NSColor.windowBackgroundColor)
@@ -1962,6 +2006,7 @@ extension Ghostty {
                 self.windowTitleFontFamily = nil
                 self.windowAppearance = nil
                 self.scrollbar = .system
+                self.desktopNotifications = true
             }
 
             init(_ config: Ghostty.Config) {
@@ -1972,6 +2017,7 @@ extension Ghostty {
                 self.windowTitleFontFamily = config.windowTitleFontFamily
                 self.windowAppearance = .init(ghosttyConfig: config)
                 self.scrollbar = config.scrollbar
+                self.desktopNotifications = config.desktopNotifications
             }
         }
 

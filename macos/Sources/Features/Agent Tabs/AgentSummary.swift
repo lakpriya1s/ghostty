@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import SwiftUI
+import UserNotifications
 
 /// A summary of the agents in every window, shown outside the windows: a
 /// count on the dock icon and an item in the menu bar. See
@@ -137,5 +138,68 @@ final class AgentSummary {
             return true
         }
         return image
+    }
+}
+
+/// The image on an agent notification, from the design: Ghostty's `>_` on a
+/// dark rounded square with a dot in the state's color. macOS always shows
+/// the app icon on a notification, so this goes in as an attachment.
+enum AgentNotificationIcon {
+    static func attachment(for state: Ghostty.Action.ProgramStatus.State) -> UNNotificationAttachment? {
+        guard let png = image(dot: NSColor(AgentTabBarColors.label(for: state))) else { return nil }
+
+        // The system moves the file into its own store, so each notification
+        // needs its own copy.
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ghostty-agent-\(UUID().uuidString).png")
+        do {
+            try png.write(to: url)
+            return try UNNotificationAttachment(identifier: "agent-icon", url: url)
+        } catch {
+            try? FileManager.default.removeItem(at: url)
+            return nil
+        }
+    }
+
+    /// A 40pt square at 3x: the 34pt icon at the top left and the 12pt dot
+    /// hanging 3pt past its bottom right corner.
+    private static func image(dot: NSColor) -> Data? {
+        let scale: CGFloat = 3
+        let size: CGFloat = 40
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: Int(size * scale), pixelsHigh: Int(size * scale),
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return nil }
+        // Draw in points: the size has to be set before making the context.
+        rep.size = NSSize(width: size, height: size)
+        guard let context = NSGraphicsContext(bitmapImageRep: rep) else { return nil }
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = context
+        defer { NSGraphicsContext.restoreGraphicsState() }
+
+        let icon = NSRect(x: 0.5, y: 6.5, width: 33, height: 33)
+        let square = NSBezierPath(roundedRect: icon, xRadius: 9, yRadius: 9)
+        NSColor(AgentTabBarColors.notificationIcon).setFill()
+        square.fill()
+        NSColor(AgentTabBarColors.cardBorder).setStroke()
+        square.lineWidth = 1
+        square.stroke()
+
+        let text = NSAttributedString(string: ">_", attributes: [
+            .font: NSFont.monospacedSystemFont(ofSize: 15, weight: .semibold),
+            .foregroundColor: NSColor(AgentTabBarColors.notificationIconText),
+        ])
+        let textSize = text.size()
+        text.draw(at: NSPoint(x: icon.midX - textSize.width / 2, y: icon.midY - textSize.height / 2))
+
+        let ring = NSRect(x: 25, y: 3, width: 12, height: 12)
+        NSColor(AgentTabBarColors.card).setFill()
+        NSBezierPath(ovalIn: ring).fill()
+        dot.setFill()
+        NSBezierPath(ovalIn: ring.insetBy(dx: 2, dy: 2)).fill()
+
+        return rep.representation(using: .png, properties: [:])
     }
 }

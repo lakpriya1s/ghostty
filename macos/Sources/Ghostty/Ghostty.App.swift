@@ -2542,7 +2542,7 @@ extension Ghostty {
             case UNNotificationDefaultActionIdentifier, Ghostty.userNotificationActionShow:
                 // The user clicked on a notification
                 surface.handleUserNotification(notification: response.notification, focus: true)
-            case UNNotificationDismissActionIdentifier:
+            case UNNotificationDismissActionIdentifier, Ghostty.agentNotificationActionDismiss:
                 // The user dismissed the notification
                 surface.handleUserNotification(notification: response.notification, focus: false)
             default:

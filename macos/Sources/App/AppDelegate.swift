@@ -308,7 +308,17 @@ class AppDelegate: NSObject,
                 actions: actions,
                 intentIdentifiers: [],
                 options: [.customDismissAction]
-            )
+            ),
+            UNNotificationCategory(
+                identifier: Ghostty.agentNotificationCategory,
+                actions: [
+                    UNNotificationAction(
+                        identifier: Ghostty.userNotificationActionShow, title: "Open tab", options: [.foreground]),
+                    UNNotificationAction(identifier: Ghostty.agentNotificationActionDismiss, title: "Dismiss"),
+                ],
+                intentIdentifiers: [],
+                options: [.customDismissAction]
+            ),
         ])
         center.delegate = self
 

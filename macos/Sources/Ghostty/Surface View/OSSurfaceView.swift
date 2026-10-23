@@ -42,6 +42,11 @@ extension Ghostty {
         /// account-reporting hook. See `updateProgramStatus`.
         var programReportsOwnStatus = false
 
+        /// When the program started working on the current request, so a
+        /// "finished" notification can say how long it took. Time spent
+        /// waiting on the user in between counts too.
+        var programWorkStartedAt: Date?
+
         // The currently active key tables. Empty if no tables are active.
         @Published var keyTables: [String] = []
 
