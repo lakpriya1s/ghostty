@@ -74,5 +74,16 @@ if pgrep -f "$APP/Contents/MacOS/" >/dev/null; then
   done
 fi
 
+# `open` passes this environment on to the app and every terminal in it.
+# Run from inside Claude Code, that includes Claude's own variables: then
+# `claude` in the dev app thinks it's a child session and stops saving
+# transcripts, and CLAUDE_CONFIG_DIR pins every tab to one account. Leave
+# them out.
+unset_args=""
+for name in $(env | sed -nE 's/^(CLAUDECODE|CLAUDE_[A-Z0-9_]*)=.*/\1/p'); do
+  unset_args="$unset_args -u $name"
+done
+
 echo "==> open $APP"
-open "$APP"
+# shellcheck disable=SC2086
+env $unset_args open "$APP"

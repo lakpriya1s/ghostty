@@ -93,6 +93,11 @@ See it work without Claude: run `agents/demo-states.sh` in a tab.
 - **Restarting the dev app closes the user's Claude sessions in it.** Check
   first (`ps -t <tty>` for each terminal's tty, from AppleScript) and ask, or
   let the user run `scripts/dev-run.sh --no-build`.
+- **Launching the dev app from a Claude Code session** passes Claude's
+  `CLAUDE_*` variables to every terminal in it: `claude` there turns off
+  transcript saving ("inherited CLAUDE_CODE_CHILD_SESSION marker"), which
+  also loses the context bar, and `CLAUDE_CONFIG_DIR` pins every tab to one
+  account. `scripts/dev-run.sh` strips them; a bare `open` doesn't.
 - **Don't launch a second copy** (`open -n`) to test: it restores the user's
   windows, and they may start working in it.
 - **The agent can't edit `~/.claude*/settings.json`** (Claude Code's permission
