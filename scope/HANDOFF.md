@@ -36,7 +36,8 @@ user before pushing.
 
 **Built, needs checking on screen:** left position and S/M/L (05),
 notifications (04), dock badge and menu bar summary (10), Agents panel ⌘⇧A
-and ⌘J (11), subagent badge (12), ⌥⌘1–9, worktree option, Add account….
+and ⌘J (11), subagent badge (12), ⌥⌘1–9, worktree option, New account… / Add existing account…, Title
+Bar position (05).
 
 **Built, needs the hook reinstalled and checking on screen:** context used,
 last message and git branch in the hover card and Agents panel, `StopFailure`

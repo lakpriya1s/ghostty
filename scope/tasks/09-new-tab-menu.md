@@ -28,7 +28,11 @@ Code: `macos/Sources/Features/Agent Tabs/AgentNewTabMenu.swift`
       in the picked folder.
 - [x] ⌥⌘1 … ⌥⌘9 for the first nine accounts (key codes, so any layout).
 - [x] "N running" = tabs in all windows whose agent reports that account.
-- [x] Add account… picks a config folder (hidden files shown).
+- [x] Add existing account… picks a config folder (hidden files shown).
+- [x] New account… asks for a name, creates `~/.claude-<name>` with a
+      `settings.json` that runs the status hook (as `install.sh` does; only
+      if the hook is installed), adds the account and opens a tab running
+      `claude` there to log in. An existing folder is left as it is.
 - [x] Right-click an account row: Rename…, Color, Remove.
 - [x] "Start in a new git worktree" (remembered; disabled outside a git
       repo): types `git worktree add -b agent/<MMdd-HHmmss>
@@ -39,4 +43,4 @@ Code: `macos/Sources/Features/Agent Tabs/AgentNewTabMenu.swift`
 
 - [x] On screen (user screenshot): menu look, blue hover, folder row with
       "Change ⌄", "1 running" on an account.
-- [ ] ⌥⌘1 shortcut, worktree option, Add account…, Rename.
+- [ ] ⌥⌘1 shortcut, worktree option, New account…, Add existing account…, Rename.
