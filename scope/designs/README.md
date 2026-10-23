@@ -10,6 +10,7 @@ https://claude.ai/artifact/GqsEQ9WZbmCBrk5RGNcBKX
 | 3 | `+` button: new tab by account | [03-new-tab-menu.md](03-new-tab-menu.md)         | [NewTab.dc.html](source/NewTab.dc.html)    |
 | 4 | Notifications and dock badge   | [04-notifications.md](04-notifications.md)       | [Notify.dc.html](source/Notify.dc.html)    |
 | 5 | Agents panel                   | [05-agents-panel.md](05-agents-panel.md)         | [Agents.dc.html](source/Agents.dc.html)    |
+| 6 | Face sets (Orbs, Shapes, Bots, Spark) | [06-face-sets.md](06-face-sets.md) | [FacesOrbs](source/FacesOrbs.dc.html), [FacesShapes](source/FacesShapes.dc.html), [FacesBots](source/FacesBots.dc.html), [FacesSpark](source/FacesSpark.dc.html) |
 
 ## Viewing them
 

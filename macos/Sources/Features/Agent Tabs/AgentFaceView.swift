@@ -7,19 +7,32 @@ import SwiftUI
 /// The face is drawn on the design's 40x40 grid and scaled to `size`. The
 /// canvas is 7 grid units larger on every side so the spinner ring, the pulse,
 /// the "z", the "?" and the unread dot have room.
-/// See scope/designs/02-agent-faces.md for the design.
+/// See scope/designs/02-agent-faces.md for the design, and
+/// scope/designs/06-face-sets.md for the other sets (AgentFaceSets.swift).
 struct AgentFaceView: View {
     typealias State = Ghostty.Action.ProgramStatus.State
+    typealias Style = AgentTabBarSettings.FaceStyle
 
     let state: State
-    var size: CGFloat = 40
+    var size: CGFloat
 
     /// The color behind the face, used to cut out the unread dot.
-    var background: Color = AgentTabBarColors.bar
+    var background: Color
 
     /// Which faces move. Each animation frame lays out the whole window, so
     /// faces nobody can see stay still.
-    var motion: Motion = .all
+    var motion: Motion
+
+    @ObservedObject private var settings = AgentTabBarSettings.shared
+
+    init(state: State, size: CGFloat = 40, background: Color = AgentTabBarColors.bar, motion: Motion = .all) {
+        self.state = state
+        self.size = size
+        self.background = background
+        self.motion = motion
+    }
+
+    private var style: Style { settings.faceStyle }
 
     enum Motion {
         /// Every state that moves.
@@ -48,7 +61,13 @@ struct AgentFaceView: View {
             Canvas { gc, _ in
                 gc.scaleBy(x: scale, y: scale)
                 gc.translateBy(x: Self.pad, y: Self.pad)
-                draw(in: &gc, time: time)
+                switch style {
+                case .faces: draw(in: &gc, time: time)
+                case .orbs: drawOrb(in: &gc, time: time)
+                case .shapes: drawShape(in: &gc, time: time)
+                case .bots: drawBot(in: &gc, time: time)
+                case .spark: drawSpark(in: &gc, time: time)
+                }
             }
         }
         .frame(width: Self.side(for: size), height: Self.side(for: size))
@@ -61,7 +80,10 @@ struct AgentFaceView: View {
         switch (state, motion) {
         case (_, .none): return nil
         case (.working, _), (.blocked, _): return 1.0 / 30
-        case (.idle, .all): return 1.0 / 12
+        // Bots sleep still; every other set's idle face breathes or fades.
+        case (.idle, .all): return style == .bots ? nil : 1.0 / 12
+        // A short shake every 2.4s needs more frames than breathing.
+        case (.error, .all): return style == .faces ? nil : 1.0 / 24
         default: return nil
         }
     }
@@ -95,7 +117,7 @@ struct AgentFaceView: View {
 
     /// 0 at the start and end of each period, 1 in the middle, eased like
     /// CSS `ease-in-out` keyframes at 0%, 50% and 100%.
-    private static func wave(_ time: TimeInterval, period: Double) -> Double {
+    static func wave(_ time: TimeInterval, period: Double) -> Double {
         (1 - cos(2 * .pi * time / period)) / 2
     }
 
@@ -180,8 +202,7 @@ struct AgentFaceView: View {
             smile.addArc(center: CGPoint(x: 20, y: 22), radius: 6.75,
                          startAngle: .degrees(0), endAngle: .degrees(180), clockwise: false)
             gc.stroke(smile, with: ink, style: line)
-            gc.fill(Path(ellipseIn: CGRect(x: 28, y: -3, width: 15, height: 15)), with: .color(background))
-            gc.fill(Path(ellipseIn: CGRect(x: 30, y: -1, width: 11, height: 11)), with: .color(Color(agentHex: 0xf1f2f4)))
+            drawUnreadDot(in: &gc)
 
         case .error:
             // X eyes and a frown.
@@ -199,15 +220,52 @@ struct AgentFaceView: View {
             gc.stroke(frown, with: ink, style: line)
         }
     }
+
+    /// The white dot on a done face until it's seen, cut out of the
+    /// background. `origin` is the top left of the 15 unit cutout.
+    func drawUnreadDot(in gc: inout GraphicsContext, at origin: CGPoint = CGPoint(x: 28, y: -3)) {
+        gc.fill(Path(ellipseIn: CGRect(x: origin.x, y: origin.y, width: 15, height: 15)), with: .color(background))
+        gc.fill(Path(ellipseIn: CGRect(x: origin.x + 2, y: origin.y + 2, width: 11, height: 11)),
+                with: .color(Color(agentHex: 0xf1f2f4)))
+    }
 }
 
-/// The face for a tab without an agent: a plain terminal prompt.
+/// The face for a tab without an agent: a plain terminal prompt, drawn in the
+/// chosen face set's style.
 struct ShellGlyphView: View {
     var size: CGFloat = 40
 
+    /// Only the Orbs cursor blinks, and only while every face may move.
+    var motion: AgentFaceView.Motion = .none
+
+    @ObservedObject private var settings = AgentTabBarSettings.shared
+
+    init(size: CGFloat = 40, motion: AgentFaceView.Motion = .none) {
+        self.size = size
+        self.motion = motion
+    }
+
     var body: some View {
+        if settings.faceStyle == .faces {
+            facesGlyph
+        } else {
+            let style = settings.faceStyle
+            let scale = size / 40
+            let blinks = style == .orbs && motion == .all
+            TimelineView(.animation(minimumInterval: 0.55, paused: !blinks)) { context in
+                let time = blinks ? context.date.timeIntervalSinceReferenceDate : 0
+                Canvas { gc, _ in
+                    gc.scaleBy(x: scale, y: scale)
+                    AgentFaceSets.drawShell(style, in: &gc, time: time)
+                }
+            }
+            .frame(width: size, height: size)
+        }
+    }
+
+    private var facesGlyph: some View {
         let scale = size / 40
-        RoundedRectangle(cornerRadius: 11 * scale, style: .continuous)
+        return RoundedRectangle(cornerRadius: 11 * scale, style: .continuous)
             .fill(Color(agentHex: 0x2a2c33))
             .overlay(
                 RoundedRectangle(cornerRadius: 11 * scale, style: .continuous)

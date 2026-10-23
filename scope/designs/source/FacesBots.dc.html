@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Face set C · Bots</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#7aa7ff}a:hover{color:#a9c6ff}
+.big{display:block;transform:scale(1.7)}
+.ic{position:relative;display:block;width:40px;height:40px}
+.ic>span{position:absolute;display:block}
+.s-done::after{content:"";position:absolute;right:-1px;top:8px;width:11px;height:11px;border-radius:50%;background:#f1f2f4;border:2px solid #1c1d21}
+.ic .a{left:5px;top:13px;width:30px;height:23px;border-radius:7px;background:var(--c)}
+.ic .b{left:19px;top:5px;width:2px;height:8px;background:#8a8f99;transform-origin:50% 100%}
+.ic .b::after{content:"";position:absolute;left:-3px;top:-6px;width:8px;height:8px;border-radius:50%;background:var(--lamp,#4a4e59)}
+.ic .c{inset:0}
+.ic .c::before,.ic .c::after{content:"";position:absolute;top:21px;width:6px;height:6px;border-radius:50%;background:#15161b}
+.ic .c::before{left:12px}
+.ic .c::after{left:22px}
+.s-idle{--c:#8b9099}
+.s-idle .c::before,.s-idle .c::after{top:24px;width:7px;height:2.5px;border-radius:2px}
+.s-idle .c::before{left:11px}
+.s-working{--c:#5ca0ff;--lamp:#bfe0ff}
+.s-working .b::after{animation:lamp .8s step-end infinite}
+.s-working .c::before{left:10px;top:20px;width:20px;height:8px;border-radius:4px;background:#15161b}
+.s-working .c::after{left:12px;top:22px;width:5px;height:4px;border-radius:2px;background:#bfe0ff;animation:scan 1.1s ease-in-out infinite alternate}
+.s-waiting{--c:#f5a524;--lamp:#ffd27a;animation:bob 1.4s ease-in-out infinite}
+.s-waiting .b::after{animation:lamp .5s step-end infinite}
+.s-waiting .c::before,.s-waiting .c::after{top:19px;width:6px;height:9px;border-radius:3px}
+.s-done{--c:#3fb950;--lamp:#9be9a8}
+.s-done .c::before,.s-done .c::after{top:21px;width:7px;height:4px;background:transparent;border:2.5px solid #15161b;border-bottom:0;border-radius:6px 6px 0 0}
+.s-done .c::before{left:10px}
+.s-done .c::after{left:20.5px}
+.s-error{--c:#f85149;--lamp:#5a2b2b;animation:shake 2.4s ease-in-out infinite}
+.s-error .b{transform:rotate(28deg)}
+.s-error .c::before,.s-error .c::after{content:"×";top:16px;width:auto;height:auto;background:transparent;border-radius:0;font:800 15px/1 Inter,system-ui,sans-serif;color:#15161b}
+.s-error .c::before{left:11px}
+.s-error .c::after{left:21px}
+.s-shell{--c:#2a2c33}
+.s-shell .a{box-shadow:inset 0 0 0 1.5px #4a4e59}
+.s-shell .b{display:none}
+.s-shell .c::before{content:">_";left:0;right:0;top:19px;width:auto;height:auto;background:transparent;border-radius:0;text-align:center;font:600 11px/1 'JetBrains Mono',ui-monospace,monospace;color:#c2c6cf}
+.s-shell .c::after{display:none}
+@keyframes lamp{50%{background:#4a4e59}}
+@keyframes scan{from{transform:translateX(0)}to{transform:translateX(11px)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes shake{0%,88%,100%{transform:translateX(0)}91%{transform:translateX(-2px)}94%{transform:translateX(2px)}97%{transform:translateX(-1px)}}
+</style>
+</helmet>
+<div style="width: 900px; height: 520px; box-sizing: border-box; padding: 40px 48px; background: #16171b; color: #d6d9df; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div>
+    <h1 style="margin: 0 0 6px; font-size: 24px; font-weight: 600; color: #f1f2f4">Set C · Bots</h1>
+    <p style="margin: 0; font-size: 14px; color: #a8adb7">Little robot heads. The antenna lamp is a second signal: off, blinking, flashing, steady, or bent.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 10px 16px; border-radius: 14px; background: #1c1d21; border: 1px solid #2e3038">
+        <span style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px" aria-hidden="true">
+          <span class="big"><span class="ic {{r.cls}}"><span class="a"></span><span class="b"></span><span class="c"></span></span></span>
+        </span>
+        <div style="font-size: 14px; font-weight: 600; color: #f1f2f4; text-align: center">{{r.name}}</div>
+        <div style="font-size: 12px; color: #a8adb7; text-align: center; line-height: 1.45">{{r.desc}}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: #8a8f99">IN THE TAB BAR · ACTUAL SIZE</span>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px; background: #22242a; border: 1px solid #2e3038">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+        <span style="display: flex; align-items: center; justify-content: center; width: 58px; height: 58px; border-radius: 14px; background: {{r.tabBg}}" aria-hidden="true">
+          <span class="ic {{r.cls}}"><span class="a"></span><span class="b"></span><span class="c"></span></span>
+        </span>
+      </sc-for>
+      <span style="margin-left: auto; font-size: 12px; color: #8a8f99">Most character</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const rows = [
+      { cls: 's-idle', name: 'Idle', desc: 'Eyes shut, lamp off.' },
+      { cls: 's-working', name: 'Working', desc: 'Visor scanning, lamp blinks.' },
+      { cls: 's-waiting', name: 'Waiting on you', desc: 'Wide eyes, lamp flashing.' },
+      { cls: 's-done', name: 'Done', desc: 'Happy eyes, green lamp.' },
+      { cls: 's-error', name: 'Error', desc: 'X eyes, bent antenna.' },
+      { cls: 's-shell', name: 'Plain shell', desc: 'Empty head, no antenna.' }
+    ];
+    return { rows: rows.map((r, i) => ({ ...r, tabBg: i === 0 ? '#363944' : r.cls === 's-shell' ? '#22242a' : '#2a2c35' })) };
+  }
+}
+</script>
+</body>
+</html>

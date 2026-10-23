@@ -41,7 +41,9 @@ The hook is installed in all six `~/.claude*` folders (reinstalled 2026-10-23 wi
 (03, 05); hover card's context bar, last message and branch (06, 13);
 Agents panel ⌘⇧A and ⌘J (11); dock badge (10); ⌥⌘1–9, worktree option,
 Add existing account…, Rename, and New account…'s two fields (name and
-folder extension) (09); the agent cards in the menu bar item's menu (10).
+folder extension) (09); the agent cards in the menu bar item's menu (10); the four other face sets (Orbs, Shapes,
+Bots, Spark: Face Style in the bar's menu and View › Agent Face Style, `AgentFaceSets.swift`,
+[designs/06-face-sets.md](designs/06-face-sets.md)).
 
 **Not started (P3):** other agents (14), Linux (15), quiet mode and the
 other extras in [README.md](README.md).

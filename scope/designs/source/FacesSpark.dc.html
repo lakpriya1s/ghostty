@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Face set D · Spark</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#7aa7ff}a:hover{color:#a9c6ff}
+.big{display:block;transform:scale(1.7)}
+.ic{position:relative;display:block;width:40px;height:40px}
+.ic>span{position:absolute;display:block}
+.s-done::after{content:"";position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;background:#f1f2f4;border:2px solid #1c1d21}
+.ic .a,.ic .b,.ic .c{left:18px;top:6px;width:4px;height:28px;border-radius:2px;background:var(--c)}
+.ic .b{transform:rotate(60deg)}
+.ic .c{transform:rotate(120deg)}
+.s-idle{--c:#8b9099;animation:breathe 3.2s ease-in-out infinite}
+.s-idle .a,.s-idle .b,.s-idle .c{top:12px;height:16px}
+.s-working{--c:#5ca0ff;animation:spin 2.2s linear infinite}
+.s-working .a,.s-working .b,.s-working .c{background:linear-gradient(#cfe6ff,#5ca0ff 50%,#2f6fd0)}
+.s-waiting{--c:#f5a524;animation:throb 1s ease-in-out infinite}
+.s-waiting::after{content:"?";position:absolute;right:-6px;top:-10px;font:800 14px Inter,system-ui,sans-serif;color:#f5a524}
+.s-done{--c:#3fb950}
+.s-done .a,.s-done .b,.s-done .c{left:16px;top:4px;width:8px;height:32px;border-radius:4px}
+.s-error{--c:#f85149;animation:shake 2.4s ease-in-out infinite}
+.s-error .a{transform:rotate(45deg)}
+.s-error .b{transform:rotate(-45deg)}
+.s-error .c{display:none}
+.s-shell{--c:#a8adb7}
+.s-shell .a{left:12.5px;top:7.5px;height:14px;transform:rotate(-45deg)}
+.s-shell .b{left:12.5px;top:16.5px;height:14px;transform:rotate(45deg)}
+.s-shell .c{left:22px;top:27px;width:12px;height:4px;transform:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes breathe{0%,100%{transform:scale(.9);opacity:.7}50%{transform:scale(1);opacity:1}}
+@keyframes throb{0%,100%{transform:scale(.82)}50%{transform:scale(1.08)}}
+@keyframes shake{0%,88%,100%{transform:translateX(0)}91%{transform:translateX(-2px)}94%{transform:translateX(2px)}97%{transform:translateX(-1px)}}
+</style>
+</helmet>
+<div style="width: 900px; height: 520px; box-sizing: border-box; padding: 40px 48px; background: #16171b; color: #d6d9df; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div>
+    <h1 style="margin: 0 0 6px; font-size: 24px; font-weight: 600; color: #f1f2f4">Set D · Spark</h1>
+    <p style="margin: 0; font-size: 14px; color: #a8adb7">One asterisk that changes form: small when asleep, spinning while it works, petals when done, broken into an X on error.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 10px 16px; border-radius: 14px; background: #1c1d21; border: 1px solid #2e3038">
+        <span style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px" aria-hidden="true">
+          <span class="big"><span class="ic {{r.cls}}"><span class="a"></span><span class="b"></span><span class="c"></span></span></span>
+        </span>
+        <div style="font-size: 14px; font-weight: 600; color: #f1f2f4; text-align: center">{{r.name}}</div>
+        <div style="font-size: 12px; color: #a8adb7; text-align: center; line-height: 1.45">{{r.desc}}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: #8a8f99">IN THE TAB BAR · ACTUAL SIZE</span>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px; background: #22242a; border: 1px solid #2e3038">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+        <span style="display: flex; align-items: center; justify-content: center; width: 58px; height: 58px; border-radius: 14px; background: {{r.tabBg}}" aria-hidden="true">
+          <span class="ic {{r.cls}}"><span class="a"></span><span class="b"></span><span class="c"></span></span>
+        </span>
+      </sc-for>
+      <span style="margin-left: auto; font-size: 12px; color: #8a8f99">Feels closest to the CLI spinner</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const rows = [
+      { cls: 's-idle', name: 'Idle', desc: 'Small, dim, breathing.' },
+      { cls: 's-working', name: 'Working', desc: 'Spins steadily.' },
+      { cls: 's-waiting', name: 'Waiting on you', desc: 'Throbs, question mark.' },
+      { cls: 's-done', name: 'Done', desc: 'Opens into petals.' },
+      { cls: 's-error', name: 'Error', desc: 'Breaks into an X.' },
+      { cls: 's-shell', name: 'Plain shell', desc: 'Rays form a prompt.' }
+    ];
+    return { rows: rows.map((r, i) => ({ ...r, tabBg: i === 0 ? '#363944' : r.cls === 's-shell' ? '#22242a' : '#2a2c35' })) };
+  }
+}
+</script>
+</body>
+</html>

@@ -128,8 +128,37 @@ final class AgentTabBarSettings: ObservableObject {
         }
     }
 
+    /// Which set of faces to draw. See scope/designs/06-face-sets.md.
+    enum FaceStyle: String, CaseIterable {
+        /// Faces with eyes and a mouth, the original design.
+        case faces
+
+        /// A glowing dot; motion does the talking.
+        case orbs
+
+        /// A silhouette per state, like road signs.
+        case shapes
+
+        /// Robot heads with an antenna lamp.
+        case bots
+
+        /// One asterisk that changes form.
+        case spark
+
+        var label: String {
+            switch self {
+            case .faces: return "Faces"
+            case .orbs: return "Orbs"
+            case .shapes: return "Shapes"
+            case .bots: return "Bots"
+            case .spark: return "Spark"
+            }
+        }
+    }
+
     private static let positionKey = "AgentTabBarPosition"
     private static let faceSizeKey = "AgentTabBarFaceSize"
+    private static let faceStyleKey = "AgentFaceStyle"
     private static let dockBadgeKey = "AgentDockBadge"
     private static let accountStyleKey = "AgentAccountStyle"
     private static let menuBarKey = "AgentMenuBarSummary"
@@ -164,6 +193,13 @@ final class AgentTabBarSettings: ObservableObject {
 
     @Published var faceSize: FaceSize {
         didSet { UserDefaults.ghostty.set(faceSize.rawValue, forKey: Self.faceSizeKey) }
+    }
+
+    @Published var faceStyle: FaceStyle {
+        didSet {
+            UserDefaults.ghostty.set(faceStyle.rawValue, forKey: Self.faceStyleKey)
+            AgentSummary.shared.update()
+        }
     }
 
     @Published var accountStyle: AccountStyle {
@@ -201,6 +237,8 @@ final class AgentTabBarSettings: ObservableObject {
             .flatMap(Position.init(rawValue:)) ?? .top
         faceSize = UserDefaults.ghostty.string(forKey: Self.faceSizeKey)
             .flatMap(FaceSize.init(rawValue:)) ?? .medium
+        faceStyle = UserDefaults.ghostty.string(forKey: Self.faceStyleKey)
+            .flatMap(FaceStyle.init(rawValue:)) ?? .faces
         accountStyle = UserDefaults.ghostty.string(forKey: Self.accountStyleKey)
             .flatMap(AccountStyle.init(rawValue:)) ?? .background
         showsDockBadge = UserDefaults.ghostty.object(forKey: Self.dockBadgeKey) as? Bool ?? true
@@ -537,6 +575,11 @@ struct AgentTabBarMenu: View {
                 Text(position.label).tag(position)
             }
         }
+        Picker("Face Style", selection: $settings.faceStyle) {
+            ForEach(AgentTabBarSettings.FaceStyle.allCases, id: \.self) { style in
+                Text(style.label).tag(style)
+            }
+        }
         Picker("Face Size", selection: $settings.faceSize) {
             ForEach(AgentTabBarSettings.FaceSize.allCases, id: \.self) { size in
                 Text(size.label).tag(size)
@@ -670,7 +713,7 @@ private struct AgentTabButton: View {
                 if let status = tab.status, status.state != .clear {
                     AgentFaceView(state: status.state, size: faceSize, background: background, motion: model.faceMotion)
                 } else {
-                    ShellGlyphView(size: faceSize)
+                    ShellGlyphView(size: faceSize, motion: model.faceMotion)
                 }
             }
             .frame(width: slot, height: slot)

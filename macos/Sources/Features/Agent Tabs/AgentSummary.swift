@@ -42,6 +42,10 @@ final class AgentSummary {
     /// right-click, and a hidden summary has no menu of its own.
     private var positionItems: [(item: NSMenuItem, position: AgentTabBarSettings.Position)] = []
 
+    /// "Agent Face Style" in the View menu: the faces show in native tabs
+    /// too, where there's no face bar to right-click.
+    private var faceStyleItems: [(item: NSMenuItem, style: AgentTabBarSettings.FaceStyle)] = []
+
     /// The menu bar choices: hidden (nil) or a style. In the View menu and
     /// the summary's own menu.
     private var menuBarItems: [(item: NSMenuItem, style: AgentTabBarSettings.MenuBarStyle?)] = []
@@ -61,6 +65,17 @@ final class AgentSummary {
         let positionMenu = NSMenuItem(title: "Agent Tab Bar", action: nil, keyEquivalent: "")
         positionMenu.submenu = positions
         view.addItem(positionMenu)
+
+        let faceStyles = NSMenu(title: "Agent Face Style")
+        for style in AgentTabBarSettings.FaceStyle.allCases {
+            let item = NSMenuItem(title: style.label, action: #selector(chooseFaceStyle(_:)), keyEquivalent: "")
+            item.target = self
+            faceStyles.addItem(item)
+            faceStyleItems.append((item, style))
+        }
+        let faceStyleMenu = NSMenuItem(title: "Agent Face Style", action: nil, keyEquivalent: "")
+        faceStyleMenu.submenu = faceStyles
+        view.addItem(faceStyleMenu)
 
         let menuBar = NSMenuItem(title: "Agents in Menu Bar", action: nil, keyEquivalent: "")
         menuBar.submenu = menuBarMenu(tracked: true)
@@ -102,6 +117,11 @@ final class AgentSummary {
         AgentTabBarSettings.shared.position = position
     }
 
+    @objc private func chooseFaceStyle(_ sender: NSMenuItem) {
+        guard let style = faceStyleItems.first(where: { $0.item === sender })?.style else { return }
+        AgentTabBarSettings.shared.faceStyle = style
+    }
+
     func update() {
         entries = NSApp.windows
             .filter(\.isVisible)
@@ -120,6 +140,9 @@ final class AgentSummary {
         }
         for (item, position) in positionItems {
             item.state = AgentTabBarSettings.shared.position == position ? .on : .off
+        }
+        for (item, style) in faceStyleItems {
+            item.state = settings.faceStyle == style ? .on : .off
         }
         updateStatusItem()
     }
