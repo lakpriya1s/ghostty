@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ghostty window with agent face tabs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#7aa7ff}a:hover{color:#a9c6ff}
+/* layout: tab bar on top or left */
+.body{flex:1;display:flex;min-height:0}
+.pos-top .body{flex-direction:column}
+.pos-left .body{flex-direction:row}
+.bar{display:flex;align-items:center;gap:6px;background:#22242a;padding:8px 10px}
+.pos-top .bar{flex-direction:row;border-bottom:1px solid #2e3038}
+.pos-left .bar{flex-direction:column;border-right:1px solid #2e3038;padding:12px 8px}
+.plus{border:1.5px dashed #4a4e59;border-radius:50%;background:transparent;color:#a8adb7;font:400 20px Inter,system-ui,sans-serif;cursor:pointer;flex:none}
+.plus:hover{border-color:#8a8f99;color:#f1f2f4}
+.pos-top .plus{margin-left:4px}
+.pos-left .plus{margin-top:4px}
+/* tab button */
+.tabbtn{position:relative;display:flex;align-items:center;justify-content:center;padding:5px;border:0;border-radius:14px;background:transparent;cursor:pointer;flex:none}
+.tabbtn:hover{background:#2c2e35}
+.tabbtn.active{background:#363944}
+.slot{position:relative;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border-radius:50%;border:2px solid transparent}
+.badge{position:absolute;right:-2px;bottom:-2px;min-width:18px;height:18px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#1c1d21;border:1.5px solid #5ca0ff;color:#d7e7ff;font:700 10px Inter,system-ui,sans-serif;display:flex;align-items:center;justify-content:center}
+/* faces */
+.face{position:relative;display:block;width:40px;height:40px;border-radius:50%;background:var(--c,#8b9099)}
+.face .eye{position:absolute;top:14px;width:5px;height:8px;border-radius:3px;background:#15161b}
+.face .eye.l{left:11px}.face .eye.r{right:11px}
+.face .mouth{position:absolute;left:50%;top:26px;width:10px;height:2.5px;margin-left:-5px;border-radius:2px;background:#15161b}
+.f-idle{--c:#8b9099}
+.f-idle .eye{top:18px;width:7px;height:2.5px}
+.f-idle .eye.l{left:10px}.f-idle .eye.r{right:10px}
+.f-idle .mouth{width:6px;margin-left:-3px}
+.f-idle::after{content:"z";position:absolute;right:-5px;top:-9px;font:700 11px Inter,system-ui,sans-serif;color:#a8adb7;animation:zz 2.6s ease-in-out infinite}
+.f-working{--c:#5ca0ff}
+.f-working .eye{animation:look 1.3s ease-in-out infinite}
+.f-working .mouth{width:7px;margin-left:-3.5px}
+.f-working::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:2.5px solid rgba(92,160,255,.18);border-top-color:#5ca0ff;animation:spin .9s linear infinite}
+.f-waiting{--c:#f5a524;animation:pulse 1.5s ease-in-out infinite,bob 1.5s ease-in-out infinite}
+.f-waiting .eye{top:12px;width:6px;height:9px}
+.f-waiting .mouth{top:25px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:transparent;border:2.5px solid #15161b;box-sizing:border-box}
+.f-waiting::after{content:"?";position:absolute;right:-6px;top:-10px;font:800 14px Inter,system-ui,sans-serif;color:#f5a524}
+.f-done{--c:#3fb950}
+.f-done .eye{top:15px;width:9px;height:5px;background:transparent;border:2.5px solid #15161b;border-bottom:0;border-radius:6px 6px 0 0;box-sizing:border-box}
+.f-done .eye.l{left:9px}.f-done .eye.r{right:9px}
+.f-done .mouth{top:22px;width:16px;height:8px;margin-left:-8px;background:transparent;border:2.5px solid #15161b;border-top:0;border-radius:0 0 10px 10px;box-sizing:border-box}
+.f-done::after{content:"";position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;background:#f1f2f4;border:2px solid #22242a}
+.f-error{--c:#f85149}
+.f-error .eye{top:13px;width:8px;height:8px;background:transparent}
+.f-error .eye::before,.f-error .eye::after{content:"";position:absolute;left:3px;top:-1px;width:2.5px;height:10px;background:#15161b;border-radius:1px;transform:rotate(45deg)}
+.f-error .eye::after{transform:rotate(-45deg)}
+.f-error .eye.l{left:9px}.f-error .eye.r{right:9px}
+.f-error .mouth{top:26px;width:12px;height:6px;margin-left:-6px;background:transparent;border:2.5px solid #15161b;border-bottom:0;border-radius:8px 8px 0 0;box-sizing:border-box}
+.f-shell{--c:#2a2c33;border-radius:11px;box-shadow:inset 0 0 0 1.5px #4a4e59}
+.f-shell .eye,.f-shell .mouth{display:none}
+.f-shell::before{content:">_";position:absolute;inset:0;line-height:40px;text-align:center;font:600 13px 'JetBrains Mono',ui-monospace,monospace;color:#c2c6cf}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes look{0%,100%{transform:translateX(-1.5px)}50%{transform:translateX(1.5px)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,165,36,.55)}50%{box-shadow:0 0 0 7px rgba(245,165,36,0)}}
+@keyframes bob{0%,100%{translate:0 0}50%{translate:0 -2px}}
+@keyframes zz{0%,100%{opacity:.25;translate:0 2px}50%{opacity:1;translate:2px -2px}}
+/* hover card */
+.tip{display:none;position:absolute;z-index:9;width:300px;padding:14px;border-radius:12px;background:#24262d;border:1px solid #3a3d47;box-shadow:0 16px 40px rgba(0,0,0,.55);color:#d6d9df;font:400 12.5px/1.5 Inter,system-ui,sans-serif;text-align:left;cursor:default}
+.tabbtn:hover .tip{display:block}
+.pos-top .tip{top:calc(100% + 8px);left:0}
+.pos-left .tip{left:calc(100% + 10px);top:0}
+.seg{display:flex;padding:3px;border-radius:9px;background:#1c1d21;border:1px solid #2e3038}
+.seg button{height:28px;padding:0 12px;border:0;border-radius:6px;background:transparent;color:#a8adb7;font:500 12.5px Inter,system-ui,sans-serif;cursor:pointer}
+.seg button.on{background:#363944;color:#f1f2f4}
+</style>
+</helmet>
+<div class="{{posCls}}" style="width: 1280px; height: 800px; box-sizing: border-box; padding: 32px 40px; background: #0f1013; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 18px">
+  <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; border-radius: 12px; background: #1c1d21; border: 1px solid #2e3038; box-shadow: 0 30px 80px rgba(0,0,0,.55)">
+    <div style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 16px; background: #22242a; border-bottom: 1px solid #2e3038; border-radius: 12px 12px 0 0" aria-hidden="true">
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #ff5f57"></span>
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #febc2e"></span>
+      <span style="width: 12px; height: 12px; border-radius: 50%; background: #28c840"></span>
+    </div>
+    <div class="body">
+      <div class="bar" role="tablist" aria-label="Tabs">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="6">
+          <button class="{{t.cls}}" onClick="{{t.pick}}" role="tab" aria-label="{{t.aria}}">
+            <span class="slot" style="width: {{slotPx}}px; height: {{slotPx}}px; border-color: {{t.ring}}">
+              <span style="display: block; transform: scale({{scale}})">
+                <span class="face {{t.faceCls}}" aria-hidden="true"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></span>
+              </span>
+              <sc-if value="{{t.hasSub}}" hint-placeholder-val="{{ false }}">
+                <span class="badge" aria-hidden="true">{{t.sub}}</span>
+              </sc-if>
+            </span>
+            <span class="tip">
+              <span style="display: flex; align-items: center; gap: 8px">
+                <strong style="color: #f1f2f4; font-size: 13.5px; font-weight: 600">{{t.title}}</strong>
+                <span style="margin-left: auto; color: #8a8f99">{{t.kbd}}</span>
+              </span>
+              <span style="display: block; margin-top: 2px; color: {{t.stateColor}}; font-weight: 600">{{t.stateLabel}} <span style="color: #8a8f99; font-weight: 400">· {{t.elapsed}}</span></span>
+              <span style="display: block; margin-top: 6px; color: #c2c6cf">{{t.detail}}</span>
+              <sc-if value="{{t.isAgent}}" hint-placeholder-val="{{ true }}">
+                <span style="display: block; margin-top: 10px">
+                  <span style="display: flex; justify-content: space-between; color: #8a8f99; font-size: 11.5px"><span>Context used</span><span>{{t.ctx}}%</span></span>
+                  <span style="display: block; height: 4px; margin-top: 4px; border-radius: 2px; background: #3a3d47"><span style="display: block; height: 4px; border-radius: 2px; width: {{t.ctx}}%; background: {{t.ctxColor}}"></span></span>
+                </span>
+                <span style="display: block; margin-top: 10px; padding: 8px 10px; border-radius: 8px; background: #1c1d21; color: #a8adb7; font-style: italic">“{{t.last}}”</span>
+              </sc-if>
+              <span style="display: flex; gap: 6px; align-items: center; margin-top: 10px; color: #8a8f99; font-size: 11.5px">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: {{t.acctColor}}"></span>
+                {{t.acct}} · {{t.cwd}}
+              </span>
+            </span>
+          </button>
+        </sc-for>
+        <button class="plus" aria-label="New tab" style="width: {{plusPx}}px; height: {{plusPx}}px">+</button>
+      </div>
+      <div style="flex: 1; min-width: 0; padding: 18px 22px; font: 400 13.5px/1.7 'JetBrains Mono', ui-monospace, monospace; color: #d6d9df; overflow: hidden">
+        <sc-for list="{{lines}}" as="l" hint-placeholder-count="8">
+          <div style="color: {{l.c}}; white-space: pre">{{l.t}}</div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+  <div style="display: flex; gap: 20px; align-items: center; color: #8a8f99; font-size: 12.5px">
+    <span>Tab bar</span>
+    <div class="seg">
+      <button class="{{topOn}}" onClick="{{setTop}}">Top</button>
+      <button class="{{leftOn}}" onClick="{{setLeft}}">Left</button>
+    </div>
+    <span style="margin-left: 8px">Face size</span>
+    <div class="seg">
+      <sc-for list="{{sizes}}" as="s" hint-placeholder-count="3">
+        <button class="{{s.cls}}" onClick="{{s.pick}}">{{s.label}}</button>
+      </sc-for>
+    </div>
+    <span style="margin-left: auto">Ring = account · hover a face for details · click to focus</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"position":{"editor":"enum","options":["top","left"],"default":"top"},"size":{"editor":"enum","options":["S","M","L"],"default":"M"},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { active: 0, read: {}, pos: null, size: null };
+  }
+  renderVals() {
+    const W = '#8b7cf6', P = '#2dd4bf';
+    const pos = this.state.pos ?? this.props.position ?? 'top';
+    const size = this.state.size ?? this.props.size ?? 'M';
+    const scale = { S: 0.8, M: 1, L: 1.25 }[size];
+    const base = [
+      { title: 'api · fix auth bug', state: 'working', sub: 2, detail: 'Editing src/auth/session.ts (2 subagents running)', elapsed: '2m 14s', acct: 'Work', color: W, cwd: '~/code/api · fix/session-race', ctx: 41, last: 'I found the race: refresh() can run twice…',
+        lines: [['> Fix the token refresh race in session.ts', '#f1f2f4'], ['', ''], ['⏺ Read(src/auth/session.ts)', '#8a8f99'], ['⏺ I found the race: refresh() can run twice when two requests expire together.', '#d6d9df'], ['⏺ Update(src/auth/session.ts)', '#5ca0ff'], ['  ⎿ Updated with 12 additions and 4 removals', '#8a8f99'], ['', ''], ['✻ Editing… (2m 14s · esc to interrupt)', '#5ca0ff']] },
+      { title: 'web · refactor nav', state: 'waiting', detail: 'Needs permission: Bash(npm test)', elapsed: 'waiting 1m', acct: 'Work', color: W, cwd: '~/code/web · feat/nav', ctx: 63, last: 'Nav refactor is done. I want to run the test suite.',
+        lines: [['⏺ Nav refactor is done. I want to run the test suite.', '#d6d9df'], ['', ''], ['╭──────────────────────────────────────────────╮', '#f5a524'], ['│ Bash command                                 │', '#f5a524'], ['│   npm test                                   │', '#f1f2f4'], ['│ Do you want to proceed?                      │', '#f5a524'], ['│ ❯ 1. Yes   2. Yes, don’t ask again   3. No   │', '#f1f2f4'], ['╰──────────────────────────────────────────────╯', '#f5a524']] },
+      { title: 'docs · changelog', state: 'done', detail: 'Finished: updated CHANGELOG.md for v1.4', elapsed: '3m ago', acct: 'Personal', color: P, cwd: '~/code/docs · main', ctx: 22, last: 'Done. The changelog now covers everything since v1.3.',
+        lines: [['⏺ Update(CHANGELOG.md)', '#3fb950'], ['  ⎿ Added v1.4 section with 6 entries', '#8a8f99'], ['', ''], ['⏺ Done. The changelog now covers everything merged since v1.3.', '#d6d9df'], ['', ''], ['>', '#f1f2f4']] },
+      { title: 'zsh', state: 'shell', detail: 'Plain shell, no agent', elapsed: 'open 40m', acct: 'No account', color: '#4a4e59', cwd: '~',
+        lines: [['~ ❯ git status', '#f1f2f4'], ['On branch main', '#d6d9df'], ['nothing to commit, working tree clean', '#d6d9df'], ['~ ❯ ', '#f1f2f4']] },
+      { title: 'infra · terraform', state: 'idle', detail: 'Ready for a prompt', elapsed: 'idle 12m', acct: 'Personal', color: P, cwd: '~/code/infra · main', ctx: 4, last: 'Welcome to Claude Code',
+        lines: [['╭───────────────────────────────╮', '#8a8f99'], ['│ ✻ Welcome to Claude Code      │', '#d6d9df'], ['│   cwd: ~/code/infra           │', '#8a8f99'], ['╰───────────────────────────────╯', '#8a8f99'], ['', ''], ['>', '#f1f2f4']] },
+      { title: 'mobile · upgrade deps', state: 'error', detail: 'Stopped: API error (overloaded). Press ↑ + Enter to retry.', elapsed: '5m ago', acct: 'Work', color: W, cwd: '~/code/mobile · chore/deps', ctx: 78, last: 'Upgrading react-native to 0.80…',
+        lines: [['⏺ Upgrading react-native to 0.80…', '#d6d9df'], ['', ''], ['  ⎿ API Error: 529 overloaded', '#f85149'], ['', ''], ['>', '#f1f2f4']] }
+    ];
+    const labels = { idle: 'Idle', working: 'Working', waiting: 'Waiting on you', done: 'Done · unread', shell: 'Shell', error: 'Error' };
+    const colors = { idle: '#a8adb7', working: '#7db4ff', waiting: '#f5a524', done: '#3fb950', shell: '#a8adb7', error: '#ff7b72' };
+    const tabs = base.map((b, i) => {
+      let st = b.state;
+      if (st === 'done' && this.state.read[i]) st = 'idle';
+      const isAgent = st !== 'shell';
+      return {
+        title: b.title, cls: 'tabbtn' + (i === this.state.active ? ' active' : ''),
+        faceCls: 'f-' + st, ring: isAgent ? b.color : 'transparent',
+        hasSub: st === 'working' && !!b.sub, sub: b.sub || 0,
+        stateLabel: labels[st], stateColor: colors[st], detail: b.detail, elapsed: b.elapsed,
+        isAgent, ctx: b.ctx || 0, ctxColor: (b.ctx || 0) > 70 ? '#f5a524' : '#7db4ff', last: b.last || '',
+        acct: b.acct, acctColor: b.color, cwd: b.cwd, kbd: '⌘' + (i + 1),
+        aria: b.title + ', ' + labels[st],
+        pick: () => this.setState({ active: i, read: { ...this.state.read, [i]: b.state === 'done' ? true : this.state.read[i] } })
+      };
+    });
+    const lines = base[this.state.active].lines.map(([t, c]) => ({ t: t || ' ', c: c || '#fff' }));
+    const sizes = ['S', 'M', 'L'].map((s) => ({ label: s, cls: s === size ? 'on' : '', pick: () => this.setState({ size: s }) }));
+    const slotPx = Math.round(40 * scale + 18);
+    return {
+      tabs, lines, sizes, scale, slotPx, plusPx: Math.round(slotPx * 0.7),
+      posCls: 'pos-' + pos, topOn: pos === 'top' ? 'on' : '', leftOn: pos === 'left' ? 'on' : '',
+      setTop: () => this.setState({ pos: 'top' }), setLeft: () => this.setState({ pos: 'left' })
+    };
+  }
+}
+</script>
+</body>
+</html>

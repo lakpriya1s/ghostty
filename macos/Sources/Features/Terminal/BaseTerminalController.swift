@@ -97,6 +97,21 @@ class BaseTerminalController: NSWindowController,
     /// Cancellable for aggregating bell state across all surfaces in this controller.
     private var bellStateCancellable: AnyCancellable?
 
+    /// The most urgent program status (OSC 7501) across all surfaces in this
+    /// controller, for example a coding agent waiting on the user.
+    @Published private(set) var programStatus: Ghostty.Action.ProgramStatus?
+
+    /// Cancellable for aggregating program status across all surfaces in this controller.
+    private var programStatusCancellable: AnyCancellable?
+
+    /// When this controller (a tab or window) was created.
+    let createdAt = Date()
+
+    /// The agent tab bar's model. Subclasses that show the agent tab bar
+    /// override this. It must be declared here, where this class conforms to
+    /// TerminalViewModel, or the protocol's default (nil) is always used.
+    var agentTabBar: AgentTabBarModel? { nil }
+
     /// Cancellable for clipboard confirmation requests from surfaces in this controller.
     private var clipboardConfirmationCancellable: AnyCancellable?
 
@@ -155,6 +170,7 @@ class BaseTerminalController: NSWindowController,
 
         // Setup our bell state for the window
         setupBellNotificationPublisher()
+        setupProgramStatusPublisher()
         setupClipboardConfirmationPublisher()
 
         // Setup our notifications for behaviors
@@ -1704,6 +1720,26 @@ extension BaseTerminalController {
                     object: self,
                     userInfo: [Notification.Name.terminalWindowHasBellKey: hasBell]
                 )
+            }
+    }
+
+    private func setupProgramStatusPublisher() {
+        programStatusCancellable = surfaceValuesPublisher(
+            valueKeyPath: \.programStatus,
+            publisherKeyPath: \.$programStatus
+        )
+            .map { statuses in
+                statuses.values
+                    .compactMap { $0 }
+                    .max { $0.state.urgency < $1.state.urgency }
+            }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                guard let self else { return }
+                programStatus = status
+                (window as? TerminalWindow)?.programStatus = status
+                AgentTabBarModel.setNeedsRefresh()
             }
     }
 

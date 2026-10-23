@@ -1,0 +1,94 @@
+#!/bin/sh
+# Claude Code hook that reports the session's status to Ghostty using
+# OSC 7501 (the Program Status Protocol). Ghostty shows it as a face on
+# the tab and sends a notification when Claude finishes or needs you.
+#
+# Claude Code runs this for each hook event with the event as JSON on
+# stdin. See install.sh for the hooks it is registered for.
+
+# Only talk to terminals that understand OSC 7501.
+[ "$TERM_PROGRAM" = "ghostty" ] || exit 0
+
+input=$(cat)
+
+# Read a top-level string field from the hook's JSON input.
+field() {
+  if command -v jq >/dev/null 2>&1; then
+    printf '%s' "$input" | jq -r --arg k "$1" '.[$k] // empty | if type == "string" then . else empty end' 2>/dev/null
+  else
+    printf '%s' "$input" | sed -n "s/.*\"$1\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n 1
+  fi
+}
+
+# Read a string field from the tool's input, e.g. the file being edited.
+tool_field() {
+  command -v jq >/dev/null 2>&1 || return 0
+  printf '%s' "$input" | jq -r --arg k "$1" '.tool_input[$k] // empty | if type == "string" then . else empty end' 2>/dev/null
+}
+
+# Encode text for a title or msg value: one line, at most 180 bytes,
+# valid UTF-8 (iconv drops a character cut in half), then base64.
+encode() {
+  printf '%s' "$1" | tr '\n\r\t' '   ' | tr -d '\000-\037' | head -c 180 |
+    iconv -c -f UTF-8 -t UTF-8 2>/dev/null | base64 | tr -d '\n'
+}
+
+event=$(field hook_event_name)
+cwd=$(field cwd)
+kind=""
+msg=""
+
+case "$event" in
+  SessionStart)
+    state=idle
+    msg="Ready"
+    ;;
+  UserPromptSubmit)
+    state=working
+    msg=$(field prompt)
+    ;;
+  PreToolUse)
+    state=working
+    tool=$(field tool_name)
+    detail=$(tool_field description)
+    [ -n "$detail" ] || detail=$(tool_field file_path)
+    [ -n "$detail" ] || detail=$(tool_field command)
+    [ -n "$detail" ] || detail=$(tool_field pattern)
+    if [ -n "$detail" ]; then msg="$tool: $detail"; else msg="$tool"; fi
+    ;;
+  PostToolUse)
+    state=working
+    msg="Thinking"
+    ;;
+  Notification)
+    msg=$(field message)
+    case "$msg" in
+      # Claude also notifies when it has been idle for a while after
+      # finishing. That isn't new, so keep showing "done".
+      *"waiting for your input"*) exit 0 ;;
+      *[Pp]ermission*) kind=permission ;;
+      *) kind=question ;;
+    esac
+    state=blocked
+    ;;
+  Stop)
+    state=done
+    msg="Finished"
+    ;;
+  SessionEnd)
+    state=clear
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+
+report="state=$state:app=claude-code"
+[ -n "$kind" ] && report="$report:kind=$kind"
+[ -n "$cwd" ] && report="$report:title=$(encode "$(basename "$cwd")")"
+[ -n "$msg" ] && report="$report:msg=$(encode "$msg")"
+
+# Hooks don't get the terminal as stdout, so write to the controlling
+# terminal directly. Never fail the hook because of this.
+printf '\033]7501;%s\033\\' "$report" 2>/dev/null >"${GHOSTTY_STATUS_TTY:-/dev/tty}" || true
+exit 0

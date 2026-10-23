@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notifications and dock badge</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#7aa7ff}a:hover{color:#a9c6ff}
+.btn{height:28px;padding:0 12px;border:0;border-radius:7px;background:#3a3d47;color:#f1f2f4;font:500 12px Inter,system-ui,sans-serif;cursor:pointer}
+.btn:hover{background:#474b57}
+</style>
+</helmet>
+<div style="width: 640px; height: 560px; box-sizing: border-box; background: #2b3242; color: #d6d9df; font-family: Inter, system-ui, sans-serif; position: relative; overflow: hidden">
+  <div style="display: flex; align-items: center; justify-content: flex-end; gap: 16px; height: 28px; padding: 0 16px; background: rgba(20,22,28,.7); font-size: 12.5px; color: #e4e6ea">
+    <span style="display: flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,.1)">
+      <span style="width: 8px; height: 8px; border-radius: 50%; background: #f5a524"></span>1 waiting
+      <span style="width: 8px; height: 8px; border-radius: 50%; background: #5ca0ff; margin-left: 6px"></span>1 working
+    </span>
+    <span>Thu 10:42</span>
+  </div>
+  <div style="position: absolute; top: 44px; right: 16px; width: 360px; display: flex; flex-direction: column; gap: 10px">
+    <sc-for list="{{notes}}" as="n" hint-placeholder-count="2">
+      <div style="padding: 12px 14px; border-radius: 14px; background: rgba(36,38,45,.94); border: 1px solid #3a3d47; box-shadow: 0 12px 30px rgba(0,0,0,.4)">
+        <div style="display: flex; gap: 10px; align-items: flex-start">
+          <span style="flex: none; width: 34px; height: 34px; border-radius: 9px; background: #101114; border: 1px solid #3a3d47; display: flex; align-items: center; justify-content: center; position: relative" aria-hidden="true">
+            <span style="font: 600 15px ui-monospace, monospace; color: #e4e6ea">&gt;_</span>
+            <span style="position: absolute; right: -3px; bottom: -3px; width: 12px; height: 12px; border-radius: 50%; background: {{n.color}}; border: 2px solid #24262d"></span>
+          </span>
+          <div style="flex: 1; min-width: 0">
+            <div style="display: flex; font-size: 13px; font-weight: 600; color: #f1f2f4">{{n.title}}<span style="margin-left: auto; font-weight: 400; color: #8a8f99; font-size: 12px">now</span></div>
+            <div style="font-size: 12.5px; color: #c2c6cf; margin-top: 2px">{{n.body}}</div>
+            <div style="display: flex; gap: 6px; margin-top: 10px">
+              <button class="btn">{{n.primary}}</button>
+              <button class="btn" style="background: transparent; color: #a8adb7">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="position: absolute; left: 24px; top: 60px; width: 210px; font-size: 12.5px; line-height: 1.6; color: #c2c6cf">
+    <div style="font-weight: 600; color: #f1f2f4; margin-bottom: 6px">When we notify</div>
+    Only when the tab isn't the one you're looking at. Click a banner to jump to that exact tab and split.
+  </div>
+  <div style="position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 10px; align-items: flex-end; padding: 8px 12px; border-radius: 18px; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.18)">
+    <span style="width: 48px; height: 48px; border-radius: 12px; background: #4a5568" aria-hidden="true"></span>
+    <span style="width: 48px; height: 48px; border-radius: 12px; background: #5a6b85" aria-hidden="true"></span>
+    <span style="position: relative; width: 48px; height: 48px; border-radius: 12px; background: #101114; border: 1px solid #3a3d47; display: flex; align-items: center; justify-content: center" role="img" aria-label="Ghostty, 2 agents need attention">
+      <span style="font: 600 18px ui-monospace, monospace; color: #e4e6ea">&gt;_</span>
+      <span style="position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px; box-sizing: border-box; border-radius: 10px; background: #e5484d; color: #fff; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center">2</span>
+    </span>
+    <span style="width: 48px; height: 48px; border-radius: 12px; background: #6b5a85" aria-hidden="true"></span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":640,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      notes: [
+        { title: 'web · refactor nav needs you', body: 'Permission requested: Bash(npm test)', primary: 'Open tab', color: '#f5a524' },
+        { title: 'docs · changelog finished', body: 'Updated CHANGELOG.md for v1.4 · took 4m 02s', primary: 'Open tab', color: '#3fb950' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

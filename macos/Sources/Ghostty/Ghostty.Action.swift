@@ -110,6 +110,94 @@ extension Ghostty.Action {
         let progress: UInt8?
     }
 
+    /// A status report from a program using OSC 7501, for example a coding
+    /// agent that is working or waiting on the user.
+    struct ProgramStatus: Equatable {
+        enum State {
+            case idle
+            case working
+            case done
+            case blocked
+            case error
+            case clear
+
+            init(_ c: ghostty_action_program_status_state_e) {
+                switch c {
+                case GHOSTTY_PROGRAM_STATE_IDLE:
+                    self = .idle
+                case GHOSTTY_PROGRAM_STATE_WORKING:
+                    self = .working
+                case GHOSTTY_PROGRAM_STATE_DONE:
+                    self = .done
+                case GHOSTTY_PROGRAM_STATE_BLOCKED:
+                    self = .blocked
+                case GHOSTTY_PROGRAM_STATE_ERROR:
+                    self = .error
+                default:
+                    self = .clear
+                }
+            }
+
+            /// How urgently this state needs the user's attention. When a tab
+            /// has several surfaces, the tab shows the most urgent one.
+            var urgency: Int {
+                switch self {
+                case .clear: return 0
+                case .idle: return 1
+                case .working: return 2
+                case .done: return 3
+                case .error: return 4
+                case .blocked: return 5
+                }
+            }
+        }
+
+        /// What a blocked program needs from the user.
+        enum Kind {
+            case permission
+            case question
+            case auth
+
+            init?(_ c: ghostty_action_program_status_kind_e) {
+                switch c {
+                case GHOSTTY_PROGRAM_KIND_PERMISSION:
+                    self = .permission
+                case GHOSTTY_PROGRAM_KIND_QUESTION:
+                    self = .question
+                case GHOSTTY_PROGRAM_KIND_AUTH:
+                    self = .auth
+                default:
+                    return nil
+                }
+            }
+        }
+
+        var state: State
+        let kind: Kind?
+        let progress: UInt8?
+
+        /// Machine-readable program name, e.g. "claude-code".
+        let app: String?
+
+        /// Short human-readable label.
+        let title: String?
+
+        /// One line of human-readable text about what the program is doing.
+        let msg: String?
+
+        /// When the program entered its current state.
+        var since: Date = Date()
+
+        /// A name for the program to show to people.
+        var appDisplayName: String {
+            switch app {
+            case "claude-code": return "Claude Code"
+            case let app?: return app
+            case nil: return "Agent"
+            }
+        }
+    }
+
     struct Scrollbar {
         let total: UInt64
         let offset: UInt64
@@ -171,6 +259,23 @@ extension Ghostty.Action {
 }
 
 // Putting the initializer in an extension preserves the automatic one.
+extension Ghostty.Action.ProgramStatus {
+    init(c: ghostty_action_program_status_s) {
+        func string(_ ptr: UnsafePointer<CChar>?) -> String? {
+            guard let ptr else { return nil }
+            let value = String(cString: ptr)
+            return value.isEmpty ? nil : value
+        }
+
+        self.state = State(c.state)
+        self.kind = Kind(c.kind)
+        self.progress = c.progress >= 0 ? UInt8(c.progress) : nil
+        self.app = string(c.app)
+        self.title = string(c.title)
+        self.msg = string(c.msg)
+    }
+}
+
 extension Ghostty.Action.ProgressReport {
     init(c: ghostty_action_progress_report_s) {
         self.state = State(c.state)

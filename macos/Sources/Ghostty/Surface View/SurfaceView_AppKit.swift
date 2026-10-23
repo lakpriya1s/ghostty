@@ -469,6 +469,10 @@ extension Ghostty {
                 // We unset our bell state if we gained focus
                 bell = false
 
+                // Focusing the surface means the user has seen any finished
+                // program status
+                markProgramStatusSeen()
+
                 // Remove any notifications for this surface once we gain focus.
                 if !notificationIdentifiers.isEmpty {
                     UNUserNotificationCenter.current()
@@ -1106,6 +1110,9 @@ extension Ghostty {
 
             // On any keyDown event we unset our bell state
             bell = false
+
+            // Typing means the user has seen any finished program status
+            markProgramStatusSeen()
 
             // We need to translate the mods (maybe) to handle configs such as option-as-alt
             let translationModsGhostty = Ghostty.eventModifierFlags(
@@ -1770,6 +1777,52 @@ extension Ghostty {
 
         @IBAction func changeTitle(_ sender: Any) {
             promptTitle()
+        }
+
+        /// Apply a new OSC 7501 program status report.
+        func updateProgramStatus(_ status: Action.ProgramStatus) {
+            if status.state == .clear {
+                programStatus = nil
+                return
+            }
+
+            let previous = programStatus
+            var status = status
+
+            // Keep counting from when the program entered this state, since
+            // programs send many reports while staying in one state.
+            if let previous, previous.state == status.state {
+                status.since = previous.since
+            }
+
+            programStatus = status
+
+            // Tell the user when the program needs them or finished, unless
+            // they're already looking at it.
+            guard previous?.state != status.state else { return }
+            let isVisible = focused && NSApp.isActive && (window?.isKeyWindow ?? false)
+            guard !isVisible else { return }
+
+            let name = status.appDisplayName
+            let body = status.msg ?? ""
+            switch status.state {
+            case .blocked:
+                showUserNotification(title: "\(name) needs you", body: body, requireFocus: false)
+            case .done:
+                showUserNotification(title: "\(name) finished", body: body, requireFocus: false)
+            case .error:
+                showUserNotification(title: "\(name) stopped with an error", body: body, requireFocus: false)
+            default:
+                break
+            }
+        }
+
+        /// A finished program goes back to idle once the user has seen it.
+        func markProgramStatusSeen() {
+            guard var status = programStatus, status.state == .done else { return }
+            status.state = .idle
+            status.since = Date()
+            programStatus = status
         }
 
         /// Show a user notification and associate it with this surface
