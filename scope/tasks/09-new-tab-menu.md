@@ -29,7 +29,10 @@ Code: `macos/Sources/Features/Agent Tabs/AgentNewTabMenu.swift`
 - [x] ⌥⌘1 … ⌥⌘9 for the first nine accounts (key codes, so any layout).
 - [x] "N running" = tabs in all windows whose agent reports that account.
 - [x] Add existing account… picks a config folder (hidden files shown).
-- [x] New account… asks for a name, creates `~/.claude-<name>` with a
+- [x] New account… asks for a display name and the folder extension
+      (`work` → `~/.claude-work`; left empty, it comes from the name, shown
+      as the placeholder while typing; lower case ASCII only), creates the
+      folder with a
       `settings.json` that runs the status hook (as `install.sh` does; only
       if the hook is installed), adds the account and opens a tab running
       `claude` there to log in. An existing folder is left as it is.

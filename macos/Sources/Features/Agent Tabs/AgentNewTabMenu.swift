@@ -179,27 +179,50 @@ enum AgentLauncher {
         let alert = NSAlert()
         alert.messageText = "New Claude Account"
         alert.informativeText = "Creates a Claude config folder and opens a tab to log in."
-        let field = NSTextField(string: "")
-        field.placeholderString = "work"
-        field.frame = NSRect(x: 0, y: 0, width: 240, height: 24)
-        alert.accessoryView = field
+
+        // The name shown in menus and cards, and the folder's extension:
+        // "work" makes ~/.claude-work. Left empty, the extension comes from
+        // the name, shown as the placeholder while typing.
+        let nameField = NSTextField(string: "")
+        nameField.placeholderString = "Work"
+        let extField = NSTextField(string: "")
+        extField.placeholderString = "work"
+        let prefix = NSTextField(labelWithString: "~/.claude-")
+        prefix.textColor = .secondaryLabelColor
+        let folderRow = NSStackView(views: [prefix, extField])
+        folderRow.spacing = 2
+        let grid = NSGridView(views: [
+            [NSTextField(labelWithString: "Name"), nameField],
+            [NSTextField(labelWithString: "Folder"), folderRow],
+        ])
+        grid.rowSpacing = 8
+        grid.columnSpacing = 8
+        grid.column(at: 0).xPlacement = .trailing
+        grid.rowAlignment = .firstBaseline
+        grid.frame = NSRect(x: 0, y: 0, width: 300, height: 56)
+        nameField.widthAnchor.constraint(equalToConstant: 240).isActive = true
+        extField.widthAnchor.constraint(greaterThanOrEqualToConstant: 120).isActive = true
+        alert.accessoryView = grid
         alert.addButton(withTitle: "Create")
         alert.addButton(withTitle: "Cancel")
-        alert.window.initialFirstResponder = field
+        alert.window.initialFirstResponder = nameField
+
+        let typing = NotificationCenter.default.addObserver(
+            forName: NSControl.textDidChangeNotification, object: nameField, queue: .main
+        ) { _ in
+            let slug = Self.folderExtension(nameField.stringValue)
+            extField.placeholderString = slug.isEmpty ? "work" : slug
+        }
 
         let done = { (response: NSApplication.ModalResponse) in
+            NotificationCenter.default.removeObserver(typing)
             guard response == .alertFirstButtonReturn else { return }
-            // Letters, digits, "-" and "_", so the folder name is also a
-            // valid OSC 7501 account.
-            let name = field.stringValue
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .lowercased()
-                .map { $0.isLetter || $0.isNumber || $0 == "_" ? $0 : "-" }
-            let slug = String(name).trimmingCharacters(in: CharacterSet(charactersIn: "-"))
-            guard !slug.isEmpty else { return }
+            let name = nameField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            let ext = Self.folderExtension(extField.stringValue.isEmpty ? name : extField.stringValue)
+            guard !ext.isEmpty else { return }
 
             let folder = FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".claude-\(String(slug.prefix(24)))")
+                .appendingPathComponent(".claude-\(ext)")
             do {
                 try createClaudeConfig(at: folder)
             } catch {
@@ -209,6 +232,7 @@ enum AgentLauncher {
                 return
             }
             let account = AgentAccountStore.shared.add(folder: folder)
+            if !name.isEmpty { AgentAccountStore.shared.rename(account.id, to: name) }
             newClaudeTab(account: account, from: controller, worktree: false)
         }
         if let window = controller.window {
@@ -216,6 +240,18 @@ enum AgentLauncher {
         } else {
             done(alert.runModal())
         }
+    }
+
+    /// A folder extension from what the user typed: lower case ASCII
+    /// letters, digits, "-" and "_", so `.claude-<ext>` is also a valid OSC 7501
+    /// account. At most 24 characters.
+    static func folderExtension(_ text: String) -> String {
+        let mapped = text
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+            .map { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "_") ? $0 : "-" }
+        let slug = String(mapped).trimmingCharacters(in: CharacterSet(charactersIn: "-"))
+        return String(slug.prefix(24))
     }
 
     /// Create a Claude config folder whose settings run our status hook, the
