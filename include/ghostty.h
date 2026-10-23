@@ -938,12 +938,21 @@ typedef struct {
   ghostty_action_program_status_kind_e kind;
   // -1 if no progress was reported, otherwise 0-100.
   int8_t progress;
+  // -1 if no context usage was reported, otherwise 0-100.
+  int8_t context;
   // Machine-readable program name, e.g. "claude-code". May be empty.
   const char* app;
   // Short human-readable label. May be empty.
   const char* title;
   // One line of human-readable text. May be empty.
   const char* msg;
+  // Which account or profile, e.g. ".claude-work". May be empty.
+  const char* account;
+  // The last thing the program said to the user. May be empty.
+  const char* last;
+  // The child record this is about, e.g. "sub/a1b2". Empty for the
+  // program itself.
+  const char* id;
 } ghostty_action_program_status_s;
 
 // apprt.action.CommandFinished.C

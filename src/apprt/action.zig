@@ -483,10 +483,10 @@ pub const Action = union(Key) {
         // For ABI compatibility, we expect that this is our union size.
         // At the time of writing, we don't promise ABI compatibility
         // so we can change this but I want to be aware of it.
-        // ProgramStatus.C (three string pointers) is the largest member.
+        // ProgramStatus.C (six string pointers) is the largest member.
         assert(@sizeOf(CValue) == switch (@sizeOf(usize)) {
-            4 => 24,
-            8 => 40,
+            4 => 36,
+            8 => 64,
             else => unreachable,
         });
     }
@@ -811,9 +811,13 @@ pub const ProgramStatus = struct {
     state: terminal.osc.Command.ProgramStatus.State,
     kind: ?terminal.osc.Command.ProgramStatus.Kind = null,
     progress: ?u8 = null,
+    context: ?u8 = null,
     app: [:0]const u8 = "",
     title: [:0]const u8 = "",
     msg: [:0]const u8 = "",
+    account: [:0]const u8 = "",
+    last: [:0]const u8 = "",
+    id: [:0]const u8 = "",
 
     /// Sync with: ghostty_action_program_status_state_e
     pub const CState = enum(c_int) {
@@ -839,9 +843,14 @@ pub const ProgramStatus = struct {
         kind: CKind,
         /// -1 if no progress was reported, otherwise 0-100.
         progress: i8,
+        /// -1 if no context usage was reported, otherwise 0-100.
+        context: i8,
         app: [*:0]const u8,
         title: [*:0]const u8,
         msg: [*:0]const u8,
+        account: [*:0]const u8,
+        last: [*:0]const u8,
+        id: [*:0]const u8,
     };
 
     pub fn cval(self: ProgramStatus) C {
@@ -853,9 +862,13 @@ pub const ProgramStatus = struct {
                 inline else => |tag| @field(CKind, @tagName(tag)),
             } else .none,
             .progress = if (self.progress) |progress| @intCast(@min(progress, 100)) else -1,
+            .context = if (self.context) |context| @intCast(@min(context, 100)) else -1,
             .app = self.app.ptr,
             .title = self.title.ptr,
             .msg = self.msg.ptr,
+            .account = self.account.ptr,
+            .last = self.last.ptr,
+            .id = self.id.ptr,
         };
     }
 

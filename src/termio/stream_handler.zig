@@ -1960,12 +1960,10 @@ pub const StreamHandler = struct {
                 }),
             },
 
-            .report => |report| {
-                // We only track the root record (the program itself) for
-                // now. Reports about child records are ignored.
-                if (report.readOption(.id) != null) return;
-                self.surfaceMessageWriter(.{ .program_status = .init(report) });
-            },
+            // Reports about the program itself and about its child records
+            // (an `id`, e.g. a subagent) both go to the app, which keeps
+            // the records.
+            .report => |report| self.surfaceMessageWriter(.{ .program_status = .init(report) }),
         }
     }
 };

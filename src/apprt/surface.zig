@@ -66,6 +66,9 @@ pub const Message = union(enum) {
         kind: ?Command.Kind,
         progress: ?u8,
 
+        /// How much of the program's context window is used, 0-100.
+        context: ?u8,
+
         /// Machine-readable program name, e.g. `claude-code`.
         app: [32:0]u8,
 
@@ -75,20 +78,44 @@ pub const Message = union(enum) {
         /// One line of human-readable text about what the program is doing.
         msg: [191:0]u8,
 
+        /// Which account or profile of the program, e.g. `.claude-work`.
+        account: [32:0]u8,
+
+        /// The last thing the program said to the user.
+        last: [191:0]u8,
+
+        /// The child record this report is about, e.g. `sub/a1b2`, or empty
+        /// for the program itself.
+        id: [terminal.osc.program_status.max_id_bytes:0]u8,
+
         pub fn init(report: Command.Report) ProgramStatus {
             var result: ProgramStatus = .{
                 .state = report.state,
                 .kind = report.readOption(.kind),
                 .progress = report.readOption(.progress),
+                .context = report.readOption(.context),
                 .app = undefined,
                 .title = undefined,
                 .msg = undefined,
+                .account = undefined,
+                .last = undefined,
+                .id = undefined,
             };
 
             DesktopNotification.copyUtf8Z(
                 result.app.len,
                 &result.app,
                 report.readOption(.app) orelse "",
+            );
+            DesktopNotification.copyUtf8Z(
+                result.account.len,
+                &result.account,
+                report.readOption(.account) orelse "",
+            );
+            DesktopNotification.copyUtf8Z(
+                result.id.len,
+                &result.id,
+                report.readOption(.id) orelse "",
             );
 
             // writeText can only fail if the buffer is too small, and the
@@ -101,6 +128,10 @@ pub const Message = union(enum) {
             writer = .fixed(&buf);
             report.writeText(.msg, &writer) catch {};
             DesktopNotification.copyUtf8Z(result.msg.len, &result.msg, writer.buffered());
+
+            writer = .fixed(&buf);
+            report.writeText(.last, &writer) catch {};
+            DesktopNotification.copyUtf8Z(result.last.len, &result.last, writer.buffered());
 
             return result;
         }
@@ -380,7 +411,7 @@ test "ProgramStatus init" {
 
     var p: terminal.osc.Parser = .init(testing.allocator);
     defer p.deinit();
-    p.nextSlice("7501;state=blocked:kind=permission:app=claude-code:msg=TmVlZHMgcGVybWlzc2lvbjogQmFzaChucG0gdGVzdCk=");
+    p.nextSlice("7501;state=blocked:kind=permission:app=claude-code:account=.claude-work:context=37:last=UmVhZHk=:msg=TmVlZHMgcGVybWlzc2lvbjogQmFzaChucG0gdGVzdCk=");
     const report = p.end('\x1b').?.program_status.report;
 
     const status: Message.ProgramStatus = .init(report);
@@ -389,5 +420,14 @@ test "ProgramStatus init" {
     try testing.expectEqual(null, status.progress);
     try testing.expectEqualStrings("claude-code", std.mem.sliceTo(&status.app, 0));
     try testing.expectEqualStrings("", std.mem.sliceTo(&status.title, 0));
+    try testing.expectEqualStrings(".claude-work", std.mem.sliceTo(&status.account, 0));
+    try testing.expectEqual(37, status.context.?);
+    try testing.expectEqualStrings("Ready", std.mem.sliceTo(&status.last, 0));
+    try testing.expectEqualStrings("", std.mem.sliceTo(&status.id, 0));
+
+    p.reset();
+    p.nextSlice("7501;state=working:id=sub/a1b2");
+    const child: Message.ProgramStatus = .init(p.end('\x1b').?.program_status.report);
+    try testing.expectEqualStrings("sub/a1b2", std.mem.sliceTo(&child.id, 0));
     try testing.expectEqualStrings("Needs permission: Bash(npm test)", std.mem.sliceTo(&status.msg, 0));
 }
