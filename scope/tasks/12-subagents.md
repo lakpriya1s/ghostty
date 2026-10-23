@@ -34,4 +34,6 @@ ids differ. Revisit for Claude versions without their own reports.
 
 ## Verify
 
-- [ ] Badge on screen during a run with subagents.
+- [x] Badge on screen (2026-10-24): a working face with two subagent
+      records shows "2" by its spinner. Seen with test reports, not yet a
+      real Claude run with subagents.
