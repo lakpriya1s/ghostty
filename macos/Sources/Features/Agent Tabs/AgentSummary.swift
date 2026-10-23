@@ -37,14 +37,17 @@ final class AgentSummary {
         update()
     }
 
-    /// "Agent Tab Bar" and "Show Agents in Menu Bar" in the View menu, so
-    /// both can always be changed back: with native tabs there's no face bar
-    /// to right-click, and a hidden summary has no menu of its own.
-    private var viewMenuItem: NSMenuItem?
+    /// "Agent Tab Bar" and "Agents in Menu Bar" in the View menu, so both
+    /// can always be changed back: with native tabs there's no face bar to
+    /// right-click, and a hidden summary has no menu of its own.
     private var positionItems: [(item: NSMenuItem, position: AgentTabBarSettings.Position)] = []
 
+    /// The menu bar choices: hidden (nil) or a style. In the View menu and
+    /// the summary's own menu.
+    private var menuBarItems: [(item: NSMenuItem, style: AgentTabBarSettings.MenuBarStyle?)] = []
+
     private func addViewMenuItem() {
-        guard viewMenuItem == nil,
+        guard positionItems.isEmpty,
               let view = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == "View" })?.submenu else { return }
         view.addItem(.separator())
 
@@ -62,19 +65,44 @@ final class AgentSummary {
         positionMenu.submenu = positions
         view.addItem(positionMenu)
 
-        let item = NSMenuItem(title: "Show Agents in Menu Bar", action: #selector(toggleSummary), keyEquivalent: "")
-        item.target = self
-        view.addItem(item)
-        viewMenuItem = item
+        let menuBar = NSMenuItem(title: "Agents in Menu Bar", action: nil, keyEquivalent: "")
+        menuBar.submenu = menuBarMenu(tracked: true)
+        view.addItem(menuBar)
+    }
+
+    /// Hidden, Full, Compact, Icon Only. `tracked` items get their check mark
+    /// kept up to date; the summary's own menu is rebuilt on every update.
+    private func menuBarMenu(tracked: Bool) -> NSMenu {
+        let settings = AgentTabBarSettings.shared
+        let menu = NSMenu(title: "Agents in Menu Bar")
+        let choices: [(String, AgentTabBarSettings.MenuBarStyle?)] =
+            [("Hidden", nil)] + AgentTabBarSettings.MenuBarStyle.allCases.map { ($0.label, $0) }
+        for (title, style) in choices {
+            let item = NSMenuItem(title: title, action: #selector(chooseMenuBarStyle(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = style?.rawValue
+            let current = settings.showsMenuBarSummary ? settings.menuBarStyle : nil
+            item.state = current == style ? .on : .off
+            menu.addItem(item)
+            if tracked { menuBarItems.append((item, style)) }
+        }
+        return menu
+    }
+
+    @objc private func chooseMenuBarStyle(_ sender: NSMenuItem) {
+        let settings = AgentTabBarSettings.shared
+        guard let raw = sender.representedObject as? String,
+              let style = AgentTabBarSettings.MenuBarStyle(rawValue: raw) else {
+            settings.showsMenuBarSummary = false
+            return
+        }
+        settings.menuBarStyle = style
+        settings.showsMenuBarSummary = true
     }
 
     @objc private func choosePosition(_ sender: NSMenuItem) {
         guard let position = positionItems.first(where: { $0.item === sender })?.position else { return }
         AgentTabBarSettings.shared.position = position
-    }
-
-    @objc private func toggleSummary() {
-        AgentTabBarSettings.shared.showsMenuBarSummary.toggle()
     }
 
     func update() {
@@ -88,7 +116,11 @@ final class AgentSummary {
             .sorted { $0.status.state.urgency > $1.status.state.urgency }
 
         (NSApp.delegate as? AppDelegate)?.syncDockBadge()
-        viewMenuItem?.state = AgentTabBarSettings.shared.showsMenuBarSummary ? .on : .off
+        let settings = AgentTabBarSettings.shared
+        let current = settings.showsMenuBarSummary ? settings.menuBarStyle : nil
+        for (item, style) in menuBarItems {
+            item.state = current == style ? .on : .off
+        }
         for (item, position) in positionItems {
             item.state = AgentTabBarSettings.shared.position == position ? .on : .off
         }
@@ -107,29 +139,44 @@ final class AgentSummary {
 
         let item = statusItem ?? NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem = item
-        item.button?.attributedTitle = title()
-        item.button?.toolTip = "Agents"
+        item.button?.attributedTitle = title(style: settings.menuBarStyle)
+        item.button?.toolTip = title(style: .full).string
         item.menu = menu()
     }
 
-    /// "● 1 waiting  ● 1 working", with each dot in its state's color, like
-    /// the design. Only states that have agents are listed.
-    private func title() -> NSAttributedString {
+    /// With each dot in its state's color, only states that have agents:
+    /// full "● 1 waiting  ● 1 working" (the design), compact "●1 ●1", or one
+    /// dot for the most urgent state.
+    private func title(style: AgentTabBarSettings.MenuBarStyle) -> NSAttributedString {
         let counts: [(Ghostty.Action.ProgramStatus.State, String)] = [
             (.blocked, "waiting"), (.error, "error"), (.done, "done"), (.working, "working"), (.idle, "idle"),
         ]
         let font = NSFont.menuBarFont(ofSize: 0)
+        let dotFont = NSFont.systemFont(ofSize: font.pointSize * 0.8)
         let result = NSMutableAttributedString()
+        func dot(_ state: Ghostty.Action.ProgramStatus.State) -> NSAttributedString {
+            NSAttributedString(string: style == .compact ? "●" : "● ", attributes: [
+                .font: dotFont,
+                .foregroundColor: NSColor(AgentFaceView.color(for: state)),
+                .baselineOffset: 1,
+            ])
+        }
+
+        if style == .icon {
+            // Entries are sorted most urgent first.
+            if let state = entries.first?.status.state { result.append(dot(state)) }
+            return result
+        }
+
         for (state, word) in counts {
             let count = entries.filter { $0.status.state == state }.count
             guard count > 0 else { continue }
-            if result.length > 0 { result.append(NSAttributedString(string: "  ", attributes: [.font: font])) }
-            result.append(NSAttributedString(string: "● ", attributes: [
-                .font: NSFont.systemFont(ofSize: font.pointSize * 0.8),
-                .foregroundColor: NSColor(AgentFaceView.color(for: state)),
-                .baselineOffset: 1,
-            ]))
-            result.append(NSAttributedString(string: "\(count) \(word)", attributes: [.font: font]))
+            if result.length > 0 {
+                result.append(NSAttributedString(string: style == .compact ? " " : "  ", attributes: [.font: font]))
+            }
+            result.append(dot(state))
+            let text = style == .compact ? "\(count)" : "\(count) \(word)"
+            result.append(NSAttributedString(string: text, attributes: [.font: font]))
         }
         return result
     }
@@ -148,20 +195,16 @@ final class AgentSummary {
             menu.addItem(row)
         }
         menu.addItem(.separator())
-        let hide = NSMenuItem(title: "Hide Menu Bar Summary", action: #selector(hideSummary), keyEquivalent: "")
-        hide.target = self
-        hide.toolTip = "Turn it back on in View › Show Agents in Menu Bar"
-        menu.addItem(hide)
+        let style = NSMenuItem(title: "Menu Bar Style", action: nil, keyEquivalent: "")
+        style.submenu = menuBarMenu(tracked: false)
+        style.toolTip = "Also in View › Agents in Menu Bar"
+        menu.addItem(style)
         return menu
     }
 
     @objc private func jump(_ sender: NSMenuItem) {
         guard let controller = sender.representedObject as? BaseTerminalController else { return }
         Self.focus(controller)
-    }
-
-    @objc private func hideSummary() {
-        AgentTabBarSettings.shared.showsMenuBarSummary = false
     }
 
     /// Bring a tab forward and focus the split whose agent it shows.

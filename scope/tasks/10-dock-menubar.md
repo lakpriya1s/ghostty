@@ -21,6 +21,13 @@ Code: `macos/Sources/Features/Agent Tabs/AgentSummary.swift`
 - [x] Settings: tab bar right-click → Dock Badge, Menu Bar Summary (both on
       by default, remembered).
 
+- [x] Menu bar style (2026-10-24): Full "● 1 waiting  ● 1 working",
+      Compact "●1 ●1", or Icon Only (one dot, most urgent state); the full
+      text is the tooltip. Chosen in the summary's own menu (Menu Bar Style),
+      View › Agents in Menu Bar (Hidden / Full / Compact / Icon Only) and
+      the tab bar's right-click menu. The summary only shows while an agent
+      runs.
+
 ## Verify
 
 - [ ] On screen: badge count, menu bar item, jump to tab.

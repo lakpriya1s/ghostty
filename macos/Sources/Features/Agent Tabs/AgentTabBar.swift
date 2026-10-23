@@ -116,6 +116,27 @@ final class AgentTabBarSettings: ObservableObject {
     private static let dockBadgeKey = "AgentDockBadge"
     private static let accountStyleKey = "AgentAccountStyle"
     private static let menuBarKey = "AgentMenuBarSummary"
+    private static let menuBarStyleKey = "AgentMenuBarStyle"
+
+    /// How much room the menu bar summary takes.
+    enum MenuBarStyle: String, CaseIterable {
+        /// "● 1 waiting  ● 1 working", as in the design.
+        case full
+
+        /// "●1 ●1": colored dots and counts.
+        case compact
+
+        /// One dot in the color of the most urgent state.
+        case icon
+
+        var label: String {
+            switch self {
+            case .full: return "Full"
+            case .compact: return "Compact"
+            case .icon: return "Icon Only"
+            }
+        }
+    }
 
     @Published var position: Position {
         didSet {
@@ -148,6 +169,13 @@ final class AgentTabBarSettings: ObservableObject {
         }
     }
 
+    @Published var menuBarStyle: MenuBarStyle {
+        didSet {
+            UserDefaults.ghostty.set(menuBarStyle.rawValue, forKey: Self.menuBarStyleKey)
+            AgentSummary.shared.update()
+        }
+    }
+
     /// Whether our own tab bar replaces the native one.
     var replacesNativeTabBar: Bool { position != .native }
 
@@ -160,6 +188,8 @@ final class AgentTabBarSettings: ObservableObject {
             .flatMap(AccountStyle.init(rawValue:)) ?? .background
         showsDockBadge = UserDefaults.ghostty.object(forKey: Self.dockBadgeKey) as? Bool ?? true
         showsMenuBarSummary = UserDefaults.ghostty.object(forKey: Self.menuBarKey) as? Bool ?? true
+        menuBarStyle = UserDefaults.ghostty.string(forKey: Self.menuBarStyleKey)
+            .flatMap(MenuBarStyle.init(rawValue:)) ?? .full
     }
 }
 
@@ -489,6 +519,11 @@ struct AgentTabBarMenu: View {
         Divider()
         Toggle("Dock Badge", isOn: $settings.showsDockBadge)
         Toggle("Menu Bar Summary", isOn: $settings.showsMenuBarSummary)
+        Picker("Menu Bar Style", selection: $settings.menuBarStyle) {
+            ForEach(AgentTabBarSettings.MenuBarStyle.allCases, id: \.self) { style in
+                Text(style.label).tag(style)
+            }
+        }
     }
 }
 
