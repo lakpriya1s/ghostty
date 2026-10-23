@@ -3,7 +3,7 @@
 Everything needed to pick this work up cold. Read this, then
 [README.md](README.md) (scope) and [tasks/README.md](tasks/README.md) (status).
 
-_Last updated: 2026-10-23 (evening)._
+_Last updated: 2026-10-24._
 
 ## What this is
 
@@ -19,31 +19,33 @@ Claude Code first; other agents later through the same protocol.
 
 ## Where it stands
 
-**Committed, not pushed:** tasks 07–13 are in five commits after
-`f2d33a991` on `agent-tabs` (core, macos, hook, dev script, scope). Ask the
-user before pushing.
+**P0, P1 and P2 are built for Claude Code on macOS.** P3 (other agents,
+Linux, extras) is deliberately left for later. Everything is committed on
+`agent-tabs`, in the commits from `f2d33a991` onward (`git log
+main..agent-tabs`); **nothing is pushed**. Ask the user before pushing.
+The hook is installed in all six `~/.claude*` folders (reinstalled 2026-10-23 with `StopFailure`).
 
-**Working and confirmed on screen**
+**Seen working on screen**
 
-- Face tab bar at the top replaces the native tabs (task 05); faces animate
-  (task 03); hover card with account footer (tasks 06, 08).
-- Real Claude Code sessions drive the faces: hook installed in all six
-  `~/.claude*` folders (task 02).
-- Accounts: tab background tinted with the account color, interactive and
-  `-p` sessions (task 08). The face goes back to `>_` when Claude exits.
-- `+` menu with accounts and a folder picker (task 09).
-- `scripts/dev-run.sh` (task 07).
+- Faces animate; tab bar at Top and Title Bar; window title back in the
+  title bar for Top/Left (05).
+- Real Claude sessions drive the faces; accounts tint the tabs (02, 08).
+- Notifications match the design: tab name in the title, "took 4m 02s",
+  Open tab / Dismiss, `>_` image with a state dot (04).
+- `+` menu with accounts, folder picker, New account… (09).
+- Subagent badge, with test reports (12).
+- Menu bar summary in Compact style (10).
+- CPU: faces only animate when visible; measurements in task 03.
 
-**Built, needs checking on screen:** left position and S/M/L (05),
-notifications (04), dock badge and menu bar summary (10), Agents panel ⌘⇧A
-and ⌘J (11), subagent badge (12), ⌥⌘1–9, worktree option, New account… / Add existing account…, Title
-Bar position (05).
+**Built, not yet checked on screen:** Left position and S/M/L vs. the design
+(03, 05); hover card's context bar, last message and branch (06, 13);
+Agents panel ⌘⇧A and ⌘J (11); dock badge (10); ⌥⌘1–9, worktree option,
+Add existing account…, Rename, and New account…'s two fields (name and
+folder extension) (09); the agent cards in the menu bar item's menu (10).
 
-**Built, needs the hook reinstalled and checking on screen:** context used,
-last message and git branch in the hover card and Agents panel, `StopFailure`
-→ error (13).
+**Not started (P3):** other agents (14), Linux (15), quiet mode and the
+other extras in [README.md](README.md).
 
-**Not started:** other agents (14), Linux (15). See [tasks/README.md](tasks/README.md).
 ## Build and run
 
 One-time setup on this Mac (already done):
@@ -122,24 +124,51 @@ See it work without Claude: run `agents/demo-states.sh` in a tab.
   waits for Enter). `log` is a zsh builtin; use `/usr/bin/log show`.
 - **Debugging hooks:** `claude --debug-file <path>` logs every hook run and its
   exit status.
+- **The dev build is its own app to macOS** (`com.mitchellh.ghostty.debug`),
+  separate from the user's `/Applications/Ghostty.app`: its own
+  notification permission (it was off; `log show` with
+  `process == "NotificationCenter"` says `notificationsAllowed: false`), its
+  own entry in System Settings › Menu Bar, and its own settings:
+  `defaults read com.mitchellh.ghostty.debug` (keys `Agent*`). To change one
+  the app can't reach, `defaults write` it, then restart the dev app.
+- **Test in a terminal without Claude running.** Once Claude reports its own
+  status, test reports only set the account, context and last message, not
+  the state. Find a plain shell: `ps -o comm= -t <tty>` for each terminal.
+  Writing to a tty only changes what's shown, never Claude's input, but
+  don't use the user's Claude terminals anyway.
+- **A notification only shows when the user isn't looking at that
+  terminal**, so test with the dev app in the background
+  (`osascript -e 'tell application "/Applications/Ghostty.app" to activate'`).
+- **`System Events … frontmost` can be wrong**; grey traffic lights in a
+  screenshot are the reliable sign the dev app isn't active.
+- **A locked screen counts as not visible**: faces stop, CPU drops to ~0.
+  Check with `CGSessionCopyCurrentDictionary()` (`CGSSessionScreenIsLocked`).
+- **Don't run the Release build next to the user's Ghostty**: same bundle
+  id. Measure CPU on the debug build and say so.
+- **Menu bar items aren't windows the app owns** on this macOS (a system
+  scene draws them), so `CGWindowList` can't find or capture them, and
+  osascript has no accessibility permission. Ask the user to look.
+- **Measuring CPU:** `top -l 8 -s 1 -pid <pid> -stats cpu`; `sample <pid> 3`
+  shows what's drawing (look for `AgentFaceView` and `layoutIfNeeded`).
+
 ## How it fits together
 
 ```
 Claude Code ──its own OSC 7501 (state, subagent child records)──┐
-Claude Code hook ──OSC 7501 (state + account)───────────────────┤
+Claude Code hook ──OSC 7501 (state, account, context, last)─────┤
                                                                 ▼
             core (Zig) ──program_status action──▶ macOS app (per terminal, per tab, summary)
 ```
 
 | Layer | Files |
 | --- | --- |
-| Hook + installer | `agents/claude-code/ghostty-agent-status`, `agents/claude-code/install.sh` (`--all`), `agents/demo-states.sh` |
-| Core: parse → app | `src/terminal/osc/parsers/program_status.zig` (adds the `account`, `context`, `last` keys), `src/termio/stream_handler.zig` (forwards root and child reports, query reply), `src/apprt/surface.zig` (`Message.ProgramStatus` with `account`, `id` + test), `src/Surface.zig`, `src/apprt/action.zig` (C union 64 bytes on 64-bit), `include/ghostty.h`, `src/apprt/gtk/class/application.zig` (ignored on Linux) |
-| Swift model | `Ghostty/Ghostty.Action.swift` (`ProgramStatus`), `Ghostty.App.swift` (action → surface; clears on command finished), `Surface View/OSSurfaceView.swift` (`programStatus`, `programChildren`), `Surface View/SurfaceView_AppKit.swift` (merge rules, children, notifications, "seen") |
+| Hook + installer | `agents/claude-code/ghostty-agent-status` (context % from the transcript, `last` on Stop, `StopFailure` → error), `agents/claude-code/install.sh` (`--all`), `agents/demo-states.sh` |
+| Core: parse → app | `src/terminal/osc/parsers/program_status.zig` (extension keys `account`, `context`, `last`), `src/termio/stream_handler.zig` (forwards root and child reports, query reply), `src/apprt/surface.zig` (`Message.ProgramStatus` + test), `src/Surface.zig`, `src/apprt/action.zig` (C union 64 bytes on 64-bit), `include/ghostty.h`, `src/apprt/gtk/class/application.zig` (ignored on Linux) |
+| Swift model | `Ghostty/Ghostty.Action.swift` (`ProgramStatus`), `Ghostty.App.swift` (action → surface; clears on command finished; notification actions), `Ghostty.Config.swift` (`desktopNotifications`), `GhosttyPackage.swift` (agent notification category), `Surface View/OSSurfaceView.swift` (`programStatus`, `programChildren`, `programWorkStartedAt`), `Surface View/SurfaceView_AppKit.swift` (merge rules, children, agent notifications, "seen") |
 | Per tab | `Features/Terminal/BaseTerminalController.swift` (most urgent status, `subagentCount`, `createdAt`, `agentTabBar`) |
-| UI (`Features/Agent Tabs/`) | `AgentFaceView.swift` (faces), `AgentTabBar.swift` (settings, model, bar, tint, badge, hover card), `AgentAccounts.swift` (account store), `AgentNewTabMenu.swift` (`+` menu, launcher, ⌥⌘1–9, folder picker), `AgentSummary.swift` (dock badge, menu bar), `AgentsPanel.swift` (⌘⇧A, ⌘J) |
-| Window | `Features/Terminal/TerminalView.swift` (bar placement), `TerminalController.swift` (owns the model, installs shortcuts), `Window Styles/TerminalWindow.swift` (hides native tab bar and title), `App/AppDelegate.swift` (dock badge count, starts the summary) |
-| Dev | `scripts/dev-run.sh` |
+| UI (`Features/Agent Tabs/`) | `AgentFaceView.swift` (faces, `Motion`), `AgentTabBar.swift` (settings incl. menu bar style, model incl. `faceMotion` and `inTitlebar`, bar, placement, hover card, `AgentGitBranch`, window drag area), `AgentAccounts.swift` (account store), `AgentNewTabMenu.swift` (`+` menu, launcher, New account…, ⌥⌘1–9), `AgentSummary.swift` (dock badge, menu bar item and its agent cards, View menu items, notification icon), `AgentsPanel.swift` (⌘⇧A, ⌘J, `AgentTime`) |
+| Window | `Features/Terminal/TerminalView.swift` (hosts the bar), `TerminalController.swift` (owns the model, installs shortcuts), `Window Styles/TerminalWindow.swift` (hides the native tab bar and its faces, Title Bar position), `TransparentTitlebarTerminalWindow.swift` (clears its title bar paint for it), `App/AppDelegate.swift` (dock badge count, notification categories, starts the summary) |
+| Dev | `scripts/dev-run.sh` (strips `CLAUDE*` from the app's environment) |
 
 Key decisions in the code:
 
@@ -147,38 +176,64 @@ Key decisions in the code:
   so ⌘T / ⌘W / ⌘1–9 / restore all keep working.
 - The native bar is hidden by setting its titlebar accessory's `isHidden`
   (in `TerminalWindow.addTitlebarAccessoryViewController` and
-  `syncNativeTabBarVisibility`). `toggleTabBar` did not work.
+  `syncNativeTabBarVisibility`). `toggleTabBar` did not work. Its per-tab
+  face is emptied while hidden, or it keeps animating unseen.
 - `agentTabBar` must be declared on `BaseTerminalController` (where the
   `TerminalViewModel` conformance is) and overridden in `TerminalController`;
   declaring it only on the subclass silently used the protocol default (nil).
 - **Two reporters.** Claude Code 2.1.309 sends its own OSC 7501 once Ghostty
   answers its `?` probe (no account; subagents as child records `id=<agent
-  id>`). The hook adds the account. A report without an account keeps the
-  last one; once the program reports itself, the hook only sets the account.
+  id>`). The hook adds the account, context and last message. A report
+  without them keeps the previous values; once the program reports itself,
+  the hook only sets those, not the state.
+- **Context used** isn't given to hooks: the hook divides the last reply's
+  input tokens (from the transcript) by the model's window (1M for Opus
+  4.7+, Sonnet 5+, Haiku 5.5+, `[1m]`; otherwise 200k). Needs `jq`.
 - **Hooks have no controlling terminal** in interactive sessions, so the hook
   writes to the tty of its nearest parent that has one (Claude Code).
 - A terminal's status is cleared when shell integration reports the command
   finished, so a crashed or interrupted agent doesn't leave a stale face.
+- **Every animation frame lays out the whole window** (~14% main thread in
+  the debug build, per frame, not per face). So faces only move when
+  someone can see them: all while Ghostty is active, working and waiting
+  only while it's in the background, none when the window isn't visible.
+  The Agents panel drops its rows when hidden for the same reason. A
+  possible later fix: draw faces in their own layer.
+- **Title Bar position:** the window gets `.fullSizeContentView` and a
+  transparent title bar while it's on, undone when switching away; the
+  `tabs` and `hidden` title bar styles and full screen fall back to Top.
 - `AgentTabBarModel.setNeedsRefresh()` is the hub every change goes through;
   the summary listens to `changesPublisher`.
 - Popovers (hover card, `+` menu, Agents panel) are borderless child panels;
   the menu and Agents panel can become key, the hover card can't.
-- Settings (position, face size, account style, dock badge, menu bar, last
-  folder, worktree) live in `UserDefaults`, from the bar's right-click menu.
-  Accounts too (`AgentAccounts`). Not Ghostty config keys yet.
+- Settings (position, face size, account style, dock badge, menu bar and its
+  style, last folder, worktree) live in `UserDefaults`, from the bar's
+  right-click menu, and position and menu bar also in **View › Agent Tab
+  Bar** and **View › Agents in Menu Bar** (always reachable, even with
+  native tabs). Accounts too (`AgentAccounts`). Not Ghostty config keys yet.
 - Departures from the design, asked for by the user: account color is a tab
-  tint, not a ring (ring kept as an option); the `+` menu has a folder row.
+  tint, not a ring (ring kept as an option); the `+` menu has a folder row;
+  the Title Bar position; the window title shown for Top/Left; the menu bar
+  defaults to Compact and its menu shows agent cards.
+
 ## Next steps
 
-1. The user checks on screen: tint strength, subagent badge, ⌘⇧A, ⌘J,
-   menu bar and dock badge, left position, notifications.
-2. Reinstall the hook (`sh agents/claude-code/install.sh --all`, adds
-   `StopFailure`) and check task 13 on screen.
-3. Push when the user asks. Then task 14 (other agents).
+1. The user checks the "Built, not yet checked" list above as they use it;
+   fix what they report.
+2. If working faces feel heavy in daily use, draw faces in their own layer
+   so a frame doesn't lay out the window (task 03).
+3. Optional, offered: show each account's email / organization from its
+   `.claude.json` (`oauthAccount.emailAddress`, `organizationName`) under it
+   in the `+` menu.
+4. P3 when the user asks: other agents (14; Codex 0.147 and opencode 1.18.9
+   are installed here, Gemini CLI isn't), Linux (15).
+5. Push only when the user asks.
 
 Testing without the user: AppleScript gives each dev-app terminal's tty
 (`tell application "<path>/Ghostty.app" to get tty of every terminal`), and
 writing an OSC 7501 report to that tty updates its tab, just like the hook.
+Use a terminal without Claude in it (see Gotchas).
+
 ## Rules from the repo
 
 - `AGENTS.md`: never create issues or PRs; format Zig with `zig fmt`, Swift
