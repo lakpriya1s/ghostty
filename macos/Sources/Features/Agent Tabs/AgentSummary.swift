@@ -181,17 +181,21 @@ final class AgentSummary {
         return result
     }
 
-    /// One row per agent, most urgent first. Choosing one jumps to its tab
+    /// One card per agent, most urgent first. Choosing one jumps to its tab
     /// and split.
     private func menu() -> NSMenu {
         let menu = NSMenu()
         for entry in entries {
-            let title = entry.controller.window?.title ?? "Terminal"
-            let row = NSMenuItem(title: "\(title) — \(entry.status.stateLabel)", action: #selector(jump(_:)), keyEquivalent: "")
-            row.target = self
-            row.representedObject = entry.controller
-            row.image = Self.dot(AgentFaceView.color(for: entry.status.state))
-            if let msg = entry.status.msg { row.toolTip = msg }
+            let row = NSMenuItem()
+            let controller = entry.controller
+            let card = AgentSummaryCard(entry: entry) { [weak row] in
+                row?.menu?.cancelTracking()
+                // Let the menu close before moving focus.
+                DispatchQueue.main.async { Self.focus(controller) }
+            }
+            let view = NSHostingView(rootView: card)
+            view.setFrameSize(view.fittingSize)
+            row.view = view
             menu.addItem(row)
         }
         menu.addItem(.separator())
@@ -200,11 +204,6 @@ final class AgentSummary {
         style.toolTip = "Also in View › Agents in Menu Bar"
         menu.addItem(style)
         return menu
-    }
-
-    @objc private func jump(_ sender: NSMenuItem) {
-        guard let controller = sender.representedObject as? BaseTerminalController else { return }
-        Self.focus(controller)
     }
 
     /// Bring a tab forward and focus the split whose agent it shows.
@@ -220,13 +219,92 @@ final class AgentSummary {
         }
     }
 
-    private static func dot(_ color: Color) -> NSImage {
-        let image = NSImage(size: NSSize(width: 10, height: 10), flipped: false) { rect in
-            NSColor(color).setFill()
-            NSBezierPath(ovalIn: rect.insetBy(dx: 1, dy: 1)).fill()
-            return true
+}
+
+/// One agent in the menu bar summary's menu: its face, the tab title, the
+/// state and for how long, what it's doing, and its account, folder and
+/// branch. Uses the menu's own text colors, so it reads in light and dark.
+private struct AgentSummaryCard: View {
+    let entry: AgentSummary.Entry
+    let action: () -> Void
+
+    @State private var hovering = false
+
+    private var status: Ghostty.Action.ProgramStatus { entry.status }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            // Still: the menu is open only briefly, and a moving face in a
+            // menu would distract more than help.
+            AgentFaceView(state: status.state, size: 26, background: .clear, motion: .none)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                (Text(status.stateLabel)
+                    .foregroundColor(AgentFaceView.color(for: status.state))
+                    .fontWeight(.medium)
+                 + Text(" · \(elapsed)").foregroundColor(.secondary))
+                    .font(.system(size: 11.5))
+
+                if let msg = status.msg {
+                    Text(msg)
+                        .font(.system(size: 11.5))
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(account?.swiftUIColor ?? Color.secondary.opacity(0.5))
+                        .frame(width: 7, height: 7)
+                    Text(footer)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
+                .padding(.top, 1)
+            }
+            Spacer(minLength: 0)
         }
-        return image
+        .padding(.vertical, 7)
+        .padding(.horizontal, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(hovering ? Color.primary.opacity(0.1) : .clear))
+        .padding(.horizontal, 5)
+        .frame(width: 320, alignment: .leading)
+        .contentShape(Rectangle())
+        .onHover { hovering = $0 }
+        .onTapGesture(perform: action)
+    }
+
+    private var title: String {
+        let title = entry.controller.window?.title ?? ""
+        return title.isEmpty ? status.appDisplayName : title
+    }
+
+    private var account: AgentAccount? {
+        status.account.map { AgentAccountStore.shared.account(for: $0) }
+    }
+
+    /// "2m 14s" working, "1m" otherwise, as in the Agents panel.
+    private var elapsed: String {
+        AgentTime.duration(from: status.since, to: Date(), seconds: status.state == .working)
+    }
+
+    /// "work · ~/code/api · feat/nav".
+    private var footer: String {
+        let pwd = entry.controller.focusedSurface?.pwd
+        let folder = pwd.map { ($0 as NSString).abbreviatingWithTildeInPath }
+        let branch = AgentGitBranch.shared.branch(at: pwd)
+        let who = account?.name ?? status.appDisplayName
+        return [who, folder, branch].compactMap { $0 }.joined(separator: " · ")
     }
 }
 

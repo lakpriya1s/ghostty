@@ -120,11 +120,11 @@ final class AgentTabBarSettings: ObservableObject {
 
     /// How much room the menu bar summary takes.
     enum MenuBarStyle: String, CaseIterable {
+        /// "●1 ●1": colored dots and counts. The default.
+        case compact
+
         /// "● 1 waiting  ● 1 working", as in the design.
         case full
-
-        /// "●1 ●1": colored dots and counts.
-        case compact
 
         /// One dot in the color of the most urgent state.
         case icon
@@ -189,7 +189,7 @@ final class AgentTabBarSettings: ObservableObject {
         showsDockBadge = UserDefaults.ghostty.object(forKey: Self.dockBadgeKey) as? Bool ?? true
         showsMenuBarSummary = UserDefaults.ghostty.object(forKey: Self.menuBarKey) as? Bool ?? true
         menuBarStyle = UserDefaults.ghostty.string(forKey: Self.menuBarStyleKey)
-            .flatMap(MenuBarStyle.init(rawValue:)) ?? .full
+            .flatMap(MenuBarStyle.init(rawValue:)) ?? .compact
     }
 }
 
