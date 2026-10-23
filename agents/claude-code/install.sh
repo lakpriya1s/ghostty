@@ -2,19 +2,25 @@
 # Install (or remove) the Ghostty status hook for Claude Code.
 #
 # Usage:
-#   install.sh [--uninstall] [CLAUDE_CONFIG_DIR ...]
+#   install.sh [--uninstall] [--all | CLAUDE_CONFIG_DIR ...]
 #
-# With no folders, uses $CLAUDE_CONFIG_DIR, or ~/.claude. Run it once for
-# each Claude account folder you use. The settings file is backed up to
-# settings.json.bak before it is changed, and installing twice is safe.
+# With no folders, uses $CLAUDE_CONFIG_DIR, or ~/.claude. --all uses every
+# ~/.claude* folder that holds a Claude config, one per account. Before the
+# first change, the settings file is copied to settings.json.before-ghostty
+# (never overwritten later). Installing twice is safe.
 
 set -eu
 
 uninstall=0
-if [ "${1:-}" = "--uninstall" ]; then
-  uninstall=1
+all=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --uninstall) uninstall=1 ;;
+    --all) all=1 ;;
+    *) break ;;
+  esac
   shift
-fi
+done
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "install.sh needs jq (brew install jq)" >&2
@@ -31,13 +37,28 @@ if [ "$uninstall" -eq 0 ]; then
   chmod +x "$hook"
 fi
 
+if [ "$all" -eq 1 ]; then
+  set --
+  for dir in "$HOME"/.claude "$HOME"/.claude-*; do
+    [ -d "$dir" ] || continue
+    if [ -e "$dir/settings.json" ] || [ -e "$dir/.claude.json" ] || [ -d "$dir/projects" ]; then
+      set -- "$@" "$dir"
+    fi
+  done
+  if [ "$#" -eq 0 ]; then
+    echo "No Claude config folders found in $HOME" >&2
+    exit 1
+  fi
+fi
+
 [ "$#" -gt 0 ] || set -- "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 
 for dir in "$@"; do
   settings="$dir/settings.json"
   mkdir -p "$dir"
   [ -f "$settings" ] || echo '{}' >"$settings"
-  cp "$settings" "$settings.bak"
+  [ -e "$settings.before-ghostty" ] || cp "$settings" "$settings.before-ghostty"
+  tmp="$settings.ghostty-tmp"
 
   jq --arg cmd "$hook" --argjson uninstall "$uninstall" '
     # Drop any hook entries we added before.
@@ -55,7 +76,8 @@ for dir in "$@"; do
       ];
 
     def events: ["SessionStart", "UserPromptSubmit", "PreToolUse",
-                 "PostToolUse", "Notification", "Stop", "SessionEnd"];
+                 "PostToolUse", "Notification", "Stop", "StopFailure",
+                 "SessionEnd"];
 
     .hooks //= {}
     | reduce events[] as $ev (.; strip($ev))
@@ -67,10 +89,12 @@ for dir in "$@"; do
         | add("PostToolUse"; "*")
         | add("Notification"; null)
         | add("Stop"; null)
+        | add("StopFailure"; null)
         | add("SessionEnd"; null)
       end
     | if .hooks == {} then del(.hooks) else . end
-  ' "$settings.bak" >"$settings"
+  ' "$settings" >"$tmp"
+  mv "$tmp" "$settings"
 
   if [ "$uninstall" -eq 1 ]; then
     echo "Removed the Ghostty status hook from $settings"
