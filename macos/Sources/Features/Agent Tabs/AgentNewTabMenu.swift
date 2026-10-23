@@ -692,15 +692,15 @@ final class AgentMenuPanel {
     /// Open the menu, or close it if it's open. Clicking "+" while the menu
     /// is open first closes it (the click is outside it), so a click that
     /// comes right after closing doesn't open it again.
-    func toggle(for controller: BaseTerminalController, below: Bool, anchor: CGRect) {
+    func toggle(for controller: BaseTerminalController, barEdge: Edge, anchor: CGRect) {
         if panel.isVisible {
             hide()
         } else if Date().timeIntervalSince(hiddenAt) > 0.25 {
-            show(for: controller, below: below, anchor: anchor)
+            show(for: controller, barEdge: barEdge, anchor: anchor)
         }
     }
 
-    func show(for controller: BaseTerminalController, below: Bool, anchor: CGRect, folder: String? = nil) {
+    func show(for controller: BaseTerminalController, barEdge: Edge, anchor: CGRect, folder: String? = nil) {
         guard let window = controller.window else { return }
         hide()
 
@@ -710,7 +710,7 @@ final class AgentMenuPanel {
             folder: folder,
             reopen: { [weak self, weak controller] path in
                 guard let self, let controller else { return }
-                self.show(for: controller, below: below, anchor: anchor, folder: path)
+                self.show(for: controller, barEdge: barEdge, anchor: anchor, folder: path)
             },
             dismiss: { [weak self] in self?.hide() })
         let host = NSHostingView(rootView: menu.fixedSize())
@@ -719,13 +719,7 @@ final class AgentMenuPanel {
 
         let button = window.screenRect(fromSwiftUIGlobal: anchor)
         let size = host.fittingSize
-        var origin = below
-            ? NSPoint(x: button.minX, y: button.minY - 6 - size.height)
-            : NSPoint(x: button.maxX + 8, y: button.maxY - size.height)
-        if let screen = window.screen?.visibleFrame {
-            origin.x = min(max(origin.x, screen.minX + 4), screen.maxX - size.width - 4)
-            origin.y = max(origin.y, screen.minY + 4)
-        }
+        let origin = button.popupOrigin(size: size, awayFrom: barEdge, gap: 6, on: window.screen)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
 
         window.addChildWindow(panel, ordered: .above)
@@ -772,5 +766,50 @@ extension NSWindow {
             width: rect.width,
             height: rect.height)
         return convertToScreen(contentView.convert(flipped, to: nil))
+    }
+}
+
+extension NSRect {
+    /// Where a popup of `size` goes next to this rect (in screen
+    /// coordinates), on the side away from a tab bar at `barEdge`: below a
+    /// bar at the top, above one at the bottom, beside one on the left or
+    /// right. Kept on `screen`.
+    func popupOrigin(size: NSSize, awayFrom barEdge: Edge, gap: CGFloat, on screen: NSScreen?) -> NSPoint {
+        // Beside the bar, the gap is a little wider to clear its border.
+        let sideGap = gap + 2
+        var origin: NSPoint
+        switch barEdge {
+        case .top: origin = NSPoint(x: minX, y: minY - gap - size.height)
+        case .bottom: origin = NSPoint(x: minX, y: maxY + gap)
+        case .leading: origin = NSPoint(x: maxX + sideGap, y: maxY - size.height)
+        case .trailing: origin = NSPoint(x: minX - sideGap - size.width, y: maxY - size.height)
+        }
+
+        if let screen = screen?.visibleFrame {
+            origin.x = min(max(origin.x, screen.minX + 4), screen.maxX - size.width - 4)
+            origin.y = min(max(origin.y, screen.minY + 4), screen.maxY - size.height - 4)
+        }
+        return origin
+    }
+}
+
+extension Edge {
+    var opposite: Edge {
+        switch self {
+        case .top: return .bottom
+        case .bottom: return .top
+        case .leading: return .trailing
+        case .trailing: return .leading
+        }
+    }
+
+    /// The alignment that puts a view against this edge.
+    var alignment: Alignment {
+        switch self {
+        case .top: return .top
+        case .bottom: return .bottom
+        case .leading: return .leading
+        case .trailing: return .trailing
+        }
     }
 }

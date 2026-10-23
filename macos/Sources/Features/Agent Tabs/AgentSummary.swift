@@ -52,11 +52,8 @@ final class AgentSummary {
         view.addItem(.separator())
 
         let positions = NSMenu(title: "Agent Tab Bar")
-        let choices: [(String, AgentTabBarSettings.Position)] = [
-            ("Top", .top), ("Title Bar", .titleBar), ("Left", .left), ("Native macOS Tabs", .native),
-        ]
-        for (title, position) in choices {
-            let item = NSMenuItem(title: title, action: #selector(choosePosition(_:)), keyEquivalent: "")
+        for position in AgentTabBarSettings.Position.allCases {
+            let item = NSMenuItem(title: position.label, action: #selector(choosePosition(_:)), keyEquivalent: "")
             item.target = self
             positions.addItem(item)
             positionItems.append((item, position))

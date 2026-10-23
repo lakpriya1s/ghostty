@@ -65,11 +65,28 @@ final class AgentTabBarSettings: ObservableObject {
         /// that show `top` instead.
         case titleBar
 
+        /// A row of faces below the terminal.
+        case bottom
+
         /// A column of faces to the left of the terminal.
         case left
 
+        /// A column of faces to the right of the terminal.
+        case right
+
         /// The standard macOS tab bar, with a small face on each tab.
         case native
+
+        var label: String {
+            switch self {
+            case .top: return "Top"
+            case .titleBar: return "Title Bar"
+            case .bottom: return "Bottom"
+            case .left: return "Left"
+            case .right: return "Right"
+            case .native: return "Native macOS Tabs"
+            }
+        }
     }
 
     /// How a tab shows its agent's account color.
@@ -350,19 +367,29 @@ private struct AgentTabBarPlacement<Content: View>: View {
             // The window extends the content under its title bar, so the
             // bar goes up there with it.
             VStack(spacing: 0) {
-                AgentTabBar(model: model, vertical: false, inTitlebar: true)
+                AgentTabBar(model: model, edge: .top, inTitlebar: true)
                 VStack(spacing: 0) { content }
             }
             .ignoresSafeArea(.container, edges: .top)
         case .top, .titleBar:
             VStack(spacing: 0) {
-                AgentTabBar(model: model, vertical: false)
+                AgentTabBar(model: model, edge: .top)
                 VStack(spacing: 0) { content }
+            }
+        case .bottom:
+            VStack(spacing: 0) {
+                VStack(spacing: 0) { content }
+                AgentTabBar(model: model, edge: .bottom)
             }
         case .left:
             HStack(spacing: 0) {
-                AgentTabBar(model: model, vertical: true)
+                AgentTabBar(model: model, edge: .leading)
                 VStack(spacing: 0) { content }
+            }
+        case .right:
+            HStack(spacing: 0) {
+                VStack(spacing: 0) { content }
+                AgentTabBar(model: model, edge: .trailing)
             }
         case .native:
             VStack(spacing: 0) { content }
@@ -374,7 +401,12 @@ private struct AgentTabBarPlacement<Content: View>: View {
 struct AgentTabBar: View {
     @ObservedObject var model: AgentTabBarModel
     @ObservedObject private var settings = AgentTabBarSettings.shared
-    let vertical: Bool
+
+    /// The side of the terminal the bar is on. Its border faces the
+    /// terminal, and cards and menus open away from it.
+    let edge: Edge
+
+    private var vertical: Bool { edge == .leading || edge == .trailing }
 
     /// In the title bar: room for the window buttons on the left, the
     /// selected tab's title after the faces, and the empty parts drag the
@@ -428,7 +460,7 @@ struct AgentTabBar: View {
             width: vertical ? button + 16 : nil,
             height: vertical ? nil : button + 16)
         .background(AgentTabBarColors.bar)
-        .overlay(alignment: vertical ? .trailing : .bottom) {
+        .overlay(alignment: edge.opposite.alignment) {
             Rectangle()
                 .fill(AgentTabBarColors.border)
                 .frame(width: vertical ? 1 : nil, height: vertical ? nil : 1)
@@ -452,12 +484,12 @@ struct AgentTabBar: View {
                         faceSize: faceSize,
                         slot: slot,
                         button: button,
-                        vertical: vertical)
+                        barEdge: edge)
                 }
 
                 AgentNewTabButton(size: (slot * 0.7).rounded()) { anchor in
                     guard let controller = model.terminalController else { return }
-                    AgentMenuPanel.shared.toggle(for: controller, below: !vertical, anchor: anchor)
+                    AgentMenuPanel.shared.toggle(for: controller, barEdge: edge, anchor: anchor)
                 }
                 .padding(vertical ? .top : .leading, 4)
             }
@@ -501,10 +533,9 @@ struct AgentTabBarMenu: View {
 
     var body: some View {
         Picker("Tab Bar", selection: $settings.position) {
-            Text("Top").tag(AgentTabBarSettings.Position.top)
-            Text("Title Bar").tag(AgentTabBarSettings.Position.titleBar)
-            Text("Left").tag(AgentTabBarSettings.Position.left)
-            Text("Native macOS Tabs").tag(AgentTabBarSettings.Position.native)
+            ForEach(AgentTabBarSettings.Position.allCases, id: \.self) { position in
+                Text(position.label).tag(position)
+            }
         }
         Picker("Face Size", selection: $settings.faceSize) {
             ForEach(AgentTabBarSettings.FaceSize.allCases, id: \.self) { size in
@@ -608,7 +639,7 @@ private struct AgentTabButton: View {
     let faceSize: CGFloat
     let slot: CGFloat
     let button: CGFloat
-    let vertical: Bool
+    let barEdge: Edge
 
     @ObservedObject private var settings = AgentTabBarSettings.shared
     @State private var hovering = false
@@ -675,7 +706,7 @@ private struct AgentTabButton: View {
                     guard hovering, let window = model.window else { return }
                     AgentTabCardPanel.shared.show(
                         AgentTabCard(tab: tab),
-                        below: !vertical,
+                        barEdge: barEdge,
                         anchor: frame,
                         in: window)
                 }
@@ -925,13 +956,13 @@ final class AgentTabCardPanel {
     }()
 
     private weak var parent: NSWindow?
-    private var below = true
+    private var barEdge: Edge = .top
     private var anchor: CGRect = .zero
 
-    /// Show a card under (or to the right of) `anchor`, a frame in the
-    /// window's SwiftUI global coordinates.
-    func show<Card: View>(_ card: Card, below: Bool, anchor: CGRect, in window: NSWindow) {
-        self.below = below
+    /// Show a card next to `anchor`, a frame in the window's SwiftUI global
+    /// coordinates, on the side away from a tab bar at `barEdge`.
+    func show<Card: View>(_ card: Card, barEdge: Edge, anchor: CGRect, in window: NSWindow) {
+        self.barEdge = barEdge
         self.anchor = anchor
         update(card, in: window)
     }
@@ -943,16 +974,7 @@ final class AgentTabCardPanel {
 
         let face = window.screenRect(fromSwiftUIGlobal: anchor)
         let size = host.fittingSize
-        var origin = below
-            ? NSPoint(x: face.minX, y: face.minY - 8 - size.height)
-            : NSPoint(x: face.maxX + 10, y: face.maxY - size.height)
-
-        // Keep the card on screen.
-        if let screen = window.screen?.visibleFrame {
-            origin.x = min(max(origin.x, screen.minX + 4), screen.maxX - size.width - 4)
-            origin.y = max(origin.y, screen.minY + 4)
-        }
-
+        let origin = face.popupOrigin(size: size, awayFrom: barEdge, gap: 8, on: window.screen)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
         if parent !== window {
             parent?.removeChildWindow(panel)

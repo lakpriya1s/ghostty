@@ -37,7 +37,7 @@ The hook is installed in all six `~/.claude*` folders (reinstalled 2026-10-23 wi
 - Menu bar summary in Compact style (10).
 - CPU: faces only animate when visible; measurements in task 03.
 
-**Built, not yet checked on screen:** Left position and S/M/L vs. the design
+**Built, not yet checked on screen:** Left, Bottom and Right positions and S/M/L vs. the design
 (03, 05); hover card's context bar, last message and branch (06, 13);
 Agents panel ⌘⇧A and ⌘J (11); dock badge (10); ⌥⌘1–9, worktree option,
 Add existing account…, Rename, and New account…'s two fields (name and
@@ -213,7 +213,7 @@ Key decisions in the code:
   native tabs). Accounts too (`AgentAccounts`). Not Ghostty config keys yet.
 - Departures from the design, asked for by the user: account color is a tab
   tint, not a ring (ring kept as an option); the `+` menu has a folder row;
-  the Title Bar position; the window title shown for Top/Left; the menu bar
+  the Title Bar, Bottom and Right positions; the window title shown for Top/Left; the menu bar
   defaults to Compact and its menu shows agent cards.
 
 ## Next steps

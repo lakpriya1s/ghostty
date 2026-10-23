@@ -27,6 +27,7 @@ Design: [../designs/01-window-face-tabs.md](../designs/01-window-face-tabs.md)
 - [x] Subagent badge (task 12; needs checking on screen there).
 - [x] Top position checked on screen.
 - [ ] Left position checked on screen.
+- [ ] Bottom and Right positions checked on screen.
 - [ ] Hover card checked on screen (task 06).
 
 ## Later
@@ -47,3 +48,7 @@ Design: [../designs/01-window-face-tabs.md](../designs/01-window-face-tabs.md)
   background. Falls back to Top for the `tabs` and `hidden` title bar styles
   and in full screen. Departure from the design, asked for by the user.
 - [x] Checked on screen by the user (2026-10-23).
+- New positions **Bottom** and **Right** (bar's right-click menu and
+  View › Agent Tab Bar). The bar's border faces the terminal, and the hover
+  card and `+` menu open away from the bar: above it at the bottom, to its
+  left on the right.
