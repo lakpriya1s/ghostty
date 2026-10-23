@@ -33,7 +33,27 @@ final class AgentSummary {
             .debounce(for: .milliseconds(100), scheduler: RunLoop.main)
             .sink { [weak self] in self?.update() }
             .store(in: &cancellables)
+        addViewMenuItem()
         update()
+    }
+
+    /// "Show Agents in Menu Bar" in the View menu, so the summary can be
+    /// turned back on after hiding it from its own menu (it's also in the
+    /// tab bar's right-click menu).
+    private var viewMenuItem: NSMenuItem?
+
+    private func addViewMenuItem() {
+        guard viewMenuItem == nil,
+              let view = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == "View" })?.submenu else { return }
+        let item = NSMenuItem(title: "Show Agents in Menu Bar", action: #selector(toggleSummary), keyEquivalent: "")
+        item.target = self
+        view.addItem(.separator())
+        view.addItem(item)
+        viewMenuItem = item
+    }
+
+    @objc private func toggleSummary() {
+        AgentTabBarSettings.shared.showsMenuBarSummary.toggle()
     }
 
     func update() {
@@ -47,6 +67,7 @@ final class AgentSummary {
             .sorted { $0.status.state.urgency > $1.status.state.urgency }
 
         (NSApp.delegate as? AppDelegate)?.syncDockBadge()
+        viewMenuItem?.state = AgentTabBarSettings.shared.showsMenuBarSummary ? .on : .off
         updateStatusItem()
     }
 
@@ -105,6 +126,7 @@ final class AgentSummary {
         menu.addItem(.separator())
         let hide = NSMenuItem(title: "Hide Menu Bar Summary", action: #selector(hideSummary), keyEquivalent: "")
         hide.target = self
+        hide.toolTip = "Turn it back on in View › Show Agents in Menu Bar"
         menu.addItem(hide)
         return menu
     }

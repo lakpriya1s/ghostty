@@ -383,6 +383,13 @@ final class AgentsPanel {
         panel.hidesOnDeactivate = true
         panel.level = .floating
         panel.contentView = NSHostingView(rootView: AgentsPanelView(model: model))
+
+        // AppKit hides the panel when Ghostty is deactivated, without calling
+        // `hide`. Clean up then too, or the hidden list keeps its faces
+        // animating.
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in self?.hide(restoringFocus: false) }
         return panel
     }()
 
@@ -446,6 +453,9 @@ final class AgentsPanel {
         keyMonitor = nil
         if let resignObserver { NotificationCenter.default.removeObserver(resignObserver) }
         resignObserver = nil
+        // No rows, no faces: a hidden panel's views stay alive, and their
+        // animations would keep laying out the panel.
+        model.rows = []
         guard panel.isVisible else { return }
         panel.orderOut(nil)
         if restoringFocus { returnWindow?.makeKeyAndOrderFront(nil) }
