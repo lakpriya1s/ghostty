@@ -97,21 +97,46 @@ class TerminalWindow: NSWindow {
             if controller.isHidden != hide { controller.isHidden = hide }
         }
 
-        // The agent tab bar's title bar shows only the window buttons; the
-        // title is in each face's hover card.
-        if AgentTabBarSettings.shared.replacesNativeTabBar {
-            if titleVisibility == .visible {
-                titleVisibleBeforeAgentTabBar = true
-                titleVisibility = .hidden
-            }
-        } else if titleVisibleBeforeAgentTabBar {
-            titleVisibleBeforeAgentTabBar = false
-            titleVisibility = .visible
-        }
+        syncAgentTabBarInTitlebar()
     }
 
-    /// Whether we hid the title for the agent tab bar, so it can come back.
+    /// Whether this window can show the agent tab bar in its title bar. Not
+    /// without a title bar, nor in styles that already put tabs there.
+    var supportsAgentTabBarInTitlebar: Bool { styleMask.contains(.titled) }
+
+    /// Whether the agent tab bar is in the title bar, next to the window
+    /// buttons. The content then extends under the transparent title bar, and
+    /// the bar shows the title itself.
+    private(set) var agentTabBarInTitlebar = false
+
+    /// What we changed to put the agent tab bar in the title bar, to undo.
     private var titleVisibleBeforeAgentTabBar = false
+    private var titlebarTransparentBeforeAgentTabBar = false
+
+    private func syncAgentTabBarInTitlebar() {
+        let inTitlebar = AgentTabBarSettings.shared.position == .titleBar
+            && supportsAgentTabBarInTitlebar
+            && !styleMask.contains(.fullScreen)
+        guard inTitlebar != agentTabBarInTitlebar else { return }
+        agentTabBarInTitlebar = inTitlebar
+
+        if inTitlebar {
+            titleVisibleBeforeAgentTabBar = titleVisibility == .visible
+            titlebarTransparentBeforeAgentTabBar = titlebarAppearsTransparent
+            titleVisibility = .hidden
+            titlebarAppearsTransparent = true
+            styleMask.insert(.fullSizeContentView)
+        } else {
+            styleMask.remove(.fullSizeContentView)
+            titlebarAppearsTransparent = titlebarTransparentBeforeAgentTabBar
+            if titleVisibleBeforeAgentTabBar { titleVisibility = .visible }
+        }
+        agentTabBarInTitlebarDidChange()
+    }
+
+    /// Lets a window style redo its title bar appearance when the agent tab
+    /// bar moves into or out of the title bar.
+    func agentTabBarInTitlebarDidChange() {}
 
     // MARK: NSWindow Overrides
 

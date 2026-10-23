@@ -6,6 +6,10 @@ import SwiftUI
 /// This inherits from transparent styling so that the titlebar matches the background color
 /// of the window.
 class TitlebarTabsTahoeTerminalWindow: TransparentTitlebarTerminalWindow, NSToolbarDelegate {
+    /// This style has its own tabs (or no title bar), so the agent tab bar
+    /// stays below the title bar.
+    override var supportsAgentTabBarInTitlebar: Bool { false }
+
     /// The view model for SwiftUI views
     private var viewModel = ViewModel()
 

@@ -60,6 +60,11 @@ final class AgentTabBarSettings: ObservableObject {
         /// A row of faces above the terminal.
         case top
 
+        /// A row of faces in the title bar, next to the window buttons, with
+        /// the selected tab's title after them. Windows whose style can't do
+        /// that show `top` instead.
+        case titleBar
+
         /// A column of faces to the left of the terminal.
         case left
 
@@ -192,6 +197,10 @@ struct AgentTab: Identifiable, Equatable {
 final class AgentTabBarModel: ObservableObject {
     @Published private(set) var tabs: [AgentTab] = []
 
+    /// Whether the window put the bar in its title bar. See
+    /// `TerminalWindow.agentTabBarInTitlebar`.
+    @Published private(set) var inTitlebar = false
+
     private weak var controller: BaseTerminalController?
     private var windows: [ObjectIdentifier: Weak<NSWindow>] = [:]
     private var cancellables: Set<AnyCancellable> = []
@@ -215,6 +224,8 @@ final class AgentTabBarModel: ObservableObject {
             NSWindow.didBecomeKeyNotification,
             NSWindow.didBecomeMainNotification,
             NSWindow.willCloseNotification,
+            NSWindow.didEnterFullScreenNotification,
+            NSWindow.didExitFullScreenNotification,
         ].map { center.publisher(for: $0).map { _ in () }.eraseToAnyPublisher() }
 
         Publishers.MergeMany(windowChanges + [Self.changes.eraseToAnyPublisher()])
@@ -256,6 +267,8 @@ final class AgentTabBarModel: ObservableObject {
         if newTabs != tabs { tabs = newTabs }
 
         (window as? TerminalWindow)?.syncNativeTabBarVisibility()
+        let inTitlebar = (window as? TerminalWindow)?.agentTabBarInTitlebar ?? false
+        if inTitlebar != self.inTitlebar { self.inTitlebar = inTitlebar }
     }
 
     func select(_ tab: AgentTab) {
@@ -273,26 +286,43 @@ final class AgentTabBarModel: ObservableObject {
 /// Puts the agent tab bar above or beside the terminal content.
 struct AgentTabBarContainer<Content: View>: View {
     let model: AgentTabBarModel?
-    @ObservedObject private var settings = AgentTabBarSettings.shared
     @ViewBuilder let content: Content
 
     var body: some View {
         if let model {
-            switch settings.position {
-            case .top:
-                VStack(spacing: 0) {
-                    AgentTabBar(model: model, vertical: false)
-                    VStack(spacing: 0) { content }
-                }
-            case .left:
-                HStack(spacing: 0) {
-                    AgentTabBar(model: model, vertical: true)
-                    VStack(spacing: 0) { content }
-                }
-            case .native:
+            AgentTabBarPlacement(model: model, content: content)
+        } else {
+            VStack(spacing: 0) { content }
+        }
+    }
+}
+
+private struct AgentTabBarPlacement<Content: View>: View {
+    @ObservedObject var model: AgentTabBarModel
+    @ObservedObject private var settings = AgentTabBarSettings.shared
+    let content: Content
+
+    var body: some View {
+        switch settings.position {
+        case .titleBar where model.inTitlebar:
+            // The window extends the content under its title bar, so the
+            // bar goes up there with it.
+            VStack(spacing: 0) {
+                AgentTabBar(model: model, vertical: false, inTitlebar: true)
                 VStack(spacing: 0) { content }
             }
-        } else {
+            .ignoresSafeArea(.container, edges: .top)
+        case .top, .titleBar:
+            VStack(spacing: 0) {
+                AgentTabBar(model: model, vertical: false)
+                VStack(spacing: 0) { content }
+            }
+        case .left:
+            HStack(spacing: 0) {
+                AgentTabBar(model: model, vertical: true)
+                VStack(spacing: 0) { content }
+            }
+        case .native:
             VStack(spacing: 0) { content }
         }
     }
@@ -303,6 +333,11 @@ struct AgentTabBar: View {
     @ObservedObject var model: AgentTabBarModel
     @ObservedObject private var settings = AgentTabBarSettings.shared
     let vertical: Bool
+
+    /// In the title bar: room for the window buttons on the left, the
+    /// selected tab's title after the faces, and the empty parts drag the
+    /// window.
+    var inTitlebar = false
 
     private var scale: CGFloat { settings.faceSize.scale }
 
@@ -315,12 +350,58 @@ struct AgentTabBar: View {
     /// The tab button: the slot plus 5pt padding on each side.
     private var button: CGFloat { slot + 10 }
 
+    /// Where the bar starts in the title bar: after the window buttons.
+    private var windowButtonsInset: CGFloat {
+        guard let zoom = model.window?.standardWindowButton(.zoomButton) else { return 78 }
+        return zoom.convert(zoom.bounds, to: nil).maxX + 8
+    }
+
+    /// The width the faces and `+` need, so in the title bar the title
+    /// gets the rest.
+    private var facesWidth: CGFloat {
+        let count = CGFloat(model.tabs.count)
+        return 20 + count * (button + 6) + 4 + (slot * 0.7).rounded()
+    }
+
     var body: some View {
+        Group {
+            if inTitlebar {
+                HStack(spacing: 0) {
+                    AgentWindowDragArea().frame(width: windowButtonsInset)
+                    faces.frame(maxWidth: facesWidth)
+                    Text(model.tabs.first(where: \.isSelected)?.title ?? "")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(AgentTabBarColors.cardMuted)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .padding(.horizontal, 12)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                        .background(AgentWindowDragArea())
+                }
+            } else {
+                faces
+            }
+        }
+        .frame(
+            width: vertical ? button + 16 : nil,
+            height: vertical ? nil : button + 16)
+        .background(AgentTabBarColors.bar)
+        .overlay(alignment: vertical ? .trailing : .bottom) {
+            Rectangle()
+                .fill(AgentTabBarColors.border)
+                .frame(width: vertical ? 1 : nil, height: vertical ? nil : 1)
+        }
+        .contextMenu { AgentTabBarMenu() }
+        .onAppear { model.refresh() }
+    }
+
+    /// The faces and the `+` button, scrolling when they don't fit.
+    private var faces: some View {
         let layout = vertical
             ? AnyLayout(VStackLayout(spacing: 6))
             : AnyLayout(HStackLayout(spacing: 6))
 
-        ScrollView(vertical ? .vertical : .horizontal, showsIndicators: false) {
+        return ScrollView(vertical ? .vertical : .horizontal, showsIndicators: false) {
             layout {
                 ForEach(model.tabs) { tab in
                     AgentTabButton(
@@ -346,18 +427,30 @@ struct AgentTabBar: View {
                 maxHeight: vertical ? nil : .infinity,
                 alignment: vertical ? .top : .leading)
         }
-        .frame(
-            width: vertical ? button + 16 : nil,
-            height: vertical ? nil : button + 16)
-        .background(AgentTabBarColors.bar)
-        .overlay(alignment: vertical ? .trailing : .bottom) {
-            Rectangle()
-                .fill(AgentTabBarColors.border)
-                .frame(width: vertical ? 1 : nil, height: vertical ? nil : 1)
-        }
-        .contextMenu { AgentTabBarMenu() }
-        .onAppear { model.refresh() }
     }
+}
+
+/// Empty title bar space: drag to move the window, double-click to zoom
+/// (or minimize, per the system setting).
+private struct AgentWindowDragArea: NSViewRepresentable {
+    final class DragView: NSView {
+        override func mouseDown(with event: NSEvent) {
+            guard let window else { return }
+            if event.clickCount == 2 {
+                let action = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick")
+                switch action {
+                case "Minimize": window.performMiniaturize(nil)
+                case "None": break
+                default: window.performZoom(nil)
+                }
+            } else {
+                window.performDrag(with: event)
+            }
+        }
+    }
+
+    func makeNSView(context: Context) -> DragView { DragView() }
+    func updateNSView(_ nsView: DragView, context: Context) {}
 }
 
 /// The options for the tab bar itself.
@@ -367,6 +460,7 @@ struct AgentTabBarMenu: View {
     var body: some View {
         Picker("Tab Bar", selection: $settings.position) {
             Text("Top").tag(AgentTabBarSettings.Position.top)
+            Text("Title Bar").tag(AgentTabBarSettings.Position.titleBar)
             Text("Left").tag(AgentTabBarSettings.Position.left)
             Text("Native macOS Tabs").tag(AgentTabBarSettings.Position.native)
         }

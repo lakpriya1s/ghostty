@@ -33,3 +33,18 @@ Design: [../designs/01-window-face-tabs.md](../designs/01-window-face-tabs.md)
 
 - Drag faces to reorder; drag a face out to a new window.
 - Hold ⌘ to show 1–9 on the faces.
+
+## Title bar (2026-10-23)
+
+- Top and Left show the window title in the title bar again (it was hidden
+  for the design's buttons-only title bar).
+- New position **Title Bar** (right-click the bar): faces in the title bar
+  after the window buttons, the selected tab's title after `+`, empty space
+  drags the window (double-click zooms or minimizes per the system
+  setting). The window gets `.fullSizeContentView` and a transparent title
+  bar while it's on (`TerminalWindow.syncAgentTabBarInTitlebar`), undone when
+  switching away; the transparent style clears its painted title bar
+  background. Falls back to Top for the `tabs` and `hidden` title bar styles
+  and in full screen. Departure from the design, asked for by the user.
+- [ ] Check on screen: alignment with the window buttons, drag, switching
+      back and forth, full screen.
