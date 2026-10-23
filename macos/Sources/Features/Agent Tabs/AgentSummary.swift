@@ -37,19 +37,40 @@ final class AgentSummary {
         update()
     }
 
-    /// "Show Agents in Menu Bar" in the View menu, so the summary can be
-    /// turned back on after hiding it from its own menu (it's also in the
-    /// tab bar's right-click menu).
+    /// "Agent Tab Bar" and "Show Agents in Menu Bar" in the View menu, so
+    /// both can always be changed back: with native tabs there's no face bar
+    /// to right-click, and a hidden summary has no menu of its own.
     private var viewMenuItem: NSMenuItem?
+    private var positionItems: [(item: NSMenuItem, position: AgentTabBarSettings.Position)] = []
 
     private func addViewMenuItem() {
         guard viewMenuItem == nil,
               let view = NSApp.mainMenu?.items.first(where: { $0.submenu?.title == "View" })?.submenu else { return }
+        view.addItem(.separator())
+
+        let positions = NSMenu(title: "Agent Tab Bar")
+        let choices: [(String, AgentTabBarSettings.Position)] = [
+            ("Top", .top), ("Title Bar", .titleBar), ("Left", .left), ("Native macOS Tabs", .native),
+        ]
+        for (title, position) in choices {
+            let item = NSMenuItem(title: title, action: #selector(choosePosition(_:)), keyEquivalent: "")
+            item.target = self
+            positions.addItem(item)
+            positionItems.append((item, position))
+        }
+        let positionMenu = NSMenuItem(title: "Agent Tab Bar", action: nil, keyEquivalent: "")
+        positionMenu.submenu = positions
+        view.addItem(positionMenu)
+
         let item = NSMenuItem(title: "Show Agents in Menu Bar", action: #selector(toggleSummary), keyEquivalent: "")
         item.target = self
-        view.addItem(.separator())
         view.addItem(item)
         viewMenuItem = item
+    }
+
+    @objc private func choosePosition(_ sender: NSMenuItem) {
+        guard let position = positionItems.first(where: { $0.item === sender })?.position else { return }
+        AgentTabBarSettings.shared.position = position
     }
 
     @objc private func toggleSummary() {
@@ -68,6 +89,9 @@ final class AgentSummary {
 
         (NSApp.delegate as? AppDelegate)?.syncDockBadge()
         viewMenuItem?.state = AgentTabBarSettings.shared.showsMenuBarSummary ? .on : .off
+        for (item, position) in positionItems {
+            item.state = AgentTabBarSettings.shared.position == position ? .on : .off
+        }
         updateStatusItem()
     }
 

@@ -27,6 +27,10 @@ on done.
       it's in the background, nothing while the window isn't visible
       (covered, minimized, other space, screen locked). Measured: 0% with
       the screen locked.
-- [ ] Measure with Ghostty active and in the background but visible.
+- [x] Measured (2026-10-24, debug build). Two leaks found and fixed: the
+      Agents panel kept its rows (and animating faces) after AppKit hid it
+      on deactivation, and each window kept an animating face in the hidden
+      native tab bar. Now, in the background: no face 0.0%, idle 0.1%,
+      working 14.6% (it animates on purpose). Active: idle 15%.
 - [ ] Later, if needed: draw faces in their own layer so a frame doesn't
       lay out the window.

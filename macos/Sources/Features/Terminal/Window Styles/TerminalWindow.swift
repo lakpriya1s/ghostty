@@ -81,9 +81,17 @@ class TerminalWindow: NSWindow {
     var programStatus: Ghostty.Action.ProgramStatus? {
         didSet {
             guard programStatus != oldValue else { return }
-            programStatusIndicator.rootView = AgentTabFaceView(status: programStatus)
+            syncProgramStatusIndicator()
             tab.toolTip = programStatus?.tooltip
         }
+    }
+
+    /// The face on the native tab, only while native tabs are shown. The
+    /// hidden tab bar keeps its views, and a face there would keep animating.
+    private func syncProgramStatusIndicator() {
+        let status = AgentTabBarSettings.shared.replacesNativeTabBar ? nil : programStatus
+        guard programStatusIndicator.rootView.status != status else { return }
+        programStatusIndicator.rootView = AgentTabFaceView(status: status)
     }
 
     /// Hide the native tab bar when the agent tab bar replaces it, and bring it
@@ -96,6 +104,7 @@ class TerminalWindow: NSWindow {
         for controller in titlebarAccessoryViewControllers where isTabBar(controller) {
             if controller.isHidden != hide { controller.isHidden = hide }
         }
+        syncProgramStatusIndicator()
 
         syncAgentTabBarInTitlebar()
     }
