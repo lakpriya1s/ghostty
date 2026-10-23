@@ -13,6 +13,6 @@ Design: [../designs/01-window-face-tabs.md](../designs/01-window-face-tabs.md#ho
       ("2m 14s", "waiting 1m", "3m ago", "idle 12m", "open 40m").
 - [x] What it's doing; "Plain shell, no agent" for shells.
 - [x] Footer: dot · Claude Code · folder (or "No account · folder").
-- [ ] Account dot color and name (task 08).
+- [x] Account dot color and name (task 08).
 - [x] Git branch in the footer (task 13).
 - [x] Context used bar and last message (task 13).

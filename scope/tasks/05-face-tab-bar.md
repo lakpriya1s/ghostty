@@ -23,8 +23,8 @@ Design: [../designs/01-window-face-tabs.md](../designs/01-window-face-tabs.md)
 - [x] Bar shows from the start, even with one tab. Confirmed on screen.
 - [x] Native tab bar stays hidden when tabs are added. Confirmed on screen.
 - [x] Window title hidden, title bar shows only the window buttons.
-- [ ] Account ring (needs task 08).
-- [ ] Subagent badge (needs task 12).
+- [x] Account color: tab tint, or ring as an option (task 08).
+- [x] Subagent badge (task 12; needs checking on screen there).
 - [x] Top position checked on screen.
 - [ ] Left position checked on screen.
 - [ ] Hover card checked on screen (task 06).
@@ -46,5 +46,4 @@ Design: [../designs/01-window-face-tabs.md](../designs/01-window-face-tabs.md)
   switching away; the transparent style clears its painted title bar
   background. Falls back to Top for the `tabs` and `hidden` title bar styles
   and in full screen. Departure from the design, asked for by the user.
-- [ ] Check on screen: alignment with the window buttons, drag, switching
-      back and forth, full screen.
+- [x] Checked on screen by the user (2026-10-23).

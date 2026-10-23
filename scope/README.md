@@ -93,5 +93,6 @@ Claude Code ──hooks──▶ ghostty-agent-status ──OSC 7501──▶ Gh
 
 ## Status
 
-See [tasks/README.md](tasks/README.md). P0 is mostly built; the face tab bar
-needs to be checked against the design.
+See [tasks/README.md](tasks/README.md). P0, P1 and P2 are built and
+committed for Claude Code on macOS; what's left there is checking some of it
+on screen (marked 🟡). P3 (other agents, Linux, extras) is not started.

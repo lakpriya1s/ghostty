@@ -43,4 +43,5 @@ Code: `macos/Sources/Features/Agent Tabs/AgentNewTabMenu.swift`
 
 - [x] On screen (user screenshot): menu look, blue hover, folder row with
       "Change ⌄", "1 running" on an account.
-- [ ] ⌥⌘1 shortcut, worktree option, New account…, Add existing account…, Rename.
+- [x] New account… checked on screen by the user (2026-10-23).
+- [ ] ⌥⌘1 shortcut, worktree option, Add existing account…, Rename.

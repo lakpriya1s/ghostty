@@ -17,6 +17,22 @@ struct AgentFaceView: View {
     /// The color behind the face, used to cut out the unread dot.
     var background: Color = AgentTabBarColors.bar
 
+    /// Which faces move. Each animation frame lays out the whole window, so
+    /// faces nobody can see stay still.
+    var motion: Motion = .all
+
+    enum Motion {
+        /// Every state that moves.
+        case all
+
+        /// Only working and waiting, which should still catch the eye from
+        /// another app. The idle "z" holds still.
+        case attention
+
+        /// Nothing moves.
+        case none
+    }
+
     /// Grid units around the face reserved for rings and badges.
     static let pad: CGFloat = 7
 
@@ -42,9 +58,10 @@ struct AgentFaceView: View {
 
     /// How often to redraw. Faces that don't move aren't redrawn.
     private var frameInterval: Double? {
-        switch state {
-        case .working, .blocked: return 1.0 / 30
-        case .idle: return 1.0 / 12
+        switch (state, motion) {
+        case (_, .none): return nil
+        case (.working, _), (.blocked, _): return 1.0 / 30
+        case (.idle, .all): return 1.0 / 12
         default: return nil
         }
     }

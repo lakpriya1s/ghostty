@@ -201,6 +201,11 @@ final class AgentTabBarModel: ObservableObject {
     /// `TerminalWindow.agentTabBarInTitlebar`.
     @Published private(set) var inTitlebar = false
 
+    /// Which faces animate: all of them while Ghostty is active, only the
+    /// ones that need attention while it's in the background, none while
+    /// the window can't be seen.
+    @Published private(set) var faceMotion: AgentFaceView.Motion = .all
+
     private weak var controller: BaseTerminalController?
     private var windows: [ObjectIdentifier: Weak<NSWindow>] = [:]
     private var cancellables: Set<AnyCancellable> = []
@@ -226,6 +231,9 @@ final class AgentTabBarModel: ObservableObject {
             NSWindow.willCloseNotification,
             NSWindow.didEnterFullScreenNotification,
             NSWindow.didExitFullScreenNotification,
+            NSWindow.didChangeOcclusionStateNotification,
+            NSApplication.didBecomeActiveNotification,
+            NSApplication.didResignActiveNotification,
         ].map { center.publisher(for: $0).map { _ in () }.eraseToAnyPublisher() }
 
         Publishers.MergeMany(windowChanges + [Self.changes.eraseToAnyPublisher()])
@@ -269,6 +277,10 @@ final class AgentTabBarModel: ObservableObject {
         (window as? TerminalWindow)?.syncNativeTabBarVisibility()
         let inTitlebar = (window as? TerminalWindow)?.agentTabBarInTitlebar ?? false
         if inTitlebar != self.inTitlebar { self.inTitlebar = inTitlebar }
+
+        let motion: AgentFaceView.Motion = !window.occlusionState.contains(.visible) ? .none
+            : NSApp.isActive ? .all : .attention
+        if motion != faceMotion { faceMotion = motion }
     }
 
     func select(_ tab: AgentTab) {
@@ -590,7 +602,7 @@ private struct AgentTabButton: View {
         } label: {
             ZStack {
                 if let status = tab.status, status.state != .clear {
-                    AgentFaceView(state: status.state, size: faceSize, background: background)
+                    AgentFaceView(state: status.state, size: faceSize, background: background, motion: model.faceMotion)
                 } else {
                     ShellGlyphView(size: faceSize)
                 }
