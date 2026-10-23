@@ -1135,6 +1135,8 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
         // Fill in the agent tab bar as soon as the window exists, so it shows
         // even before a second tab is opened.
         agentTabBar?.refresh()
+        AgentLauncher.installShortcuts()
+        AgentsPanel.installShortcuts()
 
         // If we have a default size, we want to apply it.
         if let defaultSize {

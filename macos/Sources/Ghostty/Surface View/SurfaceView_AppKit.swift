@@ -1780,14 +1780,54 @@ extension Ghostty {
         }
 
         /// Apply a new OSC 7501 program status report.
+        ///
+        /// A program can have two reporters at once. Claude Code reports its
+        /// own status, but without an account, and our Claude Code hook
+        /// reports with one. So a report without an account keeps the
+        /// account the terminal already had, and once the program has
+        /// reported on its own, reports with an account only set the account
+        /// and leave the state to the program. Without the program's own
+        /// reports (older versions, `claude -p`), the hook's reports are used
+        /// in full.
+        ///
+        /// Context used and the last message come only from the hook, and
+        /// not with every report, so a report without them keeps the ones
+        /// the terminal already had.
         func updateProgramStatus(_ status: Action.ProgramStatus) {
+            if let id = status.id {
+                updateProgramChild(id, status)
+                return
+            }
+
             if status.state == .clear {
                 programStatus = nil
+                programChildren = [:]
+                programReportsOwnStatus = false
                 return
             }
 
             let previous = programStatus
             var status = status
+
+            if previous?.app == status.app {
+                status.context = status.context ?? previous?.context
+                status.last = status.last ?? previous?.last
+            }
+
+            if status.account == nil {
+                programReportsOwnStatus = true
+                if previous?.app == status.app { status.account = previous?.account }
+            } else if programReportsOwnStatus, var previous {
+                if previous.account != status.account
+                    || previous.context != status.context
+                    || previous.last != status.last {
+                    previous.account = status.account
+                    previous.context = status.context
+                    previous.last = status.last
+                    programStatus = previous
+                }
+                return
+            }
 
             // Keep counting from when the program entered this state, since
             // programs send many reports while staying in one state.
@@ -1818,6 +1858,20 @@ extension Ghostty {
         }
 
         /// A finished program goes back to idle once the user has seen it.
+        /// Apply a report about a child record. `clear` removes the record
+        /// and every record under it (`sub` removes `sub/a1b2` too).
+        private func updateProgramChild(_ id: String, _ status: Action.ProgramStatus) {
+            if status.state == .clear {
+                programChildren = programChildren.filter { $0.key != id && !$0.key.hasPrefix(id + "/") }
+                return
+            }
+            var status = status
+            if let previous = programChildren[id], previous.state == status.state {
+                status.since = previous.since
+            }
+            programChildren[id] = status
+        }
+
         func markProgramStatusSeen() {
             guard var status = programStatus, status.state == .done else { return }
             status.state = .idle

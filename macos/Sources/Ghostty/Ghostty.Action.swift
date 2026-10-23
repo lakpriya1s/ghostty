@@ -185,6 +185,20 @@ extension Ghostty.Action {
         /// One line of human-readable text about what the program is doing.
         let msg: String?
 
+        /// Which account or profile of the program, e.g. ".claude-work".
+        var account: String?
+
+        /// How much of the program's context window is used, 0-100.
+        var context: UInt8?
+
+        /// The last thing the program said to the user, e.g. the agent's
+        /// last reply.
+        var last: String?
+
+        /// The child record this is about, e.g. "sub/a1b2", or nil for the
+        /// program itself.
+        var id: String?
+
         /// When the program entered its current state.
         var since: Date = Date()
 
@@ -273,6 +287,10 @@ extension Ghostty.Action.ProgramStatus {
         self.app = string(c.app)
         self.title = string(c.title)
         self.msg = string(c.msg)
+        self.account = string(c.account)
+        self.context = c.context >= 0 ? UInt8(c.context) : nil
+        self.last = string(c.last)
+        self.id = string(c.id)
     }
 }
 

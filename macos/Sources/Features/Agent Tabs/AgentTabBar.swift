@@ -22,6 +22,20 @@ enum AgentTabBarColors {
     static let cardText = Color(agentHex: 0xc2c6cf)
     static let cardMuted = Color(agentHex: 0x8a8f99)
     static let shellAccount = Color(agentHex: 0x4a4e59)
+    static let cardInset = Color(agentHex: 0x1c1d21)
+    static let cardQuote = Color(agentHex: 0xa8adb7)
+    static let contextTrack = Color(agentHex: 0x3a3d47)
+    static let contextBar = Color(agentHex: 0x7db4ff)
+    static let contextBarHigh = Color(agentHex: 0xf5a524)
+
+    /// `color` laid over `base` at `fraction`, as one opaque color. Used to
+    /// tint a tab with its account color and still cut the unread dot out of
+    /// the right color.
+    static func blend(_ base: Color, _ color: Color, _ fraction: CGFloat) -> Color {
+        let base = NSColor(base).usingColorSpace(.sRGB) ?? .black
+        let color = NSColor(color).usingColorSpace(.sRGB) ?? .black
+        return Color(nsColor: base.blended(withFraction: fraction, of: color) ?? base)
+    }
 
     /// The state label's color in the hover card.
     static func label(for state: Ghostty.Action.ProgramStatus.State?) -> Color {
@@ -51,6 +65,22 @@ final class AgentTabBarSettings: ObservableObject {
         case native
     }
 
+    /// How a tab shows its agent's account color.
+    enum AccountStyle: String, CaseIterable {
+        /// The tab's background is tinted with it.
+        case background
+
+        /// A ring around the face, as in the original design.
+        case ring
+
+        var label: String {
+            switch self {
+            case .background: return "Tab Background"
+            case .ring: return "Ring"
+            }
+        }
+    }
+
     enum FaceSize: String, CaseIterable {
         case small
         case medium
@@ -76,6 +106,9 @@ final class AgentTabBarSettings: ObservableObject {
 
     private static let positionKey = "AgentTabBarPosition"
     private static let faceSizeKey = "AgentTabBarFaceSize"
+    private static let dockBadgeKey = "AgentDockBadge"
+    private static let accountStyleKey = "AgentAccountStyle"
+    private static let menuBarKey = "AgentMenuBarSummary"
 
     @Published var position: Position {
         didSet {
@@ -88,6 +121,26 @@ final class AgentTabBarSettings: ObservableObject {
         didSet { UserDefaults.ghostty.set(faceSize.rawValue, forKey: Self.faceSizeKey) }
     }
 
+    @Published var accountStyle: AccountStyle {
+        didSet { UserDefaults.ghostty.set(accountStyle.rawValue, forKey: Self.accountStyleKey) }
+    }
+
+    /// Count agents waiting on you or done and unseen on the dock icon.
+    @Published var showsDockBadge: Bool {
+        didSet {
+            UserDefaults.ghostty.set(showsDockBadge, forKey: Self.dockBadgeKey)
+            AgentSummary.shared.update()
+        }
+    }
+
+    /// Show "● 1 waiting ● 1 working" in the menu bar while agents run.
+    @Published var showsMenuBarSummary: Bool {
+        didSet {
+            UserDefaults.ghostty.set(showsMenuBarSummary, forKey: Self.menuBarKey)
+            AgentSummary.shared.update()
+        }
+    }
+
     /// Whether our own tab bar replaces the native one.
     var replacesNativeTabBar: Bool { position != .native }
 
@@ -96,6 +149,10 @@ final class AgentTabBarSettings: ObservableObject {
             .flatMap(Position.init(rawValue:)) ?? .top
         faceSize = UserDefaults.ghostty.string(forKey: Self.faceSizeKey)
             .flatMap(FaceSize.init(rawValue:)) ?? .medium
+        accountStyle = UserDefaults.ghostty.string(forKey: Self.accountStyleKey)
+            .flatMap(AccountStyle.init(rawValue:)) ?? .background
+        showsDockBadge = UserDefaults.ghostty.object(forKey: Self.dockBadgeKey) as? Bool ?? true
+        showsMenuBarSummary = UserDefaults.ghostty.object(forKey: Self.menuBarKey) as? Bool ?? true
     }
 }
 
@@ -112,8 +169,17 @@ struct AgentTab: Identifiable, Equatable {
     /// The focused terminal's working directory.
     let pwd: String?
 
+    /// The git branch of `pwd`, if it's in a repository.
+    let branch: String?
+
     /// When the tab was opened.
     let openedAt: Date
+
+    /// The account the agent in this tab reported, if any.
+    let account: AgentAccount?
+
+    /// Subagents working for the agent in this tab.
+    let subagents: Int
 }
 
 /// The tabs of one window's tab group, kept up to date for the agent tab bar.
@@ -136,6 +202,9 @@ final class AgentTabBarModel: ObservableObject {
         changes.send()
     }
 
+    /// Fires on every `setNeedsRefresh`, for anything else that summarizes tabs.
+    static var changesPublisher: AnyPublisher<Void, Never> { changes.eraseToAnyPublisher() }
+
     init(controller: BaseTerminalController) {
         self.controller = controller
 
@@ -154,6 +223,8 @@ final class AgentTabBarModel: ObservableObject {
 
     var window: NSWindow? { controller?.window }
 
+    var terminalController: BaseTerminalController? { controller }
+
     func refresh() {
         guard let window = controller?.window else { return }
 
@@ -163,14 +234,20 @@ final class AgentTabBarModel: ObservableObject {
         windows = Dictionary(uniqueKeysWithValues: all.map { (ObjectIdentifier($0), Weak($0)) })
         let newTabs = all.map { tabWindow in
             let tabController = tabWindow.windowController as? BaseTerminalController
+            let status = tabController?.programStatus
+            let account = status.flatMap { $0.state == .clear ? nil : $0.account }
+                .map { AgentAccountStore.shared.account(for: $0) }
             return AgentTab(
                 id: ObjectIdentifier(tabWindow),
                 title: tabWindow.title,
-                status: tabController?.programStatus,
+                status: status,
                 isSelected: tabWindow === selected,
                 shortcut: (tabWindow as? TerminalWindow)?.keyEquivalent,
                 pwd: tabController?.focusedSurface?.pwd,
-                openedAt: tabController?.createdAt ?? Date()
+                branch: AgentGitBranch.shared.branch(at: tabController?.focusedSurface?.pwd),
+                openedAt: tabController?.createdAt ?? Date(),
+                account: account,
+                subagents: tabController?.subagentCount ?? 0
             )
         }
 
@@ -188,10 +265,6 @@ final class AgentTabBarModel: ObservableObject {
     func close(_ tab: AgentTab) {
         guard let window = windows[tab.id]?.value else { return }
         (window.windowController as? TerminalController)?.closeTab(nil)
-    }
-
-    func newTab() {
-        (controller as? TerminalController)?.newTab(nil)
     }
 }
 
@@ -257,8 +330,11 @@ struct AgentTabBar: View {
                         vertical: vertical)
                 }
 
-                AgentNewTabButton(size: (slot * 0.7).rounded(), action: model.newTab)
-                    .padding(vertical ? .top : .leading, 4)
+                AgentNewTabButton(size: (slot * 0.7).rounded()) { anchor in
+                    guard let controller = model.terminalController else { return }
+                    AgentMenuPanel.shared.toggle(for: controller, below: !vertical, anchor: anchor)
+                }
+                .padding(vertical ? .top : .leading, 4)
             }
             .padding(vertical
                 ? EdgeInsets(top: 12, leading: 8, bottom: 12, trailing: 8)
@@ -297,18 +373,69 @@ struct AgentTabBarMenu: View {
                 Text(size.label).tag(size)
             }
         }
+        Picker("Account Color", selection: $settings.accountStyle) {
+            ForEach(AgentTabBarSettings.AccountStyle.allCases, id: \.self) { style in
+                Text(style.label).tag(style)
+            }
+        }
+        Divider()
+        Toggle("Dock Badge", isOn: $settings.showsDockBadge)
+        Toggle("Menu Bar Summary", isOn: $settings.showsMenuBarSummary)
     }
 }
 
-/// The dashed round "+" button at the end of the bar.
-private struct AgentNewTabButton: View {
-    let size: CGFloat
-    let action: () -> Void
-
-    @State private var hovering = false
+/// The number of running subagents, a pill at the bottom right of the face's
+/// slot. Only shown while the agent works.
+private struct AgentSubagentBadge: View {
+    let count: Int
 
     var body: some View {
-        Button(action: action) {
+        Text("\(count)")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundColor(Color(agentHex: 0xd7e7ff))
+            .padding(.horizontal, 4)
+            .frame(minWidth: 18, minHeight: 18)
+            .background(Capsule().fill(Color(agentHex: 0x1c1d21)))
+            .overlay(Capsule().strokeBorder(AgentFaceView.color(for: .working), lineWidth: 1.5))
+            .fixedSize()
+            .accessibilityLabel("\(count) \(count == 1 ? "subagent" : "subagents") running")
+    }
+}
+
+/// Choose the ring color of an account, from a tab's context menu.
+private struct AgentAccountColorMenu: View {
+    let account: AgentAccount
+
+    var body: some View {
+        Menu("Account Color (\(account.name))") {
+            ForEach(AgentAccountStore.colorNames, id: \.color) { option in
+                Button {
+                    AgentAccountStore.shared.setColor(option.color, for: account.id)
+                } label: {
+                    if option.color == account.color {
+                        Label(option.name, systemImage: "checkmark")
+                    } else {
+                        Text(option.name)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// The dashed round "+" button at the end of the bar. It opens the new tab
+/// menu; ⌘T still opens a plain tab.
+private struct AgentNewTabButton: View {
+    let size: CGFloat
+
+    /// Called with the button's frame in the window's SwiftUI coordinates.
+    let action: (CGRect) -> Void
+
+    @State private var hovering = false
+    @State private var frame: CGRect = .zero
+
+    var body: some View {
+        Button { action(frame) } label: {
             Text("+")
                 .font(.system(size: 20, weight: .regular))
                 .foregroundColor(hovering ? AgentTabBarColors.plusTextHovered : AgentTabBarColors.plusText)
@@ -321,7 +448,12 @@ private struct AgentNewTabButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .accessibilityLabel("New Tab")
+        .background(GeometryReader { geometry in
+            Color.clear
+                .onAppear { frame = geometry.frame(in: .global) }
+                .onChange(of: geometry.frame(in: .global)) { frame = $0 }
+        })
+        .accessibilityLabel("New Tab Menu")
     }
 }
 
@@ -335,8 +467,25 @@ private struct AgentTabButton: View {
     let button: CGFloat
     let vertical: Bool
 
+    @ObservedObject private var settings = AgentTabBarSettings.shared
     @State private var hovering = false
     @State private var frame: CGRect = .zero
+
+    /// The tab's background. With an account and the background style, the
+    /// usual background gets a light tint of the account color, so the face
+    /// stays the loudest thing and a selected tab still reads as selected.
+    /// Otherwise the design's gray highlight.
+    private var background: Color {
+        if settings.accountStyle == .background, let account = tab.account {
+            if tab.isSelected {
+                return AgentTabBarColors.blend(AgentTabBarColors.selected, account.swiftUIColor, 0.16)
+            }
+            return AgentTabBarColors.blend(AgentTabBarColors.bar, account.swiftUIColor, hovering ? 0.14 : 0.08)
+        }
+        if tab.isSelected { return AgentTabBarColors.selected }
+        if hovering { return AgentTabBarColors.hovered }
+        return AgentTabBarColors.bar
+    }
 
     var body: some View {
         Button {
@@ -345,22 +494,28 @@ private struct AgentTabButton: View {
         } label: {
             ZStack {
                 if let status = tab.status, status.state != .clear {
-                    AgentFaceView(state: status.state, size: faceSize)
+                    AgentFaceView(state: status.state, size: faceSize, background: background)
                 } else {
                     ShellGlyphView(size: faceSize)
                 }
             }
             .frame(width: slot, height: slot)
             .overlay(
-                // The account ring. Accounts come later (task 08), so for
-                // now it is always transparent, like the design's shell tabs.
-                Circle().strokeBorder(Color.clear, lineWidth: 2))
+                // The account ring: the slot's 2pt border, in the account's
+                // color. None for plain shells and agents without an account.
+                Circle().strokeBorder(
+                    settings.accountStyle == .ring ? tab.account?.swiftUIColor ?? .clear : .clear,
+                    lineWidth: 2))
+            .overlay(alignment: .bottomTrailing) {
+                if tab.status?.state == .working, tab.subagents > 0 {
+                    AgentSubagentBadge(count: tab.subagents)
+                        .offset(x: 2, y: 2)
+                }
+            }
             .frame(width: button, height: button)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(tab.isSelected
-                        ? AgentTabBarColors.selected
-                        : hovering ? AgentTabBarColors.hovered : Color.clear))
+                    .fill(background))
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -392,6 +547,10 @@ private struct AgentTabButton: View {
         }
         .contextMenu {
             Button("Close Tab") { model.close(tab) }
+            if let account = tab.account {
+                Divider()
+                AgentAccountColorMenu(account: account)
+            }
             Divider()
             AgentTabBarMenu()
         }
@@ -442,17 +601,37 @@ private struct AgentTabCard: View {
             }
             .padding(.top, 2)
 
-            Text(status?.msg ?? (status == nil ? "Plain shell, no agent" : status!.appDisplayName))
+            Text(detail)
                 .font(.system(size: 12.5))
                 .foregroundColor(AgentTabBarColors.cardText)
                 .lineLimit(4)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 6)
 
+            if let context = status?.context {
+                AgentContextBar(percent: Int(context))
+                    .padding(.top, 10)
+            }
+
+            if let last = status?.last {
+                Text("“\(last)”")
+                    .font(.system(size: 12.5).italic())
+                    .foregroundColor(AgentTabBarColors.cardQuote)
+                    .lineLimit(3)
+                    .truncationMode(.tail)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(AgentTabBarColors.cardInset))
+                    .padding(.top, 10)
+            }
+
             HStack(spacing: 6) {
-                // The account's color. Accounts come later (task 08).
                 Circle()
-                    .fill(AgentTabBarColors.shellAccount)
+                    .fill(tab.account?.swiftUIColor ?? AgentTabBarColors.shellAccount)
                     .frame(width: 8, height: 8)
                 Text(footer)
                     .lineLimit(1)
@@ -472,32 +651,112 @@ private struct AgentTabCard: View {
                 .strokeBorder(AgentTabBarColors.cardBorder, lineWidth: 1))
     }
 
-    /// "Claude Code · ~/code/api", or "No account · ~" for a shell.
+    /// What the agent is doing, like the design's "Editing
+    /// src/auth/session.ts (2 subagents running)".
+    private var detail: String {
+        guard let status else { return "Plain shell, no agent" }
+        var text = status.msg ?? (status.state == .idle ? "Ready for a prompt" : status.stateLabel)
+        if status.state == .working, tab.subagents > 0 {
+            text += " (\(tab.subagents) \(tab.subagents == 1 ? "subagent" : "subagents") running)"
+        }
+        return text
+    }
+
+    /// The account, folder and branch, like the design's "Work · ~/code/api
+    /// · feat/nav", or "No account · ~" for a shell. An agent that reports no
+    /// account shows its name instead.
     private var footer: String {
         let pwd = tab.pwd.map { ($0 as NSString).abbreviatingWithTildeInPath }
-        guard let status else { return ["No account", pwd].compactMap { $0 }.joined(separator: " · ") }
-        return [status.appDisplayName, pwd ?? status.title].compactMap { $0 }.joined(separator: " · ")
+        guard let status else { return ["No account", pwd, tab.branch].compactMap { $0 }.joined(separator: " · ") }
+        let who = tab.account?.name ?? status.appDisplayName
+        return [who, pwd ?? status.title, tab.branch].compactMap { $0 }.joined(separator: " · ")
     }
 
     /// The time part of the state line, worded like the design:
     /// "2m 14s" working, "waiting 1m", "3m ago" done, "idle 12m", "open 40m".
     private func elapsed(now: Date) -> String {
-        guard let status else { return "open \(Self.duration(from: tab.openedAt, to: now, seconds: false))" }
-        let short = Self.duration(from: status.since, to: now, seconds: false)
+        guard let status else { return "open \(AgentTime.duration(from: tab.openedAt, to: now, seconds: false))" }
+        let short = AgentTime.duration(from: status.since, to: now, seconds: false)
         switch status.state {
-        case .working: return Self.duration(from: status.since, to: now, seconds: true)
+        case .working: return AgentTime.duration(from: status.since, to: now, seconds: true)
         case .blocked: return "waiting \(short)"
         case .done, .error: return "\(short) ago"
         case .idle, .clear: return "idle \(short)"
         }
     }
+}
 
-    private static func duration(from start: Date, to end: Date, seconds showSeconds: Bool) -> String {
-        let total = max(0, Int(end.timeIntervalSince(start)))
-        let hours = total / 3600, minutes = (total % 3600) / 60, seconds = total % 60
-        if hours > 0 { return "\(hours)h \(minutes)m" }
-        if minutes > 0 { return showSeconds ? "\(minutes)m \(seconds)s" : "\(minutes)m" }
-        return "\(seconds)s"
+/// How much of the agent's context window is used: a label, the percent and
+/// a 4pt bar that turns amber above 70%.
+private struct AgentContextBar: View {
+    let percent: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Context used")
+                Spacer(minLength: 0)
+                Text("\(percent)%").monospacedDigit()
+            }
+            .font(.system(size: 11.5))
+            .foregroundColor(AgentTabBarColors.cardMuted)
+
+            GeometryReader { geometry in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(AgentTabBarColors.contextTrack)
+                    Capsule()
+                        .fill(percent > 70 ? AgentTabBarColors.contextBarHigh : AgentTabBarColors.contextBar)
+                        .frame(width: geometry.size.width * CGFloat(min(max(percent, 0), 100)) / 100)
+                }
+            }
+            .frame(height: 4)
+        }
+    }
+}
+
+/// The git branch of a folder, read from the repository's HEAD without
+/// running git. Tabs refresh on every status report, so results are kept for
+/// a few seconds.
+final class AgentGitBranch {
+    static let shared = AgentGitBranch()
+
+    private var cache: [String: (branch: String?, at: Date)] = [:]
+
+    func branch(at path: String?) -> String? {
+        guard let path, !path.isEmpty else { return nil }
+        if let cached = cache[path], Date().timeIntervalSince(cached.at) < 5 { return cached.branch }
+        let branch = Self.readBranch(at: path)
+        cache[path] = (branch, Date())
+        return branch
+    }
+
+    /// The branch HEAD points to, or the short commit when detached. A
+    /// worktree's `.git` is a file that points to its git folder.
+    private static func readBranch(at path: String) -> String? {
+        let fm = FileManager.default
+        var dir = URL(fileURLWithPath: path, isDirectory: true)
+        while true {
+            let dotGit = dir.appendingPathComponent(".git")
+            var isDir: ObjCBool = false
+            if fm.fileExists(atPath: dotGit.path, isDirectory: &isDir) {
+                var gitDir = dotGit
+                if !isDir.boolValue {
+                    guard let text = try? String(contentsOf: dotGit, encoding: .utf8),
+                          text.hasPrefix("gitdir:") else { return nil }
+                    let target = text.dropFirst("gitdir:".count).trimmingCharacters(in: .whitespacesAndNewlines)
+                    gitDir = URL(fileURLWithPath: target, relativeTo: dir)
+                }
+                guard let head = try? String(contentsOf: gitDir.appendingPathComponent("HEAD"), encoding: .utf8)
+                    .trimmingCharacters(in: .whitespacesAndNewlines) else { return nil }
+                if head.hasPrefix("ref: refs/heads/") {
+                    return String(head.dropFirst("ref: refs/heads/".count))
+                }
+                return head.isEmpty ? nil : String(head.prefix(7))
+            }
+            let parent = dir.deletingLastPathComponent()
+            if parent.path == dir.path { return nil }
+            dir = parent
+        }
     }
 }
 
@@ -539,15 +798,7 @@ final class AgentTabCardPanel {
         host.frame.size = host.fittingSize
         panel.contentView = host
 
-        guard let contentView = window.contentView else { return }
-        // SwiftUI's global coordinates start at the top left of the content
-        // view; AppKit's start at the bottom left.
-        let flipped = NSRect(
-            x: anchor.minX,
-            y: contentView.bounds.height - anchor.maxY,
-            width: anchor.width,
-            height: anchor.height)
-        let face = window.convertToScreen(contentView.convert(flipped, to: nil))
+        let face = window.screenRect(fromSwiftUIGlobal: anchor)
         let size = host.fittingSize
         var origin = below
             ? NSPoint(x: face.minX, y: face.minY - 8 - size.height)

@@ -104,6 +104,10 @@ class BaseTerminalController: NSWindowController,
     /// Cancellable for aggregating program status across all surfaces in this controller.
     private var programStatusCancellable: AnyCancellable?
 
+    /// How many child records (subagents) are working, across all splits.
+    @Published private(set) var subagentCount: Int = 0
+    private var subagentCancellable: AnyCancellable?
+
     /// When this controller (a tab or window) was created.
     let createdAt = Date()
 
@@ -1739,6 +1743,22 @@ extension BaseTerminalController {
                 guard let self else { return }
                 programStatus = status
                 (window as? TerminalWindow)?.programStatus = status
+                AgentTabBarModel.setNeedsRefresh()
+            }
+
+        subagentCancellable = surfaceValuesPublisher(
+            valueKeyPath: \.programChildren,
+            publisherKeyPath: \.$programChildren
+        )
+            .map { children in
+                children.values.reduce(0) { total, records in
+                    total + records.values.filter { $0.state == .working || $0.state == .blocked }.count
+                }
+            }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] count in
+                self?.subagentCount = count
                 AgentTabBarModel.setNeedsRefresh()
             }
     }

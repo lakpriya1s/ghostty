@@ -35,6 +35,13 @@ extension Ghostty {
         // The latest OSC 7501 program status (if any), e.g. from a coding agent.
         @Published var programStatus: Action.ProgramStatus?
 
+        /// The program's child records, such as subagents, by id.
+        @Published var programChildren: [String: Action.ProgramStatus] = [:]
+
+        /// Whether the program reports its own status, not just through an
+        /// account-reporting hook. See `updateProgramStatus`.
+        var programReportsOwnStatus = false
+
         // The currently active key tables. Empty if no tables are active.
         @Published var keyTables: [String] = []
 

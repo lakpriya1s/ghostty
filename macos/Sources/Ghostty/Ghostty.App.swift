@@ -1656,6 +1656,16 @@ extension Ghostty {
                 guard let surface = target.target.surface else { return }
                 guard let surfaceView = self.surfaceView(from: surface) else { return }
 
+                // The shell is back at its prompt, so whatever reported a
+                // program status has exited, even if it never said so (it
+                // crashed, was interrupted, or skipped its last report).
+                DispatchQueue.main.async {
+                    surfaceView.updateProgramStatus(.init(
+                        state: .clear, kind: nil, progress: nil,
+                        app: nil, title: nil, msg: nil, account: nil,
+                        context: nil, last: nil, id: nil))
+                }
+
                 // Determine if we even care about command finish notifications
                 guard let config = (NSApplication.shared.delegate as? AppDelegate)?.ghostty.config else { return }
                 switch config.notifyOnCommandFinish {

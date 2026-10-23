@@ -238,6 +238,9 @@ class AppDelegate: NSObject,
         // This registers the Ghostty => Services menu to exist.
         NSApp.servicesMenu = menuServices
 
+        // Follow agents in every tab for the dock badge and menu bar summary.
+        AgentSummary.shared.start()
+
         // Setup a local event monitor for app-level keyboard shortcuts. See
         // localEventHandler for more info why.
         _ = NSEvent.addLocalMonitorForEvents(
@@ -746,7 +749,7 @@ class AppDelegate: NSObject,
         }
     }
 
-    private func syncDockBadge() {
+    func syncDockBadge() {
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             switch settings.authorizationStatus {
@@ -802,8 +805,11 @@ class AppDelegate: NSObject,
         let bellCount = NSApp.windows
             .compactMap { $0.windowController as? BaseTerminalController }
             .reduce(0) { $0 + ($1.bell ? 1 : 0) }
-        let wantsBadge = ghostty.config.bellFeatures.contains(.attention) && bellCount > 0
-        let label = wantsBadge ? (bellCount > 99 ? "99+" : String(bellCount)) : nil
+        let bells = ghostty.config.bellFeatures.contains(.attention) ? bellCount : 0
+        // Agents waiting on the user or done and unseen count too.
+        let agents = AgentTabBarSettings.shared.showsDockBadge ? AgentSummary.shared.attentionCount : 0
+        let count = bells + agents
+        let label = count > 0 ? (count > 99 ? "99+" : String(count)) : nil
         NSApp.dockTile.badgeLabel = label
         NSApp.dockTile.display()
     }

@@ -113,7 +113,6 @@ class TerminalWindow: NSWindow {
     /// Whether we hid the title for the agent tab bar, so it can come back.
     private var titleVisibleBeforeAgentTabBar = false
 
-
     // MARK: NSWindow Overrides
 
     override var toolbar: NSToolbar? {
