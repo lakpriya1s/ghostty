@@ -254,37 +254,11 @@ enum AgentLauncher {
         return String(slug.prefix(24))
     }
 
-    /// Create a Claude config folder whose settings run our status hook, the
-    /// same as `agents/claude-code/install.sh`. An existing folder is kept
-    /// as it is. Without the installed hook, only the folder is created:
-    /// Claude Code still reports its state, just not the account.
+    /// Create a Claude config folder whose settings run our status hook
+    /// (`AgentHookInstaller`). An existing folder is kept as it is.
     private static func createClaudeConfig(at folder: URL) throws {
-        let fm = FileManager.default
-        guard !fm.fileExists(atPath: folder.path) else { return }
-        try fm.createDirectory(at: folder, withIntermediateDirectories: true)
-
-        let hook = fm.homeDirectoryForCurrentUser
-            .appendingPathComponent(".config/ghostty/agents/claude-code/ghostty-agent-status").path
-        guard fm.isExecutableFile(atPath: hook) else { return }
-
-        func entry(matcher: String? = nil) -> [String: Any] {
-            var entry: [String: Any] = ["hooks": [["type": "command", "command": hook, "timeout": 5]]]
-            if let matcher { entry["matcher"] = matcher }
-            return entry
-        }
-        let hooks: [String: Any] = [
-            "SessionStart": [entry()],
-            "UserPromptSubmit": [entry()],
-            "PreToolUse": [entry(matcher: "*")],
-            "PostToolUse": [entry(matcher: "*")],
-            "Notification": [entry()],
-            "Stop": [entry()],
-            "StopFailure": [entry()],
-            "SessionEnd": [entry()],
-        ]
-        let data = try JSONSerialization.data(
-            withJSONObject: ["hooks": hooks], options: [.prettyPrinted, .sortedKeys])
-        try data.write(to: folder.appendingPathComponent("settings.json"))
+        guard !FileManager.default.fileExists(atPath: folder.path) else { return }
+        try AgentHookInstaller.install(into: folder)
     }
 
     /// Ask for a new name for an account.

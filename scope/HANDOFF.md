@@ -54,6 +54,13 @@ internals keep their names so upstream merges still work:
   (README images); regenerate with `scripts/render-brand.swift`. The dock
   icon is a status light (`AgentSummary.updateDockIcon`): the front face
   takes the state's color and its Square faces expression.
+- Setup Assistant (`Features/Onboarding/`): a first-launch wizard for face
+  set and size, tab bar position, the Claude Code hook (per `~/.claude*`
+  folder, via `AgentHookInstaller`, which the app bundles the hook for, so
+  no repo or `jq` is needed), account colors, notifications, dock badge and
+  menu bar summary. KinTerm › Setup Assistant… reopens it; `OnboardingCompleted`
+  in defaults marks it done. Debug builds open a page directly with
+  `KINTERM_ONBOARDING_STEP=<welcome|faces|tabBar|claude|stayInLoop|done>`.
 
 **Seen working on screen**
 

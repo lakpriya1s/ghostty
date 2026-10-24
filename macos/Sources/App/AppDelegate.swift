@@ -243,6 +243,7 @@ class AppDelegate: NSObject,
 
         // Follow agents in every tab for the dock badge and menu bar summary.
         AgentSummary.shared.start()
+        OnboardingController.shared.start()
 
         // Setup a local event monitor for app-level keyboard shortcuts. See
         // localEventHandler for more info why.
