@@ -1879,9 +1879,9 @@ extension Ghostty {
             return "\(seconds)s"
         }
 
-        /// Notify about the agent in this terminal, as in the design: no
-        /// subtitle, "Open tab" and "Dismiss", and a `>_` image with a dot in
-        /// the state's color. Clicking it focuses this split.
+        /// Notify about the agent in this terminal: no subtitle, "Open tab"
+        /// and "Dismiss", and the agent's face in that state as the image.
+        /// Clicking it focuses this split.
         private func showAgentNotification(title: String, body: String, state: Action.ProgramStatus.State) {
             showUserNotification(
                 title: title,

@@ -19,8 +19,9 @@ notifications, so clicking focuses that surface.
 - [x] "took 4m 02s" on finished notifications, from when the request
       started working (time waiting on the user included).
 - [x] Respects the `desktop-notifications` config.
-- [x] `>_` image with a state-colored dot (`AgentNotificationIcon`). macOS
-      always shows the app icon, so it's an attachment on the right.
+- [x] The agent's face in that state, in the chosen face set, as the image
+      (`AgentNotificationIcon`). macOS always shows the app icon, so it's an
+      attachment on the right. (It was a `>_` with a state-colored dot.)
 
 ## Notes
 

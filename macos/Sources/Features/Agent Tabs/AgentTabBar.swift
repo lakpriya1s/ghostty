@@ -28,7 +28,6 @@ enum AgentTabBarColors {
     static let contextBar = Color(agentHex: 0x7db4ff)
     static let contextBarHigh = Color(agentHex: 0xf5a524)
     static let notificationIcon = Color(agentHex: 0x101114)
-    static let notificationIconText = Color(agentHex: 0xe4e6ea)
 
     /// `color` laid over `base` at `fraction`, as one opaque color. Used to
     /// tint a tab with its account color and still cut the unread dot out of

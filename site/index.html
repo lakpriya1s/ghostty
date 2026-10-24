@@ -27,7 +27,7 @@
   "name": "KinTerm",
   "description": "The terminal for AI coding agents. Every tab is a face that shows what its agent is doing: working, done or waiting on you.",
   "url": "https://lakpriya.com/kinterm/",
-  "downloadUrl": "https://github.com/lakpriya1s/kinterm/releases/latest",
+  "downloadUrl": "https://github.com/lakpriya1s/kinterm/releases/latest/download/KinTerm.dmg",
   "image": "https://lakpriya.com/kinterm/og.png?v=1",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS 13 or later",
@@ -119,7 +119,8 @@ h2{margin:14px 0 0;font-size:clamp(34px,5.4vw,60px);line-height:1.04;letter-spac
 h2 .mute{color:var(--muted)}
 .sub{margin:16px 0 0;max-width:560px;color:var(--muted);font-size:18px}
 section[id]{scroll-margin-top:64px}
-#features,#protocol{scroll-margin-top:110px}
+#protocol{scroll-margin-top:110px}
+#features{scroll-margin-top:0}
 .reveal{opacity:0;translate:0 26px;transition:opacity .8s cubic-bezier(.2,.7,.2,1),translate .8s cubic-bezier(.2,.7,.2,1)}
 .reveal.in{opacity:1;translate:0 0}
 
@@ -149,7 +150,10 @@ section[id]{scroll-margin-top:64px}
 .slot{position:relative;display:flex;align-items:center;justify-content:center;width:calc(44px*var(--s));height:calc(44px*var(--s))}
 .slot>.fx{transform:scale(var(--s))}
 .win[data-size=s] .tab{--s:.72}.win[data-size=l] .tab{--s:1.3}
-.tab.ring .slot::before{content:"";position:absolute;inset:-1px;border-radius:50%;border:2px solid var(--ac)}
+.tab.ring .slot::before{content:"";position:absolute;inset:1px;border-radius:50%;border:2.5px solid var(--ac)}
+/* With a ring the face shrinks to sit inside it, as in the app. */
+.tab.ring .slot>.fx{transform:scale(calc(var(--s) * .58))}
+.tab:not(.is-working) .badge{display:none}
 .tab .badge{position:absolute;right:-3px;bottom:-3px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#1c1d21;border:1.5px solid var(--blue);color:#d7e7ff;font:700 10px/15px var(--sans);text-align:center}
 .plus{flex:none;width:30px;height:30px;margin:0 4px;border:1.5px dashed #4a4e59;border-radius:50%;background:transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
 .pane{flex:1;min-width:0;min-height:0;padding:16px 20px;font:400 13px/1.75 var(--mono);color:#d6d9df;overflow:hidden}
@@ -197,9 +201,20 @@ section[id]{scroll-margin-top:64px}
 .menubar .sum{margin-left:auto;display:flex;align-items:center;gap:10px;font-variant-numeric:tabular-nums}
 .menubar .sum span{display:inline-flex;align-items:center;gap:5px;transition:opacity .3s}
 .menubar .sum i{width:8px;height:8px;border-radius:50%}
+.sysbar{display:inline-flex;align-items:center;gap:13px;color:#e6e8ec;white-space:nowrap;flex:none}
+.sysbar svg{display:block;height:14px;width:auto;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.92}
+.sysbar .clock{font-size:12px;font-variant-numeric:tabular-nums}
+@media (max-width:700px){.menubar .sysbar svg{display:none}}
 .desk{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--edge);background:radial-gradient(70% 80% at 15% 0%,rgba(47,211,184,.22),transparent 60%),radial-gradient(70% 80% at 100% 100%,rgba(92,160,255,.22),transparent 60%),#121318;padding-bottom:84px}
 .desk .win{margin:22px 26px 0;height:min(380px,48svh)}
 .desk .dock{position:absolute;left:50%;bottom:12px;translate:-50% 0}
+.mac-note{display:flex;align-items:flex-end;justify-content:flex-end;gap:4px;margin-top:30px;margin-right:calc(-1 * clamp(28px,5vw,72px) + 6px);color:var(--soft);pointer-events:none}
+.mac-note span{font:600 26px/1 Caveat,cursive;color:var(--text);rotate:-4deg;margin-bottom:-4px;white-space:nowrap}
+.mac-note svg{flex:none;width:clamp(130px,13vw,180px);height:auto;aspect-ratio:200/74;overflow:visible}
+.mac-note path{stroke-dasharray:1;stroke-dashoffset:1}
+.mac-note.on .line{animation:draw .9s ease-out forwards}
+.mac-note.on .head{animation:draw .25s ease-out .85s forwards}
+@media (max-width:900px){.mac-note{display:none}}
 .keys{display:flex;align-items:center;gap:6px;margin-top:22px;opacity:0;transition:opacity .3s;font-size:14px;color:var(--muted)}
 .keys.on{opacity:1}
 .keys .kbd{font-size:16px;transition:transform .1s,background .1s}
@@ -215,23 +230,30 @@ section[id]{scroll-margin-top:64px}
 .dock .app .bdg{position:absolute;right:-5px;top:-5px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#ff3b30;color:#fff;font:700 11.5px/20px var(--sans);text-align:center;transform:scale(0);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
 .dock .app .bdg.on{transform:scale(1)}
 .dock .dot{position:absolute;left:50%;bottom:-6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--muted)}
-.banner{position:absolute;z-index:15;right:12px;top:36px;width:min(330px,calc(100% - 24px));display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:rgba(70,72,82,.78);border:1px solid rgba(255,255,255,.14);box-shadow:0 20px 50px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.4);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);font-size:13px;line-height:1.35;transform:translateX(calc(100% + 30px));opacity:0;transition:transform .55s cubic-bezier(.2,1.2,.3,1),opacity .3s}
+.banner{position:absolute;z-index:15;right:12px;top:36px;width:min(340px,calc(100% - 24px));transform:translateX(calc(100% + 30px));opacity:0;transition:transform .55s cubic-bezier(.2,1.2,.3,1),opacity .3s}
 .banner.on{transform:none;opacity:1}
-.banner>div{flex:1;min-width:0}
-.banner svg{width:36px;height:36px;flex:none}
-.banner .app{display:flex;justify-content:space-between;font-size:11px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:rgba(255,255,255,.55)}
-.banner .app em{font-style:normal;text-transform:none;font-weight:400}
-.banner b{display:block;margin-top:1px;color:#fff;font-size:13.5px}
-.banner span{color:rgba(255,255,255,.82)}
+.mn{display:flex;gap:11px;align-items:center;padding:11px 12px;border-radius:18px;background:rgba(70,72,82,.8);border:1px solid rgba(255,255,255,.14);box-shadow:0 20px 50px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.4);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);font-size:13px;line-height:1.35;color:#fff}
+.mn-app svg{display:block;width:38px;height:38px}
+.mn-txt{flex:1;min-width:0}
+.mn-txt b{display:block;font-size:13.5px}
+.mn-txt span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;color:rgba(255,255,255,.82);overflow:hidden}
+.mn-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;align-self:stretch}
+.mn-att{--cut:#101114;display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;background:#101114}
+.mn-att .fx{transform:scale(.62)}
+.mn-side small{font-size:11.5px;color:rgba(255,255,255,.55)}
 .win.jolt{animation:jolt .4s}
 @keyframes jolt{25%{translate:-5px 0}50%{translate:4px 0}75%{translate:-2px 0}}
 
 /* ── playground ── */
-.pg{display:grid;grid-template-columns:minmax(0,320px) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:start;margin-top:48px}
-.ctl{display:flex;flex-direction:column;gap:26px}
+.pg-sec{min-height:100svh;display:flex;align-items:center;padding:clamp(76px,10svh,110px) 0 clamp(40px,6svh,70px)}
+.pg{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:clamp(24px,4vw,56px);align-items:center}
+.pg h2{font-size:clamp(32px,min(4.4vw,6.4svh),56px)}
+.pg .sub{font-size:16px;margin-top:12px}
+.ctl-row{display:flex;flex-wrap:wrap;gap:20px}
+.ctl{display:flex;flex-direction:column;gap:clamp(14px,2.6svh,24px)}
 .ctl h4{margin:0 0 10px;font:600 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 .sets{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.set{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 6px 10px;border-radius:12px;border:1px solid var(--edge);background:var(--panel);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:border-color .2s,background .2s,color .2s,transform .15s}
+.set{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 6px 8px;border-radius:12px;border:1px solid var(--edge);background:var(--panel);cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);transition:border-color .2s,background .2s,color .2s,transform .15s}
 .set:hover{border-color:var(--edge2);color:var(--soft)}
 .set.on{border-color:var(--blue);background:color-mix(in srgb,var(--blue) 10%,var(--panel));color:var(--text)}
 .set:active{transform:scale(.97)}
@@ -240,48 +262,81 @@ section[id]{scroll-margin-top:64px}
 .seg button.on{background:#363944;color:var(--text)}
 .seg.size button{display:flex;align-items:center;gap:7px}
 .seg.size button i{display:block;border-radius:50%;background:currentColor}
-.pg .win{height:400px}
+.pg .win{height:clamp(300px,58svh,440px)}
 .pg .hint{margin-top:12px;font-size:13px;color:var(--dim);text-align:center}
 ::view-transition-group(*){animation-duration:.45s;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
 
 /* ── bento ── */
 .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:48px}
 .tile{position:relative;grid-column:span 2;display:flex;flex-direction:column;padding:22px;border-radius:20px;background:var(--panel);border:1px solid var(--edge);overflow:hidden}
+.tile.w4{grid-column:span 4}.tile.w6{grid-column:span 6}
 .tile h3{margin:0;font-size:19px;letter-spacing:-.02em}
 .tile p{margin:6px 0 0;font-size:14.5px;color:var(--muted)}
-.tile .demo{height:200px;display:flex;align-items:center;justify-content:center;margin-top:auto;padding-top:18px;position:relative;--cut:var(--panel)}
-.panel{width:100%;max-width:420px;border-radius:12px;background:#1c1d21;border:1px solid var(--edge);overflow:hidden}
-.panel .hd{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--edge);font-size:12px;color:var(--muted)}
-.panel .hd .kbd{margin-left:auto;font-size:11px}
-.panel .row{display:flex;align-items:center;gap:10px;padding:6px 12px;font-size:13px;--cut:#1c1d21;transition:background .3s}
-.panel .row+.row{border-top:1px solid #24262d}
-.panel .row .fx{transform:scale(.7);margin:-6px}
-.panel .row b{font-weight:600;color:var(--text)}
-.panel .row span{color:var(--muted);font-size:12px}
-.panel .row em{margin-left:auto;font:600 11.5px var(--sans);font-style:normal}
-.panel .row.hot{background:rgba(245,165,36,.07)}
-.panel .row:nth-child(n+4){display:none}
-.notes{position:relative;width:100%;max-width:320px;height:150px}
-.note{position:absolute;inset:auto 0 0;display:flex;gap:10px;align-items:center;padding:11px 12px;border-radius:14px;background:#2a2c33;border:1px solid var(--edge2);font-size:12.5px;line-height:1.35;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .6s cubic-bezier(.2,1,.3,1),opacity .6s;--cut:#2a2c33}
-.note .fx{transform:scale(.75);margin:-5px}
-.note b{display:block}
-.note span{color:var(--muted)}
-.accts{display:flex;gap:10px;padding:8px 10px;border-radius:12px;background:var(--raise)}
-.accts .tab{--s:1}
+.tile .demo{height:250px;display:flex;align-items:center;justify-content:center;margin-top:auto;padding-top:18px;position:relative;--cut:var(--panel)}
+.tile.w4 .demo{height:auto}
+.tile.w4 .demo{align-items:flex-start}
 .legend{display:flex;gap:14px;justify-content:center;margin-top:16px;font-size:12px;color:var(--muted)}
 .legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
-.mb{display:flex;align-items:center;gap:14px;height:30px;padding:0 12px;border-radius:8px;background:var(--raise);border:1px solid var(--edge);font-size:12.5px;color:var(--soft);font-variant-numeric:tabular-nums;white-space:nowrap}
-.mb .fx{transform:scale(.4);margin:-12px}
-.mb span{display:inline-flex;align-items:center;gap:5px}
-.mb i{width:8px;height:8px;border-radius:50%}
 .mbstyle{margin-top:12px;text-align:center;font:500 11.5px var(--mono);color:var(--dim)}
+/* Agents panel, as AgentsPanel.swift draws it */
+.ap{--cut:#1f2026;width:100%;border-radius:14px;background:#1f2026;border:1px solid #33363f;overflow:hidden;font-size:13px;color:#d6d9df}
+.ap-hd{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #2e3038}
+.ap-field{flex:1;height:30px;display:flex;align-items:center;padding:0 12px;border-radius:8px;background:#16171b;border:1px solid #3a3d47;color:#8a8f99;font-size:13px}
+.ap-hd small,.ap-ft{font-size:12px;color:#8a8f99}
+.ap-chips{display:flex;gap:6px;padding:9px 16px 2px}
+.ap-chips span{height:26px;display:inline-flex;align-items:center;padding:0 11px;border-radius:13px;border:1px solid #3a3d47;font-size:12px;font-weight:500;color:#a8adb7}
+.ap-chips span.on{background:#3a3d47;color:#f1f2f4}
+.ap-g{display:grid;grid-template-columns:24px minmax(0,1fr) minmax(0,1.15fr) 86px 60px;gap:12px;align-items:center}
+.ap-cols{padding:9px 30px 5px;font-size:11px;font-weight:600;letter-spacing:.04em;color:#8a8f99}
+.ap-cols span:last-child,.ap-row .t{text-align:right}
+.ap-rows{padding:0 16px 8px}
+.ap-row{padding:7px 14px;border-radius:9px;transition:background .25s}
+.ap-row.sel{background:#2a2c33;--cut:#2a2c33}
+.ap-row .fx{transform:scale(.6);margin:-8px}
+.ap-row b{display:block;font-weight:500;color:#f1f2f4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ap-row small{display:block;font-size:11.5px;color:#8a8f99;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ap-row .d{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#c2c6cf}
+.ap-row .a{display:flex;align-items:center;gap:6px;color:#a8adb7;white-space:nowrap;overflow:hidden}
+.ap-row .a i{flex:none;width:3px;height:14px;border-radius:2px}
+.ap-row .t{color:#8a8f99;font-variant-numeric:tabular-nums}
+.ap-ft{display:flex;gap:18px;padding:9px 16px;border-top:1px solid #2e3038}
+.ap-ft span:last-child{margin-left:auto}
+/* Notifications */
+.tile .demo.notes-demo{height:auto;align-items:flex-start;margin-top:0;padding-top:26px}
+.notes{position:relative;width:100%;max-width:340px;height:356px}
+.notes .mn{position:absolute;inset:0 0 auto;transition:transform .6s cubic-bezier(.2,1,.3,1),opacity .6s}
+/* Accounts */
+.acct-styles{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.acct-style{display:flex;flex-direction:column;align-items:center;gap:8px;font:500 11.5px var(--mono);color:var(--muted)}
+.accts{display:flex;gap:4px;padding:6px 8px;border-radius:12px;background:var(--raise)}
+.accts .tab{--s:.8}
+/* Menu bar, as AgentSummary.swift draws it */
+.mbar{width:100%;max-width:340px;align-self:flex-start;margin-top:4px}
+.mbar-strip{display:flex;align-items:center;justify-content:flex-end;overflow:hidden;gap:12px;height:26px;padding:0 12px;border-radius:7px;background:rgba(40,42,48,.9);font-size:12.5px;color:#e6e8ec;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mbar-strip .it{flex:none;padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.16)}
+.mbar-strip .it i{font-style:normal;font-size:.8em;margin-right:1px}
+.mbar-strip .sys{color:#c2c6cf}
+.mbar-menu{margin:6px 0 0 auto;width:min(300px,100%);padding:5px 0;border-radius:10px;background:rgba(44,46,53,.96);border:1px solid #3a3d47;box-shadow:0 14px 40px rgba(0,0,0,.5);--cut:transparent}
+.mc{display:flex;gap:10px;align-items:flex-start;padding:6px 14px}
+.mc .fx{transform:scale(.65);margin:-7px}
+.mc b{display:block;font-size:12.5px;color:#f1f2f4}
+.mc .s{font-size:11px}
+.mc .s em{font-style:normal;color:#8a8f99}
+.mc .f{display:flex;align-items:center;gap:5px;font-size:10.5px;color:#8a8f99}
+.mc .f i{width:6px;height:6px;border-radius:50%}
+.mbar-menu hr{border:0;border-top:1px solid #3a3d47;margin:4px 0}
+.mbar-menu .mi{padding:2px 14px;font-size:12px;color:#c2c6cf}
+.mbar-sub{margin-top:8px;text-align:right;font:500 11.5px var(--mono);color:var(--dim)}
+/* Dock */
 .icon-cyc{width:120px;height:120px;position:relative}
 .icon-cyc svg{width:100%;height:100%}
-.icon-cyc .bdg{position:absolute;right:4px;top:4px;min-width:26px;height:26px;padding:0 7px;border-radius:13px;background:#ff3b30;color:#fff;font:700 14px/26px var(--sans);text-align:center;transform:scale(0);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
+.icon-cyc .bdg{position:absolute;right:4px;top:4px;min-width:26px;height:26px;padding:0 7px;border-radius:13px;background:#ff453a;color:#fff;font:700 14px/26px var(--sans);text-align:center;transform:scale(0);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
 .icon-cyc .bdg.on{transform:scale(1)}
-.wiz{display:flex;gap:10px;align-items:flex-end}
-.wiz div{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 12px 10px;border-radius:12px;border:1px solid var(--edge);background:#1c1d21;font:600 12px var(--sans);color:var(--muted);transition:border-color .3s,color .3s}
-.wiz div.on{border-color:var(--blue);color:var(--text)}
+@media (max-width:900px){
+  .tile,.tile.w4,.tile.w6{grid-column:auto}
+  .ap-g{grid-template-columns:24px minmax(0,1fr) minmax(0,1fr) 54px}
+  .ap-g .a,.ap-cols .acc{display:none}
+}
 
 /* ── protocol ── */
 .proto{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:clamp(24px,5vw,64px);align-items:center}
@@ -335,10 +390,16 @@ section[id]{scroll-margin-top:64px}
 @media (max-height:760px){.scrollcue{display:none}}
 @media (max-width:700px){.desk .win{margin:14px 12px 0}}
 @media (max-width:560px){
+  .pg-sec{padding-top:72px}
+  .pg .sub{display:none}
+  .sets{grid-template-columns:repeat(6,1fr);gap:5px}
+  .set{padding:7px 2px 6px;font-size:9.5px;gap:4px}
+  .set .fx{transform:scale(.75);margin:-5px}
+  .pg .hint{display:none}
     .dock .app:not(.kt){display:none}
   .under{min-height:56px}
   .pane{font-size:11.5px;padding:12px 14px}
-  .pg .win{height:380px}
+  .pg .win{height:230px}
   .card{width:250px}
   }
 @media (prefers-reduced-motion:reduce){
@@ -557,7 +618,7 @@ section[id]{scroll-margin-top:64px}
     <a class="link hide-sm" href="#features">Features</a>
     <a class="link hide-sm" href="#protocol">Protocol</a>
     <a class="link" href="https://github.com/lakpriya1s/kinterm" aria-label="KinTerm on GitHub">GitHub</a>
-    <a class="btn sm" data-dl href="https://github.com/lakpriya1s/kinterm/releases/latest">Download</a>
+    <a class="btn sm" data-dl href="https://github.com/lakpriya1s/kinterm/releases/latest/download/KinTerm.dmg">Download</a>
   </div>
 </header>
 
@@ -583,11 +644,13 @@ section[id]{scroll-margin-top:64px}
           <div class="beats" id="beats"></div>
           <div class="rail" id="rail" aria-hidden="true"></div>
           <div class="keys" id="keys"><span class="kbd">&#8984;</span><span class="kbd">J</span><span id="keysLabel">jump to who's waiting</span></div>
+          <div class="mac-note" id="macNote" aria-hidden="true"><span>this is your Mac</span><svg viewBox="0 0 200 74" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path class="line" pathLength="1" d="M4 62C20 70 40 66 44 52C48 40 34 33 30 43C26 56 48 64 76 56C112 46 152 34 194 26"/><path class="head" pathLength="1" d="M184 21L194 26L186 34"/></svg></div>
         </div>
         <div class="desk">
           <div class="menubar" aria-hidden="true">
             <span>&#63743;</span><b>KinTerm</b><span class="mi">Shell</span><span class="mi">Edit</span><span class="mi">View</span><span class="mi">Window</span>
             <span class="sum" id="mbSum"></span>
+            <span class="sysbar" data-sys="wifi batt"></span>
           </div>
           <div class="win pos-top" id="storyWin" data-size="m">
             <div class="chrome"><i></i><i></i><i></i><span class="ttl">Claude Code</span></div>
@@ -597,7 +660,7 @@ section[id]{scroll-margin-top:64px}
             </div>
             <div class="card"></div>
           </div>
-          <div class="banner" id="banner" role="status"><span data-mark="banner"></span><div><small class="app">KinTerm<em>now</em></small><b>web is done</b><span>Rate limiting is in. 18 tests pass.</span></div></div>
+          <div class="banner" id="banner" role="status"></div>
           <div class="dock" aria-hidden="true"><div class="app"><span class="dot"></span></div><div class="app"></div><div class="app kt" id="dockIcon"><span class="bdg" id="dockBadge"></span><span class="dot"></span></div></div>
         </div>
       </div>
@@ -605,71 +668,66 @@ section[id]{scroll-margin-top:64px}
   </section>
 
   <!-- Playground -->
-  <section class="sec" id="faces">
-    <div class="wrap">
-      <div class="reveal">
-        <div class="eyebrow">Make them yours</div>
-        <h2>Six families.<br><span class="mute">One glance.</span></h2>
-        <p class="sub">Pick a face set, a size and where the bar lives. Your choice follows you down the page.</p>
-      </div>
-      <div class="pg reveal">
-        <div class="ctl">
-          <div><h4>Face set</h4><div class="sets" id="sets"></div></div>
+  <section class="sec pg-sec" id="faces">
+    <div class="wrap pg reveal">
+      <div class="ctl">
+        <div>
+          <div class="eyebrow">Make them yours</div>
+          <h2>Six families.<br><span class="mute">One glance.</span></h2>
+          <p class="sub">Pick a face set, a size and where the bar lives. Your choice follows you down the page.</p>
+        </div>
+        <div><h4>Face set</h4><div class="sets" id="sets"></div></div>
+        <div class="ctl-row">
           <div><h4>Size</h4><div class="seg size" id="sizes"></div></div>
           <div><h4>Tab bar</h4><div class="seg" id="poss"></div></div>
         </div>
-        <div>
-          <div class="win pos-top" id="pgWin" data-size="m">
-            <div class="chrome"><i></i><i></i><i></i><span class="ttl">~/code · 6 tabs</span></div>
-            <div class="body">
-              <div class="bar" role="tablist" aria-label="Agent tabs"></div>
-              <div class="pane" id="pgPane"></div>
-            </div>
-            <div class="card"></div>
+      </div>
+      <div>
+        <div class="win pos-top" id="pgWin" data-size="m">
+          <div class="chrome"><i></i><i></i><i></i><span class="ttl">~/code · 6 tabs</span></div>
+          <div class="body">
+            <div class="bar" role="tablist" aria-label="Agent tabs"></div>
+            <div class="pane" id="pgPane"></div>
           </div>
-          <div class="hint">Hover a face (or tap it) for the details.</div>
+          <div class="card"></div>
         </div>
+        <div class="hint">Hover a face (or tap it) for the details.</div>
       </div>
     </div>
   </section>
 
   <!-- Features -->
-  <section class="sec" id="features" style="padding-top:0">
+  <section class="sec" id="features">
     <div class="wrap">
       <div class="reveal">
         <div class="eyebrow">Stay in the loop</div>
         <h2>It tells you.<br><span class="mute">You don't go looking.</span></h2>
       </div>
       <div class="bento">
-        <article class="tile reveal">
+        <article class="tile w4 reveal">
           <h3>Agents panel</h3>
-          <p>Every agent in every window, most urgent first. <span class="kbd">&#8984;</span><span class="kbd">&#8679;</span><span class="kbd">A</span></p>
-          <div class="demo"><div class="panel"><div class="hd">Agents<span class="kbd">&#8984;J</span></div><div id="agentRows"></div></div></div>
+          <p>Every agent in every window, most urgent first. <span class="kbd">&#8984;&#8679;A</span> to open it, <span class="kbd">&#8984;J</span> to jump to the next one waiting on you.</p>
+          <div class="demo"><div class="ap" id="ap"></div></div>
         </article>
         <article class="tile reveal">
           <h3>Notifications</h3>
-          <p>Done, stuck or waiting while you're in another app? You'll hear about it.</p>
-          <div class="demo"><div class="notes" id="notes"></div></div>
+          <p>When an agent finishes, needs you or fails while you're elsewhere. Open tab or Dismiss.</p>
+          <div class="demo notes-demo"><div class="notes" id="notes"></div></div>
         </article>
         <article class="tile reveal">
           <h3>Many accounts</h3>
-          <p>Each Claude account gets a colour, as a tint or a ring. <span class="kbd">&#8997;&#8984;1–9</span></p>
-          <div class="demo" style="flex-direction:column"><div class="accts" id="accts"></div><div class="legend"><span><i style="background:#2fd3b8"></i>Work</span><span><i style="background:#c08bff"></i>Personal</span><span><i style="background:#ff8a5c"></i>Client</span></div></div>
+          <p>Each Claude account has a colour, as a tinted tab or a ring. <span class="kbd">&#8997;&#8984;1–9</span> opens a tab with one.</p>
+          <div class="demo" style="flex-direction:column;gap:12px"><div class="acct-styles" id="accts"></div><div class="legend" style="margin-top:4px"><span><i style="background:#2dd4bf"></i>Work</span><span><i style="background:#8b7cf6"></i>Personal</span><span><i style="background:#f472b6"></i>Client</span></div></div>
         </article>
         <article class="tile reveal">
           <h3>Menu bar</h3>
-          <p>A live count, from anywhere. Compact, Full or just an icon.</p>
-          <div class="demo" style="flex-direction:column"><div class="mb" id="mb"></div><div class="mbstyle" id="mbStyle"></div></div>
+          <p>A live count from anywhere, in Compact, Full or Icon Only. Click it for every agent.</p>
+          <div class="demo"><div class="mbar" id="mbar"></div></div>
         </article>
         <article class="tile reveal">
           <h3>A dock icon that cares</h3>
-          <p>The icon changes colour and expression, with a badge for who's waiting.</p>
-          <div class="demo"><div class="icon-cyc" id="iconCyc"><span class="bdg" id="iconBdg">1</span></div></div>
-        </article>
-        <article class="tile reveal">
-          <h3>Setup Assistant</h3>
-          <p>Choose everything by looking at it on first launch. It installs the Claude Code hook for you.</p>
-          <div class="demo"><div class="wiz" id="wiz"></div></div>
+          <p>It takes the colour and face of the agent that needs you most, with a badge for those waiting or done.</p>
+          <div class="demo" style="flex-direction:column"><div class="icon-cyc" id="iconCyc"><span class="bdg" id="iconBdg"></span></div><div class="mbstyle" id="iconState"></div></div>
         </article>
       </div>
     </div>
@@ -700,7 +758,7 @@ section[id]{scroll-margin-top:64px}
       <h2>Bring your kin home.</h2>
       <p class="sub" style="margin:18px auto 0">Free for macOS 13 and later.</p>
       <div class="cta" style="margin-top:30px">
-        <a class="btn" data-dl href="https://github.com/lakpriya1s/kinterm/releases/latest">Download for macOS</a>
+        <a class="btn" data-dl href="https://github.com/lakpriya1s/kinterm/releases/latest/download/KinTerm.dmg">Download for macOS</a>
         <a class="btn ghost" href="https://github.com/lakpriya1s/kinterm">Star on GitHub</a>
       </div>
     </div>
@@ -756,6 +814,8 @@ function setFace(el, state) {
   if (el.dataset.shown === key) return;
   el.dataset.shown = key;
   el.innerHTML = SETS[set].html(shown);
+  // The app shows the subagent count only while the agent works.
+  el.closest('.tab')?.classList.toggle('is-working', shown === 'working');
 }
 const refreshFaces = () => $$('.fx[data-face]').forEach(el => setFace(el, el.dataset.face));
 
@@ -911,11 +971,11 @@ function stream(pane, lines, token, gap = 140) {
 
 /* ── story ── */
 const storyTabs = [
-  { name:'api', acct:'Work', ac:'#2fd3b8', cwd:'~/code/api · feat/rate-limit', ctx:38, last:'Adding a token bucket to /login.', age:'12s', detail: s => ({ idle:'Ready for a prompt.', working:'Running npm test', waiting:'Wants to run a command', done:'Finished. 18 tests pass.', error:'API error' })[s] },
-  { name:'web', acct:'Personal', ac:'#c08bff', cwd:'~/code/web · fix/session', ctx:64, last:'Edit src/auth/session.ts?', age:'4s', detail: s => ({ idle:'Ready for a prompt.', working:'Editing session.ts', waiting:'Asking to edit session.ts', done:'Session refresh fixed.', error:'API error' })[s] },
-  { name:'docs', acct:'Work', ac:'#2fd3b8', cwd:'~/code/docs · main', ctx:21, last:'Rewrote the quick start.', age:'1m', sub:2, detail: s => ({ idle:'Ready for a prompt.', working:'2 subagents writing guides', waiting:'Needs you', done:'Quick start rewritten.', error:'API error' })[s] },
-  { name:'infra', acct:'Work', ac:'#2fd3b8', cwd:'~/code/infra · main', ctx:83, last:'terraform plan failed: 529 Overloaded.', age:'40s', detail: s => ({ idle:'Ready for a prompt.', working:'Running terraform plan', waiting:'Needs you', done:'Plan is clean.', error:'529 Overloaded' })[s] },
-  { name:'zsh', cwd:'~/code', ctx:0, last:'', detail: () => 'A plain shell.' },
+  { name:'Rate limiting for login', acct:'Work', ac:'#2dd4bf', cwd:'~/code/api · feat/rate-limit', ctx:38, last:'Adding a token bucket to /login.', age:'12s', detail: s => ({ idle:'Ready for a prompt.', working:'Running npm test', waiting:'Wants to run a command', done:'Finished. 18 tests pass.', error:'API error' })[s] },
+  { name:'Fix session refresh bug', acct:'Personal', ac:'#8b7cf6', cwd:'~/code/web · fix/session', ctx:64, last:'Edit src/auth/session.ts?', age:'4s', detail: s => ({ idle:'Ready for a prompt.', working:'Editing session.ts', waiting:'Asking to edit session.ts', done:'Session refresh fixed.', error:'API error' })[s] },
+  { name:'Next.js docs site', acct:'Work', ac:'#2dd4bf', cwd:'~/code/docs · main', ctx:21, last:'Rewrote the quick start.', age:'1m', sub:2, detail: s => ({ idle:'Ready for a prompt.', working:'2 subagents writing guides', waiting:'Needs you', done:'Quick start rewritten.', error:'API error' })[s] },
+  { name:'Staging cluster plan', acct:'Work', ac:'#2dd4bf', cwd:'~/code/infra · main', ctx:83, last:'terraform plan failed: 529 Overloaded.', age:'40s', detail: s => ({ idle:'Ready for a prompt.', working:'Running terraform plan', waiting:'Needs you', done:'Plan is clean.', error:'529 Overloaded' })[s] },
+  { name:'~/code', cwd:'~/code', ctx:0, last:'', detail: () => 'A plain shell.' },
 ];
 const P = '<span class="c-mut">&gt;</span> ';
 const DOT = c => `<span class="c-${c}">&#9210;</span> `;
@@ -944,8 +1004,13 @@ BEATS.forEach((b, i) => {
   rail.insertAdjacentHTML('beforeend', `<i style="--c:${C[b.key]}"></i>`);
 });
 $('#dockIcon').insertAdjacentHTML('afterbegin', iconSVG());
-$('#banner [data-mark]').innerHTML = markSVG('done');
-$('#banner [data-mark] svg').style.cssText = 'width:36px;height:36px;display:block';
+// An agent notification, as the app sends it: titled after the tab, the
+// agent's message as the body, and its face in that state as the image.
+function noteHTML(title, body, state) {
+  return `<div class="mn"><span class="mn-app">${iconSVG('smile')}</span><div class="mn-txt"><b>${title}</b><span>${body}</span></div>`
+    + `<div class="mn-side"><small>now</small><span class="mn-att">${face(state).outerHTML}</span></div></div>`;
+}
+$('#banner').innerHTML = noteHTML('Fix session refresh bug finished', 'Sessions now refresh before they expire. · took 4m 02s', 'done');
 
 const URGENCY = ['waiting', 'error', 'done', 'working', 'idle'];
 const timers = [];
@@ -976,7 +1041,7 @@ function setBeat(n) {
     later(() => {
       $$('.kbd', keys).forEach(k => k.classList.remove('press'));
       setActive(b.jump);
-      $('#keysLabel').textContent = 'jumped to web';
+      $('#keysLabel').textContent = 'jumped to it';
       stream(pane, b.lines, token);
     }, 950);
   }
@@ -990,7 +1055,7 @@ function setBeat(n) {
   const dock = $('#dockIcon');
   dock.querySelector('svg').outerHTML = iconSVG(top === 'idle' ? 'idle' : top);
   const bdg = $('#dockBadge');
-  const need = (counts.waiting || 0) + (counts.error || 0);
+  const need = (counts.waiting || 0) + (counts.done || 0);
   bdg.textContent = need; bdg.classList.toggle('on', need > 0);
   if (top === 'waiting' || top === 'error') { dock.classList.remove('bounce'); void dock.offsetWidth; dock.classList.add('bounce'); }
   storyFace = top;
@@ -1006,6 +1071,7 @@ function onScroll() {
   const inView = r.top < innerHeight * .5 && r.bottom > innerHeight * .5;
   if (inView !== storyInView) {
     storyInView = inView;
+    if (inView) $('#macNote').classList.add('on');
     if (!inView) { setFavicon('smile'); document.title = baseTitle; }
     else { setFavicon(storyFace); document.title = `${LABEL[storyFace]} · KinTerm`; }
   }
@@ -1017,12 +1083,12 @@ addEventListener('resize', onScroll);
 
 /* ── playground ── */
 const pgTabs = [
-  { name:'api', task:'what does the login route do?', acct:'Work', ac:'#2fd3b8', state:'idle', cwd:'~/code/api · main', ctx:12, last:'Ready when you are.', age:'8m', detail: () => 'Ready for a prompt.' },
-  { name:'web', task:'fix the session refresh bug', acct:'Personal', ac:'#c08bff', state:'working', cwd:'~/code/web · fix/session', ctx:47, last:'Reading src/auth/session.ts', age:'20s', sub:3, detail: () => '3 subagents · editing session.ts' },
-  { name:'docs', task:'build the docs site', acct:'Work', ac:'#2fd3b8', state:'waiting', cwd:'~/code/docs · main', ctx:58, last:'Allow npm run build?', age:'1m', detail: () => 'Wants to run npm run build' },
-  { name:'mobile', task:'bump to 2.4.0 and tag it', acct:'Client', ac:'#ff8a5c', state:'done', cwd:'~/code/mobile · release/2.4', ctx:71, last:'Bumped to 2.4.0 and tagged it.', age:'3m', detail: () => 'Finished. Release tagged.' },
-  { name:'infra', task:'plan the staging cluster', acct:'Work', ac:'#2fd3b8', state:'error', cwd:'~/code/infra · main', ctx:91, last:'API Error: 529 Overloaded', age:'2m', detail: () => '529 Overloaded' },
-  { name:'zsh', state:'shell', cwd:'~/code', ctx:0, last:'', detail: () => 'A plain shell.' },
+  { name:'Rate limiting for login', task:'what does the login route do?', acct:'Work', ac:'#2dd4bf', state:'idle', cwd:'~/code/api · main', ctx:12, last:'Ready when you are.', age:'8m', detail: () => 'Ready for a prompt.' },
+  { name:'Fix session refresh bug', task:'fix the session refresh bug', acct:'Personal', ac:'#8b7cf6', state:'working', cwd:'~/code/web · fix/session', ctx:47, last:'Reading src/auth/session.ts', age:'20s', sub:3, detail: () => '3 subagents · editing session.ts' },
+  { name:'Next.js docs site', task:'build the docs site', acct:'Work', ac:'#2dd4bf', state:'waiting', cwd:'~/code/docs · main', ctx:58, last:'Allow npm run build?', age:'1m', detail: () => 'Wants to run npm run build' },
+  { name:'React Native release 2.4', task:'bump to 2.4.0 and tag it', acct:'Client', ac:'#f472b6', state:'done', cwd:'~/code/mobile · release/2.4', ctx:71, last:'Bumped to 2.4.0 and tagged it.', age:'3m', detail: () => 'Finished. Release tagged.' },
+  { name:'Staging cluster plan', task:'plan the staging cluster', acct:'Work', ac:'#2dd4bf', state:'error', cwd:'~/code/infra · main', ctx:91, last:'API Error: 529 Overloaded', age:'2m', detail: () => '529 Overloaded' },
+  { name:'~/code', state:'shell', cwd:'~/code', ctx:0, last:'', detail: () => 'A plain shell.' },
 ];
 const pgWin = $('#pgWin');
 const pgEls = buildWin(pgWin, pgTabs, { vt: 'p', touch: true, onPick: i => pgActive(i) });
@@ -1068,122 +1134,169 @@ const seg = (host, items, key, apply) => items.forEach(([v, label]) => {
 seg($('#sizes'), [['s', '<i style="width:7px;height:7px"></i>S'], ['m', '<i style="width:10px;height:10px"></i>M'], ['l', '<i style="width:13px;height:13px"></i>L']], 'size', v => { pgWin.dataset.size = v; });
 seg($('#poss'), [['top', 'Top'], ['bottom', 'Bottom'], ['left', 'Left'], ['right', 'Right']], 'pos', v => { pgWin.className = pgWin.className.replace(/pos-\w+/, 'pos-' + v); });
 
-/* ── bento ── */
-(function agents() {
-  const host = $('#agentRows');
-  const rows = [['docs', 'Work', 'waiting', 'Allow npm run build?'], ['infra', 'Work', 'error', '529 Overloaded'], ['mobile', 'Client', 'done', 'Release tagged'], ['web', 'Personal', 'working', 'Editing session.ts']];
-  const els = rows.map(([n, a, s, m]) => {
-    const r = document.createElement('div');
-    r.className = 'row';
-    const f = face(s);
-    r.append(f);
-    r.insertAdjacentHTML('beforeend', `<div><b>${n}</b><br><span>${a} · ${m}</span></div><em></em>`);
-    host.append(r);
-    return { r, f, s };
+/* ── macOS menu bar extras: volume, Wi-Fi, battery, display, Spotlight, Control Center, clock ── */
+const SYS = {
+  vol: '<svg viewBox="0 0 16 16"><path d="M2 6h2.5L8 3v10L4.5 10H2z" fill="currentColor" stroke="none"/><path d="M10.5 5.5a3.5 3.5 0 0 1 0 5M12.5 3.5a6.3 6.3 0 0 1 0 9"/></svg>',
+  wifi: '<svg viewBox="0 0 16 16"><path d="M1.5 6.2a9.5 9.5 0 0 1 13 0M3.8 8.7a6.2 6.2 0 0 1 8.4 0M6.1 11.1a2.9 2.9 0 0 1 3.8 0"/><circle cx="8" cy="13.3" r="1" fill="currentColor" stroke="none"/></svg>',
+  batt: '<svg viewBox="0 0 26 16"><rect x="1" y="3.5" width="20" height="9" rx="2.6"/><path d="M23 6.6v2.8"/><rect x="3" y="5.5" width="16" height="5" rx="1.2" fill="currentColor" stroke="none" opacity=".85"/><path d="M12.4 4.2 9 8.4h3.1l-1 3.4 3.6-4.4h-3.1z" fill="#2a2c33" stroke="none"/></svg>',
+  disp: '<svg viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="2"/><path d="M1.5 9.6h13"/></svg>',
+  search: '<svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.6"/><path d="M10.5 10.5 14.2 14.2"/></svg>',
+  cc: '<svg viewBox="0 0 16 16"><rect x="1.5" y="2.2" width="13" height="5" rx="2.5"/><circle cx="11.9" cy="4.7" r="1.4" fill="currentColor" stroke="none"/><rect x="1.5" y="9" width="13" height="5" rx="2.5"/><circle cx="4.1" cy="11.5" r="1.4" fill="currentColor" stroke="none"/></svg>',
+};
+// "Sun 25 Oct 01:12", like the menu bar clock.
+function menuClock() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.toLocaleDateString('en-GB', { weekday: 'short' })} ${d.getDate()} ${d.toLocaleDateString('en-GB', { month: 'short' })} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function fillSysbars(root = document) {
+  $$('.sysbar', root).forEach(el => {
+    el.innerHTML = el.dataset.sys.split(' ').map(k => SYS[k]).join('') + `<span class="clock">${menuClock()}</span>`;
   });
-  const paint = () => els.forEach(({ r, f, s }) => {
-    setFace(f, s);
-    r.classList.toggle('hot', s === 'waiting');
-    const em = r.querySelector('em');
-    em.textContent = LABEL[s]; em.style.color = C[s];
+}
+fillSysbars();
+setInterval(() => $$('.sysbar .clock').forEach(c => { c.textContent = menuClock(); }), 20000);
+
+/* ── bento: each tile drawn like the app ── */
+const ACC = { Work: '#2dd4bf', Personal: '#8b7cf6', Client: '#f472b6' };
+(function agentsPanel() {
+  const host = $('#ap');
+  // Most urgent first, as the panel sorts them.
+  const rows = [
+    { t: 'Fix session refresh bug', loc: 'Window 1 · tab 2 · fix/session', st: 'waiting', doing: 'Edit src/auth/session.ts?', acc: 'Personal', time: '1m' },
+    { t: 'Staging cluster plan', loc: 'Window 2 · tab 1 · main', st: 'error', doing: 'API Error: 529 Overloaded', acc: 'Work', time: '3m ago' },
+    { t: 'Next.js docs site', loc: 'Window 1 · tab 3 · main', st: 'done', doing: 'Finished · Rewrote the quick start', acc: 'Work', time: '4m ago' },
+    { t: 'Rate limiting for login', loc: 'Window 1 · tab 1 · feat/rate-limit', st: 'working', doing: 'Bash: npm test -- login', acc: 'Work', secs: 72 },
+    { t: 'React Native release 2.4', loc: 'Window 2 · tab 2 · release/2.4', st: 'idle', doing: 'Ready for a prompt', acc: 'Client', time: '6m' },
+  ];
+  const doingColor = st => st === 'waiting' ? C.waiting : st === 'idle' ? '#8a8f99' : '#c2c6cf';
+  const fmt = s => s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s`;
+  host.innerHTML = `<div class="ap-hd"><div class="ap-field">Filter agents…</div><small>&#8984;&#8679;A</small></div>`
+    + `<div class="ap-chips"><span class="on">All 5</span><span>Waiting 1</span><span>Working 1</span><span>Done 1</span></div>`
+    + `<div class="ap-g ap-cols"><span></span><span>TAB</span><span>DOING</span><span class="acc">ACCOUNT</span><span>TIME</span></div>`
+    + `<div class="ap-rows"></div>`
+    + `<div class="ap-ft"><span>&#8629; jump to tab</span><span>&#8984;J next waiting agent</span><span>5 agents · 2 windows</span></div>`;
+  const list = $('.ap-rows', host);
+  const els = rows.map(r => {
+    const d = document.createElement('div');
+    d.className = 'ap-g ap-row';
+    d.append(face(r.st));
+    d.insertAdjacentHTML('beforeend', `<div><b>${r.t}</b><small>${r.loc}</small></div><span class="d" style="color:${doingColor(r.st)}">${r.doing}</span><span class="a"><i style="background:${ACC[r.acc]}"></i>${r.acc}</span><span class="t">${r.time || fmt(r.secs)}</span>`);
+    list.append(d);
+    return d;
   });
-  paint();
-  const cycle = { waiting:'working', working:'done', done:'idle', idle:'working', error:'working' };
-  let t = 0;
+  // The selection steps down the list, like arrow keys; the working time ticks.
+  let sel = 0;
+  els[0].classList.add('sel');
   setInterval(() => {
     if (asleep) return;
-    const e = els[t++ % els.length];
-    e.s = cycle[e.s];
-    if (t % 5 === 0) els[(t + 1) % els.length].s = 'waiting';
-    els.sort((a, b) => URGENCY.indexOf(a.s) - URGENCY.indexOf(b.s)).forEach(x => host.append(x.r));
-    paint();
-  }, 1800);
+    rows[3].secs++;
+    $('.t', els[3]).textContent = fmt(rows[3].secs);
+  }, 1000);
+  setInterval(() => {
+    if (asleep) return;
+    els[sel].classList.remove('sel');
+    sel = (sel + 1) % 3;
+    els[sel].classList.add('sel');
+  }, 2200);
 })();
 (function notes() {
   const host = $('#notes');
-  const data = [['done', 'mobile is done', 'Bumped to 2.4.0 and tagged it.'], ['waiting', 'docs needs you', 'Allow npm run build?'], ['error', 'infra hit an error', '529 Overloaded'], ['done', 'web is done', 'Session refresh fixed.']];
+  const data = [
+    ['Fix session refresh bug needs you', 'Edit src/auth/session.ts?', 'waiting'],
+    ['Next.js docs site finished', 'Rewrote the quick start · took 4m 02s', 'done'],
+    ['Staging cluster plan stopped with an error', 'API Error: 529 Overloaded', 'error'],
+    ['React Native release 2.4 finished', 'Bumped to 2.4.0 and tagged it · took 1m 48s', 'done'],
+  ];
   let n = 0;
   const stack = [];
   const push = () => {
-    const [s, h, m] = data[n++ % data.length];
-    const el = document.createElement('div');
-    el.className = 'note';
-    el.append(face(s));
-    el.insertAdjacentHTML('beforeend', `<div><b>${h}</b><span>${m}</span></div>`);
-    el.style.transform = 'translateY(-30px) scale(.9)'; el.style.opacity = 0;
+    const [t, b, st] = data[n++ % data.length];
+    const wrap = document.createElement('div');
+    wrap.innerHTML = noteHTML(t, b, st);
+    const el = wrap.firstChild;
+    el.style.transform = 'translateY(-30px) scale(.96)'; el.style.opacity = 0;
     host.append(el);
     stack.unshift(el);
-    requestAnimationFrame(() => requestAnimationFrame(() => stack.forEach((e, i) => {
-      e.style.transform = `translateY(${-i * 14}px) scale(${1 - i * .06})`;
-      e.style.opacity = i > 2 ? 0 : 1 - i * .3;
-      e.style.zIndex = 10 - i;
-    })));
-    if (stack.length > 4) stack.pop().remove();
+    // Each one sits below the last, by its own height; any that don't fit fade out.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      let y = 0;
+      stack.forEach((e, i) => {
+        e.style.transform = `translateY(${y}px)`;
+        y += e.offsetHeight + 10;
+        e.style.opacity = y - 10 > host.clientHeight ? 0 : 1;
+        e.style.zIndex = 10 - i;
+      });
+    }));
+    if (stack.length > 5) stack.pop().remove();
   };
-  push();
+  for (let k = 0; k < 4; k++) push();
   setInterval(() => { if (!asleep) push(); }, 2600);
 })();
 (function accounts() {
+  // The two ways a tab shows its account: a tinted tab, or a ring round the face.
   const host = $('#accts');
-  const tabs = [['working', '#2fd3b8'], ['done', '#c08bff'], ['waiting', '#ff8a5c'], ['working', '#2fd3b8']].map(([s, ac]) => {
-    const b = document.createElement('span');
-    b.className = 'tab acct';
-    b.style.setProperty('--ac', ac);
-    const slot = document.createElement('span');
-    slot.className = 'slot';
-    slot.append(face(s));
-    b.append(slot);
-    host.append(b);
-    return b;
+  const faces = [['working', 'Work'], ['done', 'Personal'], ['waiting', 'Client']];
+  ['acct', 'ring'].forEach(style => {
+    const group = document.createElement('div');
+    group.className = 'acct-style';
+    const bar = document.createElement('div');
+    bar.className = 'accts';
+    faces.forEach(([st, a], i) => {
+      const b = document.createElement('span');
+      b.className = 'tab ' + style + (i === 1 ? ' on' : '');
+      b.style.setProperty('--ac', ACC[a]);
+      const slot = document.createElement('span');
+      slot.className = 'slot';
+      slot.append(face(st));
+      b.append(slot);
+      bar.append(b);
+    });
+    group.append(bar);
+    group.insertAdjacentHTML('beforeend', `<span>${style === 'acct' ? 'Tinted tab' : 'Ring'}</span>`);
+    host.append(group);
   });
-  let ring = false;
-  setInterval(() => { ring = !ring; tabs.forEach(b => { b.classList.toggle('ring', ring); b.classList.toggle('acct', !ring); }); }, 2400);
 })();
 (function menubar() {
-  const mb = $('#mb'), label = $('#mbStyle');
-  const styles = ['Full', 'Compact', 'Icon only'];
+  const host = $('#mbar');
+  // Waiting, error, done, working, idle; dots in each state's colour.
+  const counts = [['waiting', 1, 'waiting'], ['done', 1, 'done'], ['working', 2, 'working']];
+  const styles = {
+    'Compact': counts.map(([s, n]) => `<span><i style="color:${C[s]}">&#9679;</i>${n}</span>`).join(' '),
+    'Full': counts.map(([s, n, w]) => `<span><i style="color:${C[s]}">&#9679;</i> ${n} ${w}</span>`).join('&nbsp;&nbsp;'),
+    'Icon Only': `<span><i style="color:${C.waiting}">&#9679;</i></span>`,
+  };
+  const card = (st, t, since, msg, acc, where) => `<div class="mc">${face(st).outerHTML}<div><b>${t}</b><div class="s"><span style="color:${C[st]};font-weight:500">${LABEL[st]}</span><em> · ${since}</em></div>${msg ? `<div class="s"><em>${msg}</em></div>` : ''}<div class="f"><i style="background:${ACC[acc]}"></i>${acc} · ${where}</div></div></div>`;
   let i = 0;
+  const names = Object.keys(styles);
   const paint = () => {
-    const s = styles[i++ % 3];
-    label.textContent = s;
-    const f = face('waiting');
-    mb.innerHTML = '';
-    mb.append(f);
-    if (s === 'Full') mb.insertAdjacentHTML('beforeend', `<span><i style="background:${C.waiting}"></i>1 waiting</span><span><i style="background:${C.working}"></i>3 working</span><span><i style="background:${C.done}"></i>2 done</span>`);
-    if (s === 'Compact') mb.insertAdjacentHTML('beforeend', `<span><i style="background:${C.waiting}"></i>1</span><span><i style="background:${C.working}"></i>3</span><span><i style="background:${C.done}"></i>2</span>`);
+    const name = names[i++ % names.length];
+    host.innerHTML = `<div class="mbar-strip"><span class="it">${styles[name]}</span><span class="sysbar" data-sys="wifi batt"></span></div>`
+      + `<div class="mbar-menu">${card('waiting', 'Fix session refresh bug', '1m', 'Edit src/auth/session.ts?', 'Personal', '~/code/web · fix/session')}${card('working', 'Rate limiting for login', '1m 12s', 'Bash: npm test -- login', 'Work', '~/code/api')}<hr><div class="mi">Menu Bar Style &#9656;</div></div>`
+      + `<div class="mbar-sub">${name}</div>`;
+    host.querySelectorAll('.fx[data-face]').forEach(el => { el.dataset.shown = ''; setFace(el, el.dataset.face); });
+    fillSysbars(host);
   };
   paint();
-  setInterval(paint, 2200);
+  setInterval(() => { if (!asleep) paint(); }, 2600);
 })();
 (function dockIcon() {
-  const host = $('#iconCyc'), bdg = $('#iconBdg');
-  const seq = ['smile', 'working', 'waiting', 'error', 'done', 'idle'];
+  const host = $('#iconCyc'), bdg = $('#iconBdg'), label = $('#iconState');
+  // [expression, badge]: the badge counts agents waiting on you or done and unseen.
+  const seq = [['working', 0], ['waiting', 1], ['done', 2], ['error', 1], ['working', 0]];
   let i = 0;
-  host.insertAdjacentHTML('afterbegin', iconSVG());
-  setInterval(() => {
-    const e = seq[++i % seq.length];
-    host.querySelector('svg').outerHTML = iconSVG(e);
-    bdg.classList.toggle('on', e === 'waiting' || e === 'error');
+  const paint = () => {
+    const [e, n] = seq[i++ % seq.length];
+    const old = host.querySelector('svg');
+    if (old) old.remove();
+    host.insertAdjacentHTML('afterbegin', iconSVG(e));
+    bdg.textContent = n;
+    bdg.classList.toggle('on', n > 0);
+    label.textContent = LABEL[e];
     host.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }, { transform: 'scale(1)' }], { duration: 350 });
-  }, 1700);
-})();
-(function wizard() {
-  const host = $('#wiz');
-  const els = [['s', .72], ['m', 1], ['l', 1.3]].map(([k, s]) => {
-    const d = document.createElement('div');
-    const sl = document.createElement('span');
-    sl.className = 'slot';
-    sl.style.setProperty('--s', s);
-    sl.append(face('done'));
-    d.append(sl);
-    d.insertAdjacentHTML('beforeend', k.toUpperCase());
-    host.append(d);
-    return d;
-  });
-  let i = 1;
-  const paint = () => els.forEach((d, j) => d.classList.toggle('on', j === i));
+  };
   paint();
-  setInterval(() => { i = (i + 1) % 3; paint(); }, 1500);
+  setInterval(() => { if (!asleep) paint(); }, 1800);
 })();
 
 /* ── protocol ── */

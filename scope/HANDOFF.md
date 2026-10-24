@@ -69,7 +69,7 @@ internals keep their names so upstream merges still work:
   title bar for Top/Left (05).
 - Real Claude sessions drive the faces; accounts tint the tabs (02, 08).
 - Notifications match the design: tab name in the title, "took 4m 02s",
-  Open tab / Dismiss, `>_` image with a state dot (04).
+  Open tab / Dismiss, the agent's face as the image (04).
 - `+` menu with accounts, folder picker, New account… (09).
 - Subagent badge, with test reports (12).
 - Menu bar summary in Compact style (10).
