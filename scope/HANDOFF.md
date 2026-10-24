@@ -22,7 +22,8 @@ Claude Code first; other agents later through the same protocol.
 **P0, P1 and P2 are built for Claude Code on macOS.** P3 (other agents,
 Linux, extras) is deliberately left for later. Everything is committed on
 `agent-tabs`, in the commits from `f2d33a991` onward (`git log
-main..agent-tabs`); **nothing is pushed**. Ask the user before pushing.
+main..agent-tabs`). Pushed to `lakpriya1s/kinterm` and open as PR #1
+into `main` (2026-10-24). Ask the user before pushing again.
 The hook is installed in all six `~/.claude*` folders (reinstalled 2026-10-23 with `StopFailure`).
 **It must be reinstalled after the KinTerm rename** (`install.sh --all`
 swaps `ghostty-agent-status` for `kinterm-agent-status`); the old hook
