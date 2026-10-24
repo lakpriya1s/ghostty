@@ -22,7 +22,7 @@ who's done and who needs you, without opening a single tab.
 ---
 
 <p align="center">
-  <img src="images/kinterm/demo.gif" alt="A KinTerm window with five tabs, each a face. The faces sleep, then turn blue and look around while Claude Code works, one turns amber with a question mark when it needs permission, one turns red with X eyes on an API error, and they turn green and happy when done, with a notification and the dock icon changing along with them" width="880">
+  <img src="images/kinterm/tabs.gif" alt="A KinTerm tab bar where each tab is a face: they sleep, turn blue while working, amber with a question mark when one needs you, green and happy when done, and red with X eyes on an error" width="600">
 </p>
 
 You run Claude Code in one tab, then another, then five. One is waiting for a yes,
