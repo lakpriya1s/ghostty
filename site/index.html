@@ -98,7 +98,7 @@ h2 .mute{color:var(--muted)}
 .win .chrome{display:flex;align-items:center;gap:8px;height:34px;padding:0 14px;background:var(--raise);border-bottom:1px solid var(--edge);border-radius:14px 14px 0 0;flex:none}
 .win .chrome i{width:12px;height:12px;border-radius:50%;background:#ff5f57}
 .win .chrome i:nth-child(2){background:#febc2e}.win .chrome i:nth-child(3){background:#28c840}
-.win .chrome .ttl{flex:1;text-align:center;font-size:12.5px;color:var(--muted);margin-right:52px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.win .chrome .ttl{flex:1;text-align:left;font-size:12.5px;color:var(--muted);margin-left:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .win .body{flex:1;display:flex;min-height:0;flex-direction:column}
 .win.pos-bottom .body{flex-direction:column-reverse}
 .win.pos-left .body{flex-direction:row}
@@ -533,7 +533,7 @@ h2 .mute{color:var(--muted)}
   <section class="hero" id="hero">
     <div class="hero-in">
       <button class="agent-btn" id="heroFace" aria-label="Your agent. Click it to change what it's doing.">
-        <span class="bigface"><span class="fx" data-set="squares" data-face="idle"></span></span>
+        <span class="bigface"><span class="fx" data-set="squares" data-face="idle" data-awake></span></span>
         <span class="poke" id="poke" aria-hidden="true"><svg viewBox="0 0 96 76" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path class="line" pathLength="1" d="M78 70C62 72 46 64 48 50C50 38 66 36 66 47C66 60 44 62 32 50C22 40 16 28 9 14"/><path class="head" pathLength="1" d="M18 15L9 14L7 23"/></svg><span>Poke me!</span></span>
       </button>
       <h1 class="h1">Your agent<br><span class="when" id="heroWhen">when it&rsquo;s asleep.</span></h1>
@@ -557,7 +557,7 @@ h2 .mute{color:var(--muted)}
             <span class="sum" id="mbSum"></span>
           </div>
           <div class="win pos-top" id="storyWin" data-size="m">
-            <div class="chrome"><i></i><i></i><i></i><span class="ttl" id="storyTitle">api · Claude Code</span></div>
+            <div class="chrome"><i></i><i></i><i></i><span class="ttl">Claude Code</span></div>
             <div class="body">
               <div class="bar" role="tablist" aria-label="Agent tabs"></div>
               <div class="pane" id="storyPane" aria-live="polite"></div>
@@ -701,7 +701,7 @@ const SETS = {
   bots:    { label:'Bots',   html: abc('bot', 'r') },
   spark:   { label:'Spark',  html: abc('spk', 'k') },
 };
-let globalSet = 'faces';
+let globalSet = 'squares';
 let asleep = false;
 
 // A face element follows the page's set unless it has its own data-set.
@@ -715,7 +715,8 @@ function face(state, set) {
 function setFace(el, state) {
   el.dataset.face = state;
   const set = el.dataset.set || globalSet;
-  const shown = asleep && state !== 'shell' ? 'idle' : state;
+  // The hero face stays as poked, so it always matches its headline.
+  const shown = asleep && state !== 'shell' && !('awake' in el.dataset) ? 'idle' : state;
   const key = set + ':' + shown;
   if (el.dataset.shown === key) return;
   el.dataset.shown = key;
@@ -882,7 +883,7 @@ const DOT = c => `<span class="c-${c}">&#9210;</span> `;
 const BEATS = [
   { key:'idle', h:'Asleep until you need them.', p:'A gray face with its eyes shut. The agent is ready for a prompt.',
     states:['idle','idle','idle','idle','shell'], active:0,
-    lines:['<span class="c-teal">~/code/api</span> <span class="c-dim">on</span> <span class="c-blue">feat/rate-limit</span>', '', '<span class="c-amb">&#10043;</span> <span class="c-hi">Welcome to Claude Code</span>', '', P + '<span class="caret"></span>'] },
+    lines:['<span class="c-amb">&#10043;</span> <span class="c-hi">Welcome to Claude Code!</span>', '', '  <span class="c-dim">cwd: ~/code/api</span>', '', P + '<span class="caret"></span>'] },
   { key:'working', h:'Blue means busy.', p:'Darting eyes while it reads, edits and runs things. Go get a coffee.',
     states:['working','working','working','working','shell'], active:0,
     lines:[P + '<span class="c-hi">add rate limiting to the login route</span>', '', DOT('hi') + 'Read <span class="c-mut">src/routes/login.ts</span>', DOT('hi') + 'Read <span class="c-mut">src/middleware/index.ts</span>', DOT('grn') + 'Update <span class="c-mut">src/middleware/rateLimit.ts</span> <span class="c-grn">+42</span>', DOT('grn') + 'Bash <span class="c-mut">npm test -- login</span>', '  <span class="c-dim">&#9151;</span> running 18 tests…', '', '<span class="c-amb">&#10043;</span> <span class="c-amb">Thinking…</span> <span class="c-dim">(esc to interrupt)</span>'] },
@@ -913,7 +914,6 @@ const later = (f, ms) => timers.push(setTimeout(f, reduce ? 0 : ms));
 let beat = -1;
 function setActive(i) {
   storyEls.forEach((b, j) => b.classList.toggle('on', i === j));
-  $('#storyTitle').textContent = storyTabs[i].name + ' · Claude Code';
 }
 function setBeat(n) {
   if (n === beat) return;
@@ -978,11 +978,11 @@ addEventListener('resize', onScroll);
 
 /* ── playground ── */
 const pgTabs = [
-  { name:'api', acct:'Work', ac:'#2fd3b8', state:'idle', cwd:'~/code/api · main', ctx:12, last:'Ready when you are.', age:'8m', detail: () => 'Ready for a prompt.' },
-  { name:'web', acct:'Personal', ac:'#c08bff', state:'working', cwd:'~/code/web · fix/session', ctx:47, last:'Reading src/auth/session.ts', age:'20s', sub:3, detail: () => '3 subagents · editing session.ts' },
-  { name:'docs', acct:'Work', ac:'#2fd3b8', state:'waiting', cwd:'~/code/docs · main', ctx:58, last:'Allow npm run build?', age:'1m', detail: () => 'Wants to run npm run build' },
-  { name:'mobile', acct:'Client', ac:'#ff8a5c', state:'done', cwd:'~/code/mobile · release/2.4', ctx:71, last:'Bumped to 2.4.0 and tagged it.', age:'3m', detail: () => 'Finished. Release tagged.' },
-  { name:'infra', acct:'Work', ac:'#2fd3b8', state:'error', cwd:'~/code/infra · main', ctx:91, last:'API Error: 529 Overloaded', age:'2m', detail: () => '529 Overloaded' },
+  { name:'api', task:'what does the login route do?', acct:'Work', ac:'#2fd3b8', state:'idle', cwd:'~/code/api · main', ctx:12, last:'Ready when you are.', age:'8m', detail: () => 'Ready for a prompt.' },
+  { name:'web', task:'fix the session refresh bug', acct:'Personal', ac:'#c08bff', state:'working', cwd:'~/code/web · fix/session', ctx:47, last:'Reading src/auth/session.ts', age:'20s', sub:3, detail: () => '3 subagents · editing session.ts' },
+  { name:'docs', task:'build the docs site', acct:'Work', ac:'#2fd3b8', state:'waiting', cwd:'~/code/docs · main', ctx:58, last:'Allow npm run build?', age:'1m', detail: () => 'Wants to run npm run build' },
+  { name:'mobile', task:'bump to 2.4.0 and tag it', acct:'Client', ac:'#ff8a5c', state:'done', cwd:'~/code/mobile · release/2.4', ctx:71, last:'Bumped to 2.4.0 and tagged it.', age:'3m', detail: () => 'Finished. Release tagged.' },
+  { name:'infra', task:'plan the staging cluster', acct:'Work', ac:'#2fd3b8', state:'error', cwd:'~/code/infra · main', ctx:91, last:'API Error: 529 Overloaded', age:'2m', detail: () => '529 Overloaded' },
   { name:'zsh', state:'shell', cwd:'~/code', ctx:0, last:'', detail: () => 'A plain shell.' },
 ];
 const pgWin = $('#pgWin');
@@ -991,8 +991,8 @@ function pgActive(i) {
   pgEls.forEach((b, j) => b.classList.toggle('on', i === j));
   const t = pgTabs[i], st = t.el.dataset.face;
   const lines = st === 'shell'
-    ? ['<span class="c-teal">~/code</span> <span class="c-mut">$</span> <span class="caret"></span>']
-    : [`<span class="c-teal">${t.cwd.split(' · ')[0]}</span> <span class="c-dim">on</span> <span class="c-blue">${t.cwd.split(' · ')[1]}</span>`, '', `<span style="color:${C[st]}">&#9679;</span> <span class="c-hi">${LABEL[st]}</span> <span class="c-dim">· ${t.age}</span>`, `  <span class="c-mut">${t.last}</span>`, '', P + '<span class="caret"></span>'];
+    ? ['<span class="c-mut">~/code $</span> <span class="caret"></span>']
+    : [P + `<span class="c-hi">${t.task}</span>`, '', `<span style="color:${C[st]}">&#9210;</span> ${t.last}`, '', P + '<span class="caret"></span>'];
   const token = String(Math.random());
   $('#pgPane').dataset.token = token;
   stream($('#pgPane'), lines, token, 60);
@@ -1231,7 +1231,7 @@ function sleep() {
   refreshFaces();
   toast.classList.add('on');
 }
-['pointermove', 'keydown', 'scroll', 'touchstart', 'wheel'].forEach(ev => addEventListener(ev, wake, { passive: true }));
+['pointermove', 'pointerdown', 'keydown', 'scroll', 'touchstart', 'wheel'].forEach(ev => addEventListener(ev, wake, { passive: true }));
 wake();
 
 // Leave the tab and the favicon asks for you.
