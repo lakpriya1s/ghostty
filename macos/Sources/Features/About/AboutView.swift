@@ -3,8 +3,7 @@ import SwiftUI
 struct AboutView: View {
     @Environment(\.openURL) var openURL
 
-    private let githubURL = URL(string: "https://github.com/ghostty-org/ghostty")
-    private let docsURL = URL(string: "https://ghostty.org/docs")
+    private let githubURL = URL(string: "https://github.com/lakpriya1s/kinterm")
 
     /// Read the commit from the bundle.
     private var build: String? { Bundle.main.infoDictionary?["CFBundleVersion"] as? String }
@@ -30,15 +29,8 @@ struct AboutView: View {
             self = .other(version)
         }
 
-        var url: URL? {
-            switch self {
-            case .stable(let version):
-                let slug = version.replacingOccurrences(of: ".", with: "-")
-                return URL(string: "https://ghostty.org/docs/install/release-notes/\(slug)")
-            default:
-                return nil
-            }
-        }
+        /// KinTerm has no release notes yet.
+        var url: URL? { nil }
     }
 
     private var versionConfig: VersionConfig { VersionConfig(version: version) }
@@ -74,14 +66,14 @@ struct AboutView: View {
 
     var body: some View {
         VStack(alignment: .center) {
-            CyclingIconView()
+            KinTermMark()
+                .frame(width: 96, height: 96)
+                .padding(.bottom, 8)
 
             VStack(alignment: .center, spacing: 32) {
                 VStack(alignment: .center, spacing: 8) {
-                    Text("Ghostty")
-                        .bold()
-                        .font(.title)
-                    Text("Fast, native, feature-rich terminal \nemulator pushing modern features.")
+                    KinTermWordmark(size: 26)
+                    Text("Your agents, at a glance.")
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                         .font(.caption)
@@ -112,11 +104,6 @@ struct AboutView: View {
                 .frame(maxWidth: .infinity)
 
                 HStack(spacing: 8) {
-                    if let url = docsURL {
-                        Button("Docs") {
-                            openURL(url)
-                        }
-                    }
                     if let url = githubURL {
                         Button("GitHub") {
                             openURL(url)

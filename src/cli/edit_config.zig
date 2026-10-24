@@ -31,9 +31,9 @@ pub const Options = struct {
 /// this yet.
 ///
 /// The filepath opened is the default user-specific configuration
-/// file, which is typically located at `$XDG_CONFIG_HOME/ghostty/config.ghostty`.
+/// file, which is typically located at `$XDG_CONFIG_HOME/kinterm/config.kinterm`.
 /// On macOS, this may also be located at
-/// `~/Library/Application Support/com.mitchellh.ghostty/config.ghostty`.
+/// `~/Library/Application Support/com.kinterm.app/config.kinterm`.
 /// On macOS, whichever path exists and is non-empty will be prioritized,
 /// prioritizing the Application Support directory if neither are
 /// non-empty.
@@ -86,7 +86,7 @@ fn runInner(alloc: Allocator, stderr: *std.Io.Writer) !u8 {
     // We don't currently support Windows because we use the exec syscall.
     if (comptime builtin.target.os.tag == .windows) {
         try stderr.print(
-            \\The `ghostty +edit-config` command is not supported on Windows.
+            \\The `kinterm +edit-config` command is not supported on Windows.
             \\Please edit the configuration file manually at the following path:
             \\
             \\

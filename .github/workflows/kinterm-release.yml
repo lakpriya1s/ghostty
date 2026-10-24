@@ -1,0 +1,211 @@
+# Builds, signs and notarizes KinTerm, publishes it as a GitHub release and
+# adds it to the Sparkle update feed on GitHub Pages. See scope/RELEASING.md.
+#
+# Tags are kinterm-vX.Y.Z so Ghostty's own release workflows (v* tags)
+# never run in this repo.
+on:
+  push:
+    tags:
+      - "kinterm-v[0-9]+.[0-9]+.[0-9]+"
+
+name: KinTerm Release
+
+# Only one release at a time, so two can't both rewrite the appcast.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 90
+    env:
+      APP: macos/build/Release/KinTerm.app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Important so that build number generation works
+          fetch-depth: 0
+
+      - name: Check secrets
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          MACOS_CERTIFICATE_NAME: ${{ secrets.MACOS_CERTIFICATE_NAME }}
+          MACOS_CI_KEYCHAIN_PWD: ${{ secrets.MACOS_CI_KEYCHAIN_PWD }}
+          APPLE_NOTARIZATION_ISSUER: ${{ secrets.APPLE_NOTARIZATION_ISSUER }}
+          APPLE_NOTARIZATION_KEY_ID: ${{ secrets.APPLE_NOTARIZATION_KEY_ID }}
+          APPLE_NOTARIZATION_KEY: ${{ secrets.APPLE_NOTARIZATION_KEY }}
+          SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          missing=0
+          for name in MACOS_CERTIFICATE MACOS_CERTIFICATE_PWD MACOS_CERTIFICATE_NAME \
+            MACOS_CI_KEYCHAIN_PWD APPLE_NOTARIZATION_ISSUER APPLE_NOTARIZATION_KEY_ID \
+            APPLE_NOTARIZATION_KEY SPARKLE_PUBLIC_KEY SPARKLE_PRIVATE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing secret $name (see scope/RELEASING.md)"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Extract version and build info
+        run: |
+          # GitHub Pages serves the repo at /<name>; the feed URL goes into
+          # the app, so renaming the repo later strands installed copies.
+          {
+            echo "KINTERM_TAG=$GITHUB_REF_NAME"
+            echo "KINTERM_VERSION=${GITHUB_REF_NAME#kinterm-v}"
+            # A UTC timestamp, like scripts/release-mac.sh, so builds from
+            # either always count as newer.
+            echo "KINTERM_BUILD=$(date -u +%Y%m%d%H%M)"
+            echo "KINTERM_COMMIT=$(git rev-parse --short HEAD)"
+            echo "KINTERM_COMMIT_LONG=$(git rev-parse HEAD)"
+            echo "KINTERM_FEED_URL=https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/appcast.xml"
+          } >> "$GITHUB_ENV"
+
+      - name: Setup Zig
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: 0.17.0
+
+      - name: Xcode
+        run: |
+          xcodebuild -version
+          xcodebuild -downloadComponent MetalToolchain
+
+      - name: Setup Sparkle
+        env:
+          SPARKLE_VERSION: 2.9.6
+        run: |
+          mkdir -p .action/sparkle
+          cd .action/sparkle
+          curl -L "https://github.com/sparkle-project/Sparkle/releases/download/$SPARKLE_VERSION/Sparkle-for-Swift-Package-Manager.zip" > sparkle.zip
+          unzip sparkle.zip
+          echo "$(pwd)/bin" >> "$GITHUB_PATH"
+
+      - name: Build GhosttyKit
+        run: |
+          zig build \
+            -Doptimize=ReleaseFast \
+            -Demit-macos-app=false \
+            "-Dversion-string=$KINTERM_VERSION"
+
+      - name: Build KinTerm.app
+        run: |
+          cd macos
+          xcodebuild -target Ghostty -configuration Release
+
+      # Version, the update feed and the key update signatures are checked
+      # against. Builds without the feed and key (all dev builds) never update.
+      - name: Update Info.plist
+        env:
+          SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
+        run: |
+          plist="$APP/Contents/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :GhosttyCommit $KINTERM_COMMIT" "$plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $KINTERM_BUILD" "$plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $KINTERM_VERSION" "$plist"
+          /usr/libexec/PlistBuddy -c "Add :SUPublicEDKey string $SPARKLE_PUBLIC_KEY" "$plist"
+          /usr/libexec/PlistBuddy -c "Add :KinTermFeedURL string $KINTERM_FEED_URL" "$plist"
+          /usr/libexec/PlistBuddy -c "Delete :SUEnableAutomaticChecks" "$plist"
+
+      - name: Codesign app bundle
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          MACOS_CERTIFICATE_NAME: ${{ secrets.MACOS_CERTIFICATE_NAME }}
+          MACOS_CI_KEYCHAIN_PWD: ${{ secrets.MACOS_CI_KEYCHAIN_PWD }}
+        run: |
+          # Turn our base64-encoded certificate back to a regular .p12 file
+          echo "$MACOS_CERTIFICATE" | base64 --decode > certificate.p12
+
+          # A new keychain, so using the certificate doesn't prompt for its
+          # password with a UI dialog.
+          security create-keychain -p "$MACOS_CI_KEYCHAIN_PWD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$MACOS_CI_KEYCHAIN_PWD" build.keychain
+          security import certificate.p12 -k build.keychain -P "$MACOS_CERTIFICATE_PWD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_CI_KEYCHAIN_PWD" build.keychain
+          rm certificate.p12
+
+          # Sparkle's parts, then the dock tile plugin, then the app.
+          sparkle="$APP/Contents/Frameworks/Sparkle.framework"
+          for part in Versions/B/XPCServices/Downloader.xpc Versions/B/XPCServices/Installer.xpc \
+            Versions/B/Autoupdate Versions/B/Updater.app; do
+            /usr/bin/codesign --verbose -f -s "$MACOS_CERTIFICATE_NAME" -o runtime "$sparkle/$part"
+          done
+          /usr/bin/codesign --verbose -f -s "$MACOS_CERTIFICATE_NAME" -o runtime "$sparkle"
+          /usr/bin/codesign --verbose -f -s "$MACOS_CERTIFICATE_NAME" -o runtime "$APP/Contents/PlugIns/DockTilePlugin.plugin"
+          /usr/bin/codesign --verbose -f -s "$MACOS_CERTIFICATE_NAME" -o runtime --entitlements macos/Ghostty.entitlements "$APP"
+
+      - name: Create DMG
+        env:
+          MACOS_CERTIFICATE_NAME: ${{ secrets.MACOS_CERTIFICATE_NAME }}
+        run: |
+          npm install --global create-dmg
+          create-dmg --identity="$MACOS_CERTIFICATE_NAME" "$APP" ./
+          mv ./KinTerm*.dmg ./KinTerm.dmg
+
+      - name: Notarize DMG
+        env:
+          APPLE_NOTARIZATION_ISSUER: ${{ secrets.APPLE_NOTARIZATION_ISSUER }}
+          APPLE_NOTARIZATION_KEY_ID: ${{ secrets.APPLE_NOTARIZATION_KEY_ID }}
+          APPLE_NOTARIZATION_KEY: ${{ secrets.APPLE_NOTARIZATION_KEY }}
+        run: |
+          echo "$APPLE_NOTARIZATION_KEY" > notarization_key.p8
+          xcrun notarytool store-credentials "notarytool-profile" --key notarization_key.p8 --key-id "$APPLE_NOTARIZATION_KEY_ID" --issuer "$APPLE_NOTARIZATION_ISSUER"
+          rm notarization_key.p8
+          xcrun notarytool submit KinTerm.dmg --keychain-profile "notarytool-profile" --wait
+          xcrun stapler staple KinTerm.dmg
+          xcrun stapler staple "$APP"
+
+      - name: Zip app and symbols
+        run: |
+          cd macos/build/Release
+          zip -9 -r --symlinks ../../../kinterm-macos-universal.zip KinTerm.app
+          zip -9 -r --symlinks ../../../kinterm-macos-universal-dsym.zip KinTerm.app.dSYM/
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$KINTERM_TAG" \
+            KinTerm.dmg kinterm-macos-universal.zip kinterm-macos-universal-dsym.zip \
+            --title "KinTerm $KINTERM_VERSION" \
+            --generate-notes \
+            --verify-tag
+
+      # The appcast lives on the gh-pages branch, which GitHub Pages serves.
+      # It's updated after the release so its download link already works.
+      - name: Update appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          echo "$SPARKLE_PRIVATE_KEY" > signing.key
+          sign_update -f signing.key KinTerm.dmg > sign_update.txt
+          rm signing.key
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch origin gh-pages; then
+            git worktree add pages origin/gh-pages
+            git -C pages checkout -B gh-pages
+          else
+            git worktree add --orphan -b gh-pages pages
+          fi
+          [ ! -f pages/appcast.xml ] || cp pages/appcast.xml appcast.xml
+
+          python3 ./dist/macos/kinterm_appcast.py
+          test -f appcast_new.xml
+          mv appcast_new.xml pages/appcast.xml
+          touch pages/.nojekyll
+
+          git -C pages add appcast.xml .nojekyll
+          git -C pages commit -m "appcast: KinTerm $KINTERM_VERSION"
+          git -C pages push origin gh-pages

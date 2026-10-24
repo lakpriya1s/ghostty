@@ -8,14 +8,14 @@
 # The core (src/, include/) is rebuilt only when a file there is newer than
 # macos/GhosttyKit.xcframework. Logs go to $LOG_DIR (default: /tmp).
 #
-# Runs macos/build/Debug/Ghostty.app. Never zig-out/Ghostty.app: a plain
+# Runs macos/build/Debug/KinTerm.app. Never zig-out/KinTerm.app: a plain
 # `zig build` copies over it in place and macOS refuses to launch it
 # (see scope/tasks/07-dev-build.md).
 
 set -eu
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-APP="$ROOT/macos/build/Debug/Ghostty.app"
+APP="$ROOT/macos/build/Debug/KinTerm.app"
 KIT="$ROOT/macos/GhosttyKit.xcframework"
 LOG_DIR=${LOG_DIR:-/tmp}
 
@@ -40,19 +40,19 @@ if [ "$build" = yes ]; then
   fi
 
   if [ "$core" = yes ]; then
-    echo "==> zig build -Demit-macos-app=false (log: $LOG_DIR/ghostty-core.log)"
-    (cd "$ROOT" && zig build -Demit-macos-app=false) >"$LOG_DIR/ghostty-core.log" 2>&1 || {
-      tail -40 "$LOG_DIR/ghostty-core.log"
+    echo "==> zig build -Demit-macos-app=false (log: $LOG_DIR/kinterm-core.log)"
+    (cd "$ROOT" && zig build -Demit-macos-app=false) >"$LOG_DIR/kinterm-core.log" 2>&1 || {
+      tail -40 "$LOG_DIR/kinterm-core.log"
       exit 1
     }
     # xcodebuild only relinks when the framework looks newer.
     touch "$KIT/Info.plist"
   fi
 
-  echo "==> xcodebuild Debug (log: $LOG_DIR/ghostty-xcode.log)"
+  echo "==> xcodebuild Debug (log: $LOG_DIR/kinterm-xcode.log)"
   (cd "$ROOT/macos" && xcodebuild -target Ghostty -configuration Debug) \
-    >"$LOG_DIR/ghostty-xcode.log" 2>&1 || {
-    grep -E "error:|BUILD FAILED" "$LOG_DIR/ghostty-xcode.log" | head -40
+    >"$LOG_DIR/kinterm-xcode.log" 2>&1 || {
+    grep -E "error:|BUILD FAILED" "$LOG_DIR/kinterm-xcode.log" | head -40
     exit 1
   }
 fi

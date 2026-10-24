@@ -7,11 +7,11 @@ _Last updated: 2026-10-24._
 
 ## What this is
 
-A fork of Ghostty where each tab is an animated **face** showing what the
+**KinTerm**, a fork of Ghostty where each tab is an animated **face** showing what the
 coding agent inside it is doing (idle, working, waiting on you, done, error).
 Claude Code first; other agents later through the same protocol.
 
-- Repo: https://github.com/lakpriya1s/ghostty, branch **`agent-tabs`**
+- Repo: https://github.com/lakpriya1s/kinterm, branch **`agent-tabs`**
   (upstream remote: `ghostty-org/ghostty`)
 - Design canvas: https://claude.ai/artifact/GqsEQ9WZbmCBrk5RGNcBKX
   (copied into [designs/](designs/README.md); open `designs/canvas-export.html`
@@ -24,6 +24,36 @@ Linux, extras) is deliberately left for later. Everything is committed on
 `agent-tabs`, in the commits from `f2d33a991` onward (`git log
 main..agent-tabs`); **nothing is pushed**. Ask the user before pushing.
 The hook is installed in all six `~/.claude*` folders (reinstalled 2026-10-23 with `StopFailure`).
+**It must be reinstalled after the KinTerm rename** (`install.sh --all`
+swaps `ghostty-agent-status` for `kinterm-agent-status`); the old hook
+keeps working until then from `~/.config/ghostty/agents/`.
+
+**Renamed to KinTerm (2026-10-24).** Product and config only; Ghostty's
+internals keep their names so upstream merges still work:
+
+- Renamed: app (`KinTerm.app`, display name, menus, About, AppleScript
+  descriptions, alerts), bundle id `com.kinterm.app` (`.debug` for Debug),
+  executable and CLI `kinterm` (help, version, shell-integration `ssh`
+  wrappers), config `~/.config/kinterm/config.kinterm` and
+  `~/Library/Application Support/com.kinterm.app/config.kinterm`, themes
+  `~/.config/kinterm/themes`, the hook and installer.
+- Fallbacks: with no KinTerm config file, Ghostty's config files are loaded
+  (and Open Config edits them); Ghostty's themes folder is searched after
+  KinTerm's. Agent settings and accounts are copied once from the old
+  bundle id's defaults (`UserDefaults.migrateAgentSettingsFromGhostty`).
+- Updates: only release builds update, from KinTerm's own Sparkle feed on
+  GitHub Pages (`UpdateController.isEnabled` needs `KinTermFeedURL` and
+  `SUPublicEDKey`, which `kinterm-release.yml` writes into Info.plist).
+  Ghostty's feed and key are gone. Setup and releasing: [RELEASING.md](RELEASING.md).
+- Kept: Xcode target and scheme `Ghostty`, Swift module `Ghostty`,
+  libghostty and its C API, `TERM_PROGRAM=ghostty`, `xterm-ghostty`
+  terminfo, `GHOSTTY_*` env vars, the gettext domain, Linux/GTK app id,
+  docs and man pages generated from `src/`.
+- Brand: `macos/Sources/Features/Branding/KinTermMark.swift` (mark, app
+  icon, wordmark), `images/KinTerm.icon` (app icon), `images/kinterm/`
+  (README images); regenerate with `scripts/render-brand.swift`. The dock
+  icon is a status light (`AgentSummary.updateDockIcon`): the front face
+  takes the state's color and its Square faces expression.
 
 **Seen working on screen**
 
@@ -73,13 +103,13 @@ zig build -Demit-macos-app=false   # rebuilds the library the app links
 After any change (Swift or core):
 
 ```sh
-cd macos && xcodebuild -target Ghostty -configuration Debug
+cd macos && xcodebuild -target Ghostty -configuration Debug   # builds KinTerm.app
 ```
 
 Run it (quit the running dev copy first, or the old one keeps running):
 
 ```sh
-A=/Volumes/External/ghossty-new/macos/build/Debug/Ghostty.app
+A=/Volumes/External/ghossty-new/macos/build/Debug/KinTerm.app
 osascript -e "tell application \"$A\" to quit"
 open "$A"
 ```
@@ -90,10 +120,10 @@ See it work without Claude: run `agents/demo-states.sh` in a tab.
 
 ## Gotchas
 
-- **Don't launch `zig-out/Ghostty.app` after a plain `zig build`.** That build
+- **Don't launch `zig-out/KinTerm.app` after a plain `zig build`.** That build
   copies the app over the old one in place, macOS keeps the old code signature
   cached, and the launch fails ("Launchd job spawn failed", code 162; the
-  binary exits 137). Use `macos/build/Debug/Ghostty.app` (what
+  binary exits 137). Use `macos/build/Debug/KinTerm.app` (what
   `scripts/dev-run.sh` runs, and what `macos/AGENTS.md` says anyway).
 - **Restarting the dev app closes the user's Claude sessions in it.** Check
   first (`ps -t <tty>` for each terminal's tty, from AppleScript) and ask, or
@@ -126,12 +156,12 @@ See it work without Claude: run `agents/demo-states.sh` in a tab.
   waits for Enter). `log` is a zsh builtin; use `/usr/bin/log show`.
 - **Debugging hooks:** `claude --debug-file <path>` logs every hook run and its
   exit status.
-- **The dev build is its own app to macOS** (`com.mitchellh.ghostty.debug`),
+- **The dev build is its own app to macOS** (`com.kinterm.app.debug`),
   separate from the user's `/Applications/Ghostty.app`: its own
   notification permission (it was off; `log show` with
   `process == "NotificationCenter"` says `notificationsAllowed: false`), its
   own entry in System Settings › Menu Bar, and its own settings:
-  `defaults read com.mitchellh.ghostty.debug` (keys `Agent*`). To change one
+  `defaults read com.kinterm.app.debug` (keys `Agent*`). To change one
   the app can't reach, `defaults write` it, then restart the dev app.
 - **Test in a terminal without Claude running.** Once Claude reports its own
   status, test reports only set the account, context and last message, not
@@ -145,8 +175,9 @@ See it work without Claude: run `agents/demo-states.sh` in a tab.
   screenshot are the reliable sign the dev app isn't active.
 - **A locked screen counts as not visible**: faces stop, CPU drops to ~0.
   Check with `CGSessionCopyCurrentDictionary()` (`CGSSessionScreenIsLocked`).
-- **Don't run the Release build next to the user's Ghostty**: same bundle
-  id. Measure CPU on the debug build and say so.
+- **Measure CPU on the debug build** and say so. The Release build
+  (`com.kinterm.app`) no longer shares the user's Ghostty bundle id, but
+  it would take over their real config and accounts.
 - **Menu bar items aren't windows the app owns** on this macOS (a system
   scene draws them), so `CGWindowList` can't find or capture them, and
   osascript has no accessibility permission. Ask the user to look.
@@ -164,7 +195,7 @@ Claude Code hook ──OSC 7501 (state, account, context, last)─────�
 
 | Layer | Files |
 | --- | --- |
-| Hook + installer | `agents/claude-code/ghostty-agent-status` (context % from the transcript, `last` on Stop, `StopFailure` → error), `agents/claude-code/install.sh` (`--all`), `agents/demo-states.sh` |
+| Hook + installer | `agents/claude-code/kinterm-agent-status` (context % from the transcript, `last` on Stop, `StopFailure` → error), `agents/claude-code/install.sh` (`--all`), `agents/demo-states.sh` |
 | Core: parse → app | `src/terminal/osc/parsers/program_status.zig` (extension keys `account`, `context`, `last`), `src/termio/stream_handler.zig` (forwards root and child reports, query reply), `src/apprt/surface.zig` (`Message.ProgramStatus` + test), `src/Surface.zig`, `src/apprt/action.zig` (C union 64 bytes on 64-bit), `include/ghostty.h`, `src/apprt/gtk/class/application.zig` (ignored on Linux) |
 | Swift model | `Ghostty/Ghostty.Action.swift` (`ProgramStatus`), `Ghostty.App.swift` (action → surface; clears on command finished; notification actions), `Ghostty.Config.swift` (`desktopNotifications`), `GhosttyPackage.swift` (agent notification category), `Surface View/OSSurfaceView.swift` (`programStatus`, `programChildren`, `programWorkStartedAt`), `Surface View/SurfaceView_AppKit.swift` (merge rules, children, agent notifications, "seen") |
 | Per tab | `Features/Terminal/BaseTerminalController.swift` (most urgent status, `subagentCount`, `createdAt`, `agentTabBar`) |
@@ -183,7 +214,7 @@ Key decisions in the code:
 - `agentTabBar` must be declared on `BaseTerminalController` (where the
   `TerminalViewModel` conformance is) and overridden in `TerminalController`;
   declaring it only on the subclass silently used the protocol default (nil).
-- **Two reporters.** Claude Code 2.1.309 sends its own OSC 7501 once Ghostty
+- **Two reporters.** Claude Code 2.1.309 sends its own OSC 7501 once KinTerm
   answers its `?` probe (no account; subagents as child records `id=<agent
   id>`). The hook adds the account, context and last message. A report
   without them keeps the previous values; once the program reports itself,
@@ -197,7 +228,7 @@ Key decisions in the code:
   finished, so a crashed or interrupted agent doesn't leave a stale face.
 - **Every animation frame lays out the whole window** (~14% main thread in
   the debug build, per frame, not per face). So faces only move when
-  someone can see them: all while Ghostty is active, working and waiting
+  someone can see them: all while KinTerm is active, working and waiting
   only while it's in the background, none when the window isn't visible.
   The Agents panel drops its rows when hidden for the same reason. A
   possible later fix: draw faces in their own layer.
@@ -232,7 +263,7 @@ Key decisions in the code:
 5. Push only when the user asks.
 
 Testing without the user: AppleScript gives each dev-app terminal's tty
-(`tell application "<path>/Ghostty.app" to get tty of every terminal`), and
+(`tell application "<path>/KinTerm.app" to get tty of every terminal`), and
 writing an OSC 7501 report to that tty updates its tab, just like the hook.
 Use a terminal without Claude in it (see Gotchas).
 

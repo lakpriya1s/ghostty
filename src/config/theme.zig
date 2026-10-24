@@ -9,6 +9,7 @@ const global = @import("../global.zig");
 /// defines the priority of theme search (from top to bottom).
 pub const Location = enum {
     user, // XDG config dir
+    ghostty_user, // Ghostty's XDG config dir, so existing themes keep working
     resources, // Ghostty resources dir
 
     /// Returns the directory for the given theme based on this location type.
@@ -27,9 +28,10 @@ pub const Location = enum {
         var environ_map = try global.environMap();
         defer environ_map.deinit();
         return switch (self) {
-            .user => user: {
+            .user, .ghostty_user => user: {
                 const subdir = std.fs.path.join(arena_alloc, &.{
-                    "ghostty", "themes",
+                    if (self == .user) "kinterm" else "ghostty",
+                    "themes",
                 }) catch return error.OutOfMemory;
 
                 break :user internal_os.xdg.config(

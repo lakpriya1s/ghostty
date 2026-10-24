@@ -18,7 +18,7 @@ pub fn isAtLeastVersion(major: i64, minor: i64, patch: i64) bool {
 
 pub const AppSupportDirError = Allocator.Error || error{AppleAPIFailed};
 
-/// Return the path to the application support directory for Ghostty
+/// Return the path to the application support directory for KinTerm
 /// with the given sub path joined. This allocates the result using the
 /// given allocator.
 pub fn appSupportDir(
@@ -28,6 +28,22 @@ pub fn appSupportDir(
     return try commonDir(
         alloc,
         .NSApplicationSupportDirectory,
+        build_config.bundle_id,
+        sub_path,
+    );
+}
+
+/// Return the path to Ghostty's application support directory with the
+/// given sub path joined, so KinTerm can fall back to a Ghostty config.
+/// This allocates the result using the given allocator.
+pub fn ghosttyAppSupportDir(
+    alloc: Allocator,
+    sub_path: []const u8,
+) AppSupportDirError![]const u8 {
+    return try commonDir(
+        alloc,
+        .NSApplicationSupportDirectory,
+        build_config.ghostty_bundle_id,
         sub_path,
     );
 }
@@ -43,6 +59,7 @@ pub fn cacheDir(
     return try commonDir(
         alloc,
         .NSCachesDirectory,
+        build_config.bundle_id,
         sub_path,
     );
 }
@@ -110,6 +127,7 @@ pub const NSSearchPathDomainMask = enum(c_ulong) {
 fn commonDir(
     alloc: Allocator,
     directory: NSSearchPathDirectory,
+    bundle_id: []const u8,
     sub_path: []const u8,
 ) (error{AppleAPIFailed} || Allocator.Error)![]const u8 {
     comptime assert(builtin.target.os.tag.isDarwin());
@@ -142,7 +160,7 @@ fn commonDir(
 
     return try std.fs.path.join(
         alloc,
-        &.{ base_dir, build_config.bundle_id, sub_path },
+        &.{ base_dir, bundle_id, sub_path },
     );
 }
 

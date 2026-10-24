@@ -1,6 +1,6 @@
-# Claude Code status for Ghostty
+# Claude Code status for KinTerm
 
-Shows what Claude Code is doing as a face on the Ghostty tab, and sends a
+Shows what Claude Code is doing as a face on the KinTerm tab, and sends a
 notification when it finishes or needs you while you're in another tab.
 
 | Claude Code event  | Tab face                         |
@@ -22,9 +22,10 @@ notification when it finishes or needs you while you're in another tab.
 ./install.sh ~/.claude-account1 ~/.claude-account2   # just these
 ```
 
-This copies `ghostty-agent-status` to `~/.config/ghostty/agents/claude-code/`
+This copies `kinterm-agent-status` to `~/.config/kinterm/agents/claude-code/`
 and adds it to each folder's `settings.json`. Before the first change the file
-is copied to `settings.json.before-ghostty`, which is never overwritten.
+is copied to `settings.json.before-kinterm`, which is never overwritten.
+It also replaces the hook from before the rename (`ghostty-agent-status`).
 Restart running Claude Code sessions to pick it up.
 
 Remove it with `./install.sh --uninstall [folders...]`.
@@ -39,7 +40,7 @@ ESC ] 7501 ; state=blocked:app=claude-code:account=.claude-work:kind=permission:
 ```
 
 `account` is the name of the Claude config folder (`CLAUDE_CONFIG_DIR`, or
-`.claude`). Ghostty gives each account a color and draws it as the ring
+`.claude`). KinTerm gives each account a color and draws it as the ring
 around the face. It's an extension to OSC 7501; terminals that don't know it
 ignore it.
 
@@ -53,9 +54,9 @@ Two more extension keys fill in the hover card:
 - `last`: Claude's last reply (`last_assistant_message` from `Stop`),
   base64 like `msg`, cut to 180 bytes.
 
-Ghostty keeps both until a report brings new ones.
+KinTerm keeps both until a report brings new ones.
 
 Any program can send these, so other agents can be supported by writing a
-similar hook. It does nothing outside Ghostty (`TERM_PROGRAM` must be
-`ghostty`). Requires `jq` for installing; the hook itself uses `jq` when
+similar hook. It does nothing outside KinTerm (`TERM_PROGRAM` must be
+`ghostty`, which KinTerm keeps setting for compatibility). Requires `jq` for installing; the hook itself uses `jq` when
 present to read tool details.

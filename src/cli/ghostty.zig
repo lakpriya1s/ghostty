@@ -89,9 +89,9 @@ pub const Action = enum {
     pub fn detectSpecialCase(arg: []const u8) ?SpecialCase(Action) {
         // If we see a "-e" and we haven't seen a command yet, then
         // we are done looking for commands. This special case enables
-        // `ghostty -e ghostty +command`. If we've seen a command we
+        // `ghostty -e kinterm +command`. If we've seen a command we
         // still want to keep looking because
-        // `ghostty +command -e +command` is invalid.
+        // `kinterm +command -e +command` is invalid.
         if (std.mem.eql(u8, arg, "-e")) return .abort_if_no_action;
 
         // Special case, --version always outputs the version no

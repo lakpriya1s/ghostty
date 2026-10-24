@@ -261,7 +261,7 @@ fn addLinuxAppResources(
     });
 
     // How the files below launch Ghostty. See -Dinstalled-exe-path.
-    const exe = cfg.installed_exe_path orelse "ghostty";
+    const exe = cfg.installed_exe_path orelse "kinterm";
 
     // Variables used by the templates.
     // Fields are nullable since unused fields trigger a build failure.

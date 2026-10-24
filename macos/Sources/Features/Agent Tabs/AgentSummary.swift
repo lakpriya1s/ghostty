@@ -133,6 +133,7 @@ final class AgentSummary {
             .sorted { $0.status.state.urgency > $1.status.state.urgency }
 
         (NSApp.delegate as? AppDelegate)?.syncDockBadge()
+        updateDockIcon()
         let settings = AgentTabBarSettings.shared
         let current = settings.showsMenuBarSummary ? settings.menuBarStyle : nil
         for (item, style) in menuBarItems {
@@ -145,6 +146,41 @@ final class AgentSummary {
             item.state = settings.faceStyle == style ? .on : .off
         }
         updateStatusItem()
+    }
+
+    // MARK: Dock icon
+
+    /// The state the dock icon shows, so it's only redrawn when that changes.
+    private var dockIconState: Ghostty.Action.ProgramStatus.State?
+
+    /// The app icon is a status light: its front face takes the color and
+    /// expression of the agent that needs the user most. Idle agents leave the normal icon, as
+    /// does a custom `macos-icon`.
+    private func updateDockIcon() {
+        let official = (NSApp.delegate as? AppDelegate)?.ghostty.config.macosIcon == .official
+        let state = official ? entries.first?.status.state : nil
+        let shown: Ghostty.Action.ProgramStatus.State? = switch state {
+        case .working, .blocked, .done, .error: state
+        default: nil
+        }
+        guard shown != dockIconState else { return }
+        dockIconState = shown
+        // Updates arrive on the main run loop.
+        MainActor.assumeIsolated {
+            NSApp.applicationIconImage = shown.flatMap {
+                KinTermAppIcon.image(front: AgentFaceView.color(for: $0), expression: Self.dockExpression(for: $0))
+            }
+        }
+    }
+
+    private static func dockExpression(for state: Ghostty.Action.ProgramStatus.State) -> KinTermMark.Expression {
+        switch state {
+        case .working: return .working
+        case .blocked: return .waiting
+        case .done: return .done
+        case .error: return .error
+        case .idle, .clear: return .smile
+        }
     }
 
     // MARK: Menu bar

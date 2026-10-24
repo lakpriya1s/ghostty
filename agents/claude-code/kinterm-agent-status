@@ -1,12 +1,14 @@
 #!/bin/sh
-# Claude Code hook that reports the session's status to Ghostty using
-# OSC 7501 (the Program Status Protocol). Ghostty shows it as a face on
+# Claude Code hook that reports the session's status to KinTerm using
+# OSC 7501 (the Program Status Protocol). KinTerm shows it as a face on
 # the tab and sends a notification when Claude finishes or needs you.
 #
 # Claude Code runs this for each hook event with the event as JSON on
 # stdin. See install.sh for the hooks it is registered for.
 
-# Only talk to terminals that understand OSC 7501.
+# Only talk to terminals that understand OSC 7501. KinTerm still sets
+# TERM_PROGRAM=ghostty, so programs that check for Ghostty's features keep
+# working in it.
 [ "$TERM_PROGRAM" = "ghostty" ] || exit 0
 
 input=$(cat)
@@ -123,7 +125,7 @@ case "$event" in
 esac
 
 # Which Claude account this is: the config folder's name, e.g.
-# ".claude-work". Ghostty colors the ring around the face by account.
+# ".claude-work". KinTerm colors the ring around the face by account.
 account=$(basename "${CLAUDE_CONFIG_DIR:-$HOME/.claude}" | tr -cd 'A-Za-z0-9_.+-' | cut -c1-32)
 
 report="state=$state:app=claude-code"

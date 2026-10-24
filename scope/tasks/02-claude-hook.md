@@ -8,17 +8,17 @@ Claude Code reports its state to Ghostty through hooks.
 
 ## Done
 
-- `agents/claude-code/ghostty-agent-status`: maps hook events to OSC 7501 and
-  writes to the terminal. Does nothing outside Ghostty.
+- `agents/claude-code/kinterm-agent-status` (was `ghostty-agent-status`): maps hook events to OSC 7501 and
+  writes to the terminal. Does nothing outside KinTerm.
   - `SessionStart` → idle, `UserPromptSubmit` / `PreToolUse` / `PostToolUse`
     → working, `Notification` → waiting (permission or question),
     `Stop` → done, `SessionEnd` → clear.
   - Title = project folder name; message = prompt or tool + detail;
     account = config folder name (task 08).
 - `agents/claude-code/install.sh [--uninstall] [--all | config folders…]`:
-  copies the hook to `~/.config/ghostty/agents/claude-code/` and adds it to
+  copies the hook to `~/.config/kinterm/agents/claude-code/` and adds it to
   each folder's `settings.json`. `--all` finds every `~/.claude*` config
-  folder. The original is kept once as `settings.json.before-ghostty` (it
+  folder. The original is kept once as `settings.json.before-kinterm` (it
   used to write `settings.json.bak`, which would have overwritten a backup
   already in `~/.claude`). Safe to run twice.
 - `agents/demo-states.sh`: cycles a tab through every state.

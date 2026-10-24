@@ -1,10 +1,11 @@
-# Ghostty Agent Tabs — Scope
+# KinTerm — Scope
 
-A fork of [Ghostty](https://github.com/ghostty-org/ghostty) for AI-native
+**KinTerm**: your agents, at a glance. A fork of
+[Ghostty](https://github.com/ghostty-org/ghostty) for AI-native
 developers. Every tab shows what the coding agent inside it is doing, so you
 never lose track of an agent that is working, finished, or waiting on you.
 
-- Fork: https://github.com/lakpriya1s/ghostty (branch `agent-tabs`)
+- Fork: https://github.com/lakpriya1s/kinterm (branch `agent-tabs`)
 - Design canvas: https://claude.ai/artifact/GqsEQ9WZbmCBrk5RGNcBKX
 - Designs, copied here: [designs/](designs/README.md)
 - Task list: [tasks/](tasks/README.md)
@@ -42,7 +43,7 @@ waiting > error > done > working > idle.
 ## How it works
 
 ```
-Claude Code ──hooks──▶ ghostty-agent-status ──OSC 7501──▶ Ghostty core (Zig)
+Claude Code ──hooks──▶ kinterm-agent-status ──OSC 7501──▶ core (Zig)
                                                               │ program_status action
                                                               ▼
                                    macOS app: face tab bar · hover card · notifications
@@ -51,7 +52,7 @@ Claude Code ──hooks──▶ ghostty-agent-status ──OSC 7501──▶ Gh
 - **Protocol:** OSC 7501, the Program Status Protocol
   (`ESC ] 7501 ; state=working:app=claude-code:msg=<base64> ESC \`). Upstream
   Ghostty already parsed it; this fork connects it to the app.
-- **Hook:** `agents/claude-code/ghostty-agent-status`, installed into each
+- **Hook:** `agents/claude-code/kinterm-agent-status`, installed into each
   Claude config folder's `settings.json` by `agents/claude-code/install.sh`.
 - **App:** each terminal keeps its latest status; each tab shows the most
   urgent one; the custom tab bar draws the tabs of the native macOS tab group,

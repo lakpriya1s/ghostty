@@ -17,7 +17,7 @@ to that exact tab **and split**.
 
 ## Dock badge
 
-Red count on the Ghostty dock icon: the number of agents that need attention
+Red count on the KinTerm dock icon: the number of agents that need attention
 (waiting + done unread).
 
 ## Menu bar

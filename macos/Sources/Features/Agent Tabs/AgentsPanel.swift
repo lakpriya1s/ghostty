@@ -384,7 +384,7 @@ final class AgentsPanel {
         panel.level = .floating
         panel.contentView = NSHostingView(rootView: AgentsPanelView(model: model))
 
-        // AppKit hides the panel when Ghostty is deactivated, without calling
+        // AppKit hides the panel when KinTerm is deactivated, without calling
         // `hide`. Clean up then too, or the hidden list keeps its faces
         // animating.
         NotificationCenter.default.addObserver(
@@ -466,7 +466,7 @@ final class AgentsPanel {
     private static var shortcutMonitor: Any?
 
     /// ⌘⇧A toggles the panel. ⌘J jumps to the next agent waiting on you; with
-    /// none waiting it does what it normally does in Ghostty.
+    /// none waiting it does what it normally does in KinTerm.
     static func installShortcuts() {
         guard shortcutMonitor == nil else { return }
         shortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in

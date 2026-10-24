@@ -286,7 +286,7 @@ final class AgentTabBarModel: ObservableObject {
     /// `TerminalWindow.agentTabBarInTitlebar`.
     @Published private(set) var inTitlebar = false
 
-    /// Which faces animate: all of them while Ghostty is active, only the
+    /// Which faces animate: all of them while KinTerm is active, only the
     /// ones that need attention while it's in the background, none while
     /// the window can't be seen.
     @Published private(set) var faceMotion: AgentFaceView.Motion = .all

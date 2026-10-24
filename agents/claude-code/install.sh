@@ -1,12 +1,12 @@
 #!/bin/sh
-# Install (or remove) the Ghostty status hook for Claude Code.
+# Install (or remove) the KinTerm status hook for Claude Code.
 #
 # Usage:
 #   install.sh [--uninstall] [--all | CLAUDE_CONFIG_DIR ...]
 #
 # With no folders, uses $CLAUDE_CONFIG_DIR, or ~/.claude. --all uses every
 # ~/.claude* folder that holds a Claude config, one per account. Before the
-# first change, the settings file is copied to settings.json.before-ghostty
+# first change, the settings file is copied to settings.json.before-kinterm
 # (never overwritten later). Installing twice is safe.
 
 set -eu
@@ -28,12 +28,12 @@ if ! command -v jq >/dev/null 2>&1; then
 fi
 
 src_dir=$(cd "$(dirname "$0")" && pwd)
-hook_dir="${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/agents/claude-code"
-hook="$hook_dir/ghostty-agent-status"
+hook_dir="${XDG_CONFIG_HOME:-$HOME/.config}/kinterm/agents/claude-code"
+hook="$hook_dir/kinterm-agent-status"
 
 if [ "$uninstall" -eq 0 ]; then
   mkdir -p "$hook_dir"
-  cp "$src_dir/ghostty-agent-status" "$hook"
+  cp "$src_dir/kinterm-agent-status" "$hook"
   chmod +x "$hook"
 fi
 
@@ -57,15 +57,16 @@ for dir in "$@"; do
   settings="$dir/settings.json"
   mkdir -p "$dir"
   [ -f "$settings" ] || echo '{}' >"$settings"
-  [ -e "$settings.before-ghostty" ] || cp "$settings" "$settings.before-ghostty"
-  tmp="$settings.ghostty-tmp"
+  [ -e "$settings.before-kinterm" ] || cp "$settings" "$settings.before-kinterm"
+  tmp="$settings.kinterm-tmp"
 
   jq --arg cmd "$hook" --argjson uninstall "$uninstall" '
-    # Drop any hook entries we added before.
+    # Drop any hook entries we added before, including the ones from
+    # before the rename (ghostty-agent-status).
     def strip(ev):
       if .hooks[ev] then
         .hooks[ev] |= map(select(
-          (.hooks // []) | all(.command // "" | contains("ghostty-agent-status") | not)))
+          (.hooks // []) | all(.command // "" | test("(kinterm|ghostty)-agent-status") | not)))
         | if .hooks[ev] == [] then del(.hooks[ev]) else . end
       else . end;
 
@@ -97,8 +98,8 @@ for dir in "$@"; do
   mv "$tmp" "$settings"
 
   if [ "$uninstall" -eq 1 ]; then
-    echo "Removed the Ghostty status hook from $settings"
+    echo "Removed the KinTerm status hook from $settings"
   else
-    echo "Installed the Ghostty status hook in $settings"
+    echo "Installed the KinTerm status hook in $settings"
   fi
 done

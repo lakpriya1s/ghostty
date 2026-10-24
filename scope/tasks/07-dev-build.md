@@ -19,5 +19,5 @@ or open `macos/build/Debug/Ghostty.app` directly.
 - [x] `scripts/dev-run.sh` rebuilds the core only when `src/` or `include/`
       changed (or with `--core`), builds the app with xcodebuild, quits the
       running dev copy, waits for it to exit, and opens the new build.
-      `--no-build` just restarts. It runs `macos/build/Debug/Ghostty.app`, so
+      `--no-build` just restarts. It runs `macos/build/Debug/KinTerm.app`, so
       the `zig-out` signature problem never comes up.
