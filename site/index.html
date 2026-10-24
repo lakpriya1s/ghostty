@@ -5,11 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KinTerm · The terminal for AI coding agents</title>
 <meta name="description" content="KinTerm is the terminal for AI coding agents. Run Claude Code in every tab; each tab's face shows what its agent is doing, so you know who's working, who's done and who needs you.">
+<meta name="keywords" content="terminal for AI agents, Claude Code terminal, AI coding agents, macOS terminal, terminal emulator, agent status, Ghostty fork, open source">
+<link rel="canonical" href="https://lakpriya.com/kinterm/">
+<meta property="og:site_name" content="KinTerm">
+<meta property="og:url" content="https://lakpriya.com/kinterm/">
 <meta property="og:title" content="KinTerm · The terminal for AI coding agents">
-<meta property="og:description" content="Run Claude Code in every tab. Each tab's face shows what its agent is doing: working, done or waiting on you.">
-<meta property="og:image" content="https://lakpriya1s.github.io/kinterm/icon.png">
+<meta property="og:description" content="Run Claude Code in every tab. Each tab's face shows what its agent is doing: working, done or waiting on you. Free and open source for macOS.">
+<meta property="og:image" content="https://lakpriya.com/kinterm/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="KinTerm, the terminal for AI coding agents, with its five agent faces">
 <meta property="og:type" content="website">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="KinTerm · The terminal for AI coding agents">
+<meta name="twitter:description" content="Every tab is a face that shows what its agent is doing. Free and open source for macOS.">
+<meta name="twitter:image" content="https://lakpriya.com/kinterm/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "KinTerm",
+  "description": "The terminal for AI coding agents. Every tab is a face that shows what its agent is doing: working, done or waiting on you.",
+  "url": "https://lakpriya.com/kinterm/",
+  "downloadUrl": "https://github.com/lakpriya1s/kinterm/releases/latest",
+  "image": "https://lakpriya.com/kinterm/og.png",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "macOS 13 or later",
+  "license": "https://opensource.org/licenses/MIT",
+  "isAccessibleForFree": true,
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Lakpriya Seneviratna", "url": "https://lakpriya.com/" },
+  "sameAs": ["https://github.com/lakpriya1s/kinterm"]
+}
+</script>
 <meta name="theme-color" content="#0c0d10">
 <link rel="icon" id="favicon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
@@ -280,6 +308,8 @@ h2 .mute{color:var(--muted)}
 .foot a{color:var(--muted);text-decoration:none}
 .foot a:hover{color:var(--text)}
 .foot nav{display:flex;gap:20px}
+.foot .about{flex:1 1 320px;margin:0;max-width:520px;color:var(--dim)}
+.foot .about a{color:var(--muted);text-decoration:underline;text-underline-offset:2px}
 
 .toast{position:fixed;left:50%;bottom:24px;z-index:60;translate:-50% calc(100% + 40px);display:flex;align-items:center;gap:10px;padding:10px 16px 10px 12px;border-radius:999px;background:#24262d;border:1px solid var(--edge2);box-shadow:0 14px 40px rgba(0,0,0,.5);font-size:14px;color:var(--soft);transition:translate .5s cubic-bezier(.2,1.2,.3,1);white-space:nowrap}
 .toast.on{translate:-50% 0}
@@ -676,6 +706,7 @@ h2 .mute{color:var(--muted)}
 
 <footer class="wrap foot">
   <a class="brand" href="#top"><span class="m" data-mark="foot"></span><span>Kin<span class="t">Term</span></span></a>
+  <p class="about">KinTerm is a free, open-source macOS terminal for AI coding agents like Claude Code. Built on <a href="https://ghostty.org">Ghostty</a>.</p>
   <nav><a href="https://github.com/lakpriya1s/kinterm">GitHub</a><a href="https://github.com/lakpriya1s/kinterm/releases">Releases</a><a href="https://github.com/lakpriya1s/kinterm/blob/main/LICENSE">License</a></nav>
 </footer>
 

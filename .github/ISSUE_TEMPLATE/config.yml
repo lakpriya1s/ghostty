@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Terminal bugs that also happen in Ghostty
+    url: https://github.com/ghostty-org/ghostty/discussions
+    about: Rendering, fonts and config options come from Ghostty. Please report those upstream.
+  - name: Security issue
+    url: https://github.com/lakpriya1s/kinterm/security/advisories/new
+    about: Report it privately, please.
