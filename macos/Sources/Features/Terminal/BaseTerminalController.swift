@@ -97,6 +97,25 @@ class BaseTerminalController: NSWindowController,
     /// Cancellable for aggregating bell state across all surfaces in this controller.
     private var bellStateCancellable: AnyCancellable?
 
+    /// The most urgent program status (OSC 7501) across all surfaces in this
+    /// controller, for example a coding agent waiting on the user.
+    @Published private(set) var programStatus: Ghostty.Action.ProgramStatus?
+
+    /// Cancellable for aggregating program status across all surfaces in this controller.
+    private var programStatusCancellable: AnyCancellable?
+
+    /// How many child records (subagents) are working, across all splits.
+    @Published private(set) var subagentCount: Int = 0
+    private var subagentCancellable: AnyCancellable?
+
+    /// When this controller (a tab or window) was created.
+    let createdAt = Date()
+
+    /// The agent tab bar's model. Subclasses that show the agent tab bar
+    /// override this. It must be declared here, where this class conforms to
+    /// TerminalViewModel, or the protocol's default (nil) is always used.
+    var agentTabBar: AgentTabBarModel? { nil }
+
     /// Cancellable for clipboard confirmation requests from surfaces in this controller.
     private var clipboardConfirmationCancellable: AnyCancellable?
 
@@ -107,7 +126,7 @@ class BaseTerminalController: NSWindowController,
     }
 
     /// The last computed title from the focused surface (without the override).
-    private var lastComputedTitle: String = "👻"
+    private var lastComputedTitle: String = "🙂"
 
     /// The time that undo/redo operations that contain running ptys are valid for.
     var undoExpiration: Duration {
@@ -155,6 +174,7 @@ class BaseTerminalController: NSWindowController,
 
         // Setup our bell state for the window
         setupBellNotificationPublisher()
+        setupProgramStatusPublisher()
         setupClipboardConfirmationPublisher()
 
         // Setup our notifications for behaviors
@@ -895,7 +915,7 @@ class BaseTerminalController: NSWindowController,
                 .store(in: &focusedSurfaceCancellables)
         } else {
             // There is no surface to listen to titles for.
-            titleDidChange(to: "👻")
+            titleDidChange(to: "🙂")
         }
     }
 
@@ -1704,6 +1724,42 @@ extension BaseTerminalController {
                     object: self,
                     userInfo: [Notification.Name.terminalWindowHasBellKey: hasBell]
                 )
+            }
+    }
+
+    private func setupProgramStatusPublisher() {
+        programStatusCancellable = surfaceValuesPublisher(
+            valueKeyPath: \.programStatus,
+            publisherKeyPath: \.$programStatus
+        )
+            .map { statuses in
+                statuses.values
+                    .compactMap { $0 }
+                    .max { $0.state.urgency < $1.state.urgency }
+            }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] status in
+                guard let self else { return }
+                programStatus = status
+                (window as? TerminalWindow)?.programStatus = status
+                AgentTabBarModel.setNeedsRefresh()
+            }
+
+        subagentCancellable = surfaceValuesPublisher(
+            valueKeyPath: \.programChildren,
+            publisherKeyPath: \.$programChildren
+        )
+            .map { children in
+                children.values.reduce(0) { total, records in
+                    total + records.values.filter { $0.state == .working || $0.state == .blocked }.count
+                }
+            }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] count in
+                self?.subagentCount = count
+                AgentTabBarModel.setNeedsRefresh()
             }
     }
 

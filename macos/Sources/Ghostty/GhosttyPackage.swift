@@ -10,6 +10,11 @@ extension Ghostty {
 
     // The user notification "Show" action
     static let userNotificationActionShow = "com.mitchellh.ghostty.userNotification.Show"
+
+    /// Notifications about a coding agent in a tab (OSC 7501), with "Open tab"
+    /// (`userNotificationActionShow`) and "Dismiss".
+    static let agentNotificationCategory = "com.mitchellh.ghostty.agentNotification"
+    static let agentNotificationActionDismiss = "com.mitchellh.ghostty.agentNotification.Dismiss"
 }
 
 // MARK: Build Info

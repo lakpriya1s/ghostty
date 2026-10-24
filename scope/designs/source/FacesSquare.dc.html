@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Face set E · Square faces</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#7aa7ff}a:hover{color:#a9c6ff}
+.big{display:block;transform:scale(1.7)}
+.sq{position:relative;display:block;width:40px;height:40px;border-radius:12px;background:var(--c,#8b9099)}
+.sq>span{position:absolute;display:block}
+.sq .el,.sq .er{top:13px;width:6px;height:10px;border-radius:3px;background:#15161b}
+.sq .el{left:10px}.sq .er{left:24px}
+.sq .m{left:15px;top:27px;width:10px;height:2.5px;border-radius:2px;background:#15161b}
+.sq .x{display:none}
+.s-idle{--c:#8b9099}
+.s-idle .el,.s-idle .er{top:18px;width:7px;height:2.5px;border-radius:2px}
+.s-idle .er{left:23px}
+.s-idle .m{left:17px;width:6px}
+.s-idle::after{content:"z";position:absolute;right:-5px;top:-10px;font:700 11px Inter,system-ui,sans-serif;color:#a8adb7;animation:zz 2.6s ease-in-out infinite}
+.s-working{--c:#5ca0ff}
+.s-working .el,.s-working .er{animation:look 1.3s ease-in-out infinite}
+.s-working .m{left:16.5px;width:7px}
+.s-waiting{--c:#f5a524;animation:pulse 1.5s ease-in-out infinite,bob 1.5s ease-in-out infinite}
+.s-waiting .el,.s-waiting .er{top:11px;height:11px}
+.s-waiting .m{left:16px;top:26px;width:8px;height:8px;border-radius:3px;background:transparent;border:2.5px solid #15161b;box-sizing:border-box}
+.s-waiting::after{content:"?";position:absolute;right:-6px;top:-11px;font:800 14px Inter,system-ui,sans-serif;color:#f5a524}
+.s-done{--c:#3fb950}
+.s-done .el,.s-done .er{top:14px;width:9px;height:5px;border-radius:6px 6px 0 0;background:transparent;border:2.5px solid #15161b;border-bottom:0;box-sizing:border-box}
+.s-done .el{left:8px}.s-done .er{left:23px}
+.s-done .m{left:12px;top:23px;width:16px;height:7px;border-radius:0 0 8px 8px;background:transparent;border:2.5px solid #15161b;border-top:0;box-sizing:border-box}
+.s-done::after{content:"";position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;background:#f1f2f4;border:2px solid #1c1d21}
+.s-error{--c:#f85149;animation:shake 2.4s ease-in-out infinite}
+.s-error .el,.s-error .er{top:13px;width:8px;height:8px;background:transparent}
+.s-error .el{left:9px}.s-error .er{left:23px}
+.s-error .el::before,.s-error .el::after,.s-error .er::before,.s-error .er::after{content:"";position:absolute;left:3px;top:-1px;width:2.5px;height:10px;border-radius:1px;background:#15161b;transform:rotate(45deg)}
+.s-error .el::after,.s-error .er::after{transform:rotate(-45deg)}
+.s-error .m{left:14px;top:27px;width:12px;height:6px;border-radius:8px 8px 0 0;background:transparent;border:2.5px solid #15161b;border-bottom:0;box-sizing:border-box}
+.s-shell{--c:#2a2c33;box-shadow:inset 0 0 0 1.5px #4a4e59}
+.s-shell .el,.s-shell .er{display:none}
+.s-shell .m{left:11px;top:16px;width:6px;height:6px;border-radius:0;background:transparent;border:solid #c2c6cf;border-width:2.5px 2.5px 0 0;transform:rotate(45deg)}
+.s-shell .x{display:block;left:20px;top:24px;width:10px;height:2.5px;border-radius:2px;background:#c2c6cf}
+@keyframes look{0%,100%{transform:translateX(-1.5px)}50%{transform:translateX(1.5px)}}
+@keyframes blink{50%{opacity:0}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,165,36,.55)}50%{box-shadow:0 0 0 7px rgba(245,165,36,0)}}
+@keyframes bob{0%,100%{translate:0 0}50%{translate:0 -2px}}
+@keyframes zz{0%,100%{opacity:.25;translate:0 2px}50%{opacity:1;translate:2px -2px}}
+@keyframes shake{0%,88%,100%{transform:translateX(0)}91%{transform:translateX(-2px)}94%{transform:translateX(2px)}97%{transform:translateX(-1px)}}
+</style>
+</helmet>
+<div style="width: 900px; height: 520px; box-sizing: border-box; padding: 40px 48px; background: #16171b; color: #d6d9df; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div>
+    <h1 style="margin: 0 0 6px; font-size: 24px; font-weight: 600; color: #f1f2f4">Set E · Square faces</h1>
+    <p style="margin: 0; font-size: 14px; color: #a8adb7">Rounded-square heads with pill eyes, the same shape as the KinTerm logo.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 10px 16px; border-radius: 14px; background: #1c1d21; border: 1px solid #2e3038">
+        <span style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px" aria-hidden="true">
+          <span class="big"><span class="sq {{r.cls}}"><span class="el"></span><span class="er"></span><span class="m"></span><span class="x"></span></span></span>
+        </span>
+        <div style="font-size: 14px; font-weight: 600; color: #f1f2f4; text-align: center">{{r.name}}</div>
+        <div style="font-size: 12px; color: #a8adb7; text-align: center; line-height: 1.45">{{r.desc}}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: #8a8f99">IN THE TAB BAR · ACTUAL SIZE</span>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px; background: #22242a; border: 1px solid #2e3038">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+        <span style="display: flex; align-items: center; justify-content: center; width: 58px; height: 58px; border-radius: 14px; background: {{r.tabBg}}" aria-hidden="true">
+          <span class="sq {{r.cls}}"><span class="el"></span><span class="er"></span><span class="m"></span><span class="x"></span></span>
+        </span>
+      </sc-for>
+      <span style="margin-left: auto; font-size: 12px; color: #8a8f99">Matches the KinTerm logo</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const rows = [
+      { cls: 's-idle', name: 'Idle', desc: 'Eyes shut, dozing.' },
+      { cls: 's-working', name: 'Working', desc: 'Eyes moving side to side.' },
+      { cls: 's-waiting', name: 'Waiting on you', desc: 'Surprised, bouncing, pulsing.' },
+      { cls: 's-done', name: 'Done', desc: 'Happy, with an unread dot.' },
+      { cls: 's-error', name: 'Error', desc: 'X eyes, frown, shake.' },
+      { cls: 's-shell', name: 'Plain shell', desc: 'No face, just a prompt.' }
+    ];
+    return { rows: rows.map((r, i) => ({ ...r, tabBg: i === 0 ? '#363944' : r.cls === 's-shell' ? '#22242a' : '#2a2c35' })) };
+  }
+}
+</script>
+</body>
+</html>

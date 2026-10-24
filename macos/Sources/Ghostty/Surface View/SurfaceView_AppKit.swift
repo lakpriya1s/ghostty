@@ -295,7 +295,7 @@ extension Ghostty {
             // Set a timer to show the ghost emoji after 500ms if no title is set
             titleFallbackTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
                 if let self = self, self.title.isEmpty {
-                    self.title = "👻"
+                    self.title = "🙂"
                 }
             }
 
@@ -469,6 +469,10 @@ extension Ghostty {
                 // We unset our bell state if we gained focus
                 bell = false
 
+                // Focusing the surface means the user has seen any finished
+                // program status
+                markProgramStatusSeen()
+
                 // Remove any notifications for this surface once we gain focus.
                 if !notificationIdentifiers.isEmpty {
                     UNUserNotificationCenter.current()
@@ -600,7 +604,7 @@ extension Ghostty {
                     // Empty means that user wants the title to be set automatically
                     // We also need to reload the config for the "title" property to be
                     // used again by this tab.
-                    let prevTitle = titleFromTerminal ?? "👻"
+                    let prevTitle = titleFromTerminal ?? "🙂"
                     titleFromTerminal = nil
                     setTitle(prevTitle)
                 } else {
@@ -1106,6 +1110,9 @@ extension Ghostty {
 
             // On any keyDown event we unset our bell state
             bell = false
+
+            // Typing means the user has seen any finished program status
+            markProgramStatusSeen()
 
             // We need to translate the mods (maybe) to handle configs such as option-as-alt
             let translationModsGhostty = Ghostty.eventModifierFlags(
@@ -1772,14 +1779,157 @@ extension Ghostty {
             promptTitle()
         }
 
+        /// Apply a new OSC 7501 program status report.
+        ///
+        /// A program can have two reporters at once. Claude Code reports its
+        /// own status, but without an account, and our Claude Code hook
+        /// reports with one. So a report without an account keeps the
+        /// account the terminal already had, and once the program has
+        /// reported on its own, reports with an account only set the account
+        /// and leave the state to the program. Without the program's own
+        /// reports (older versions, `claude -p`), the hook's reports are used
+        /// in full.
+        ///
+        /// Context used and the last message come only from the hook, and
+        /// not with every report, so a report without them keeps the ones
+        /// the terminal already had.
+        func updateProgramStatus(_ status: Action.ProgramStatus) {
+            if let id = status.id {
+                updateProgramChild(id, status)
+                return
+            }
+
+            if status.state == .clear {
+                programStatus = nil
+                programChildren = [:]
+                programReportsOwnStatus = false
+                programWorkStartedAt = nil
+                return
+            }
+
+            let previous = programStatus
+            var status = status
+
+            if previous?.app == status.app {
+                status.context = status.context ?? previous?.context
+                status.last = status.last ?? previous?.last
+            }
+
+            if status.account == nil {
+                programReportsOwnStatus = true
+                if previous?.app == status.app { status.account = previous?.account }
+            } else if programReportsOwnStatus, var previous {
+                if previous.account != status.account
+                    || previous.context != status.context
+                    || previous.last != status.last {
+                    previous.account = status.account
+                    previous.context = status.context
+                    previous.last = status.last
+                    programStatus = previous
+                }
+                return
+            }
+
+            // Keep counting from when the program entered this state, since
+            // programs send many reports while staying in one state.
+            if let previous, previous.state == status.state {
+                status.since = previous.since
+            }
+
+            programStatus = status
+
+            // A new request starts working from rest; coming back from
+            // waiting on the user is the same request.
+            if status.state == .working, previous?.state != .working, previous?.state != .blocked {
+                programWorkStartedAt = status.since
+            }
+
+            // Tell the user when the program needs them or finished, unless
+            // they're already looking at it.
+            guard previous?.state != status.state else { return }
+            let isVisible = focused && NSApp.isActive && (window?.isKeyWindow ?? false)
+            guard !isVisible else { return }
+            guard derivedConfig.desktopNotifications else { return }
+
+            // Named after the tab, like "web · refactor nav needs you".
+            let tab = title.isEmpty ? status.appDisplayName : title
+            var body = status.msg ?? ""
+            switch status.state {
+            case .blocked:
+                showAgentNotification(title: "\(tab) needs you", body: body, state: .blocked)
+            case .done:
+                if let started = programWorkStartedAt {
+                    let took = "took \(Self.notificationDuration(since: started))"
+                    body = body.isEmpty ? took : "\(body) · \(took)"
+                }
+                showAgentNotification(title: "\(tab) finished", body: body, state: .done)
+            case .error:
+                showAgentNotification(title: "\(tab) stopped with an error", body: body, state: .error)
+            default:
+                break
+            }
+        }
+
+        /// "4m 02s", "12s" or "1h 05m", for "took …" in a notification.
+        private static func notificationDuration(since start: Date) -> String {
+            let total = max(0, Int(Date().timeIntervalSince(start)))
+            let hours = total / 3600, minutes = (total % 3600) / 60, seconds = total % 60
+            if hours > 0 { return String(format: "%dh %02dm", hours, minutes) }
+            if minutes > 0 { return String(format: "%dm %02ds", minutes, seconds) }
+            return "\(seconds)s"
+        }
+
+        /// Notify about the agent in this terminal, as in the design: no
+        /// subtitle, "Open tab" and "Dismiss", and a `>_` image with a dot in
+        /// the state's color. Clicking it focuses this split.
+        private func showAgentNotification(title: String, body: String, state: Action.ProgramStatus.State) {
+            showUserNotification(
+                title: title,
+                body: body,
+                requireFocus: false,
+                showsTerminalTitle: false,
+                category: Ghostty.agentNotificationCategory,
+                attachments: [AgentNotificationIcon.attachment(for: state)].compactMap { $0 })
+        }
+
+        /// A finished program goes back to idle once the user has seen it.
+        /// Apply a report about a child record. `clear` removes the record
+        /// and every record under it (`sub` removes `sub/a1b2` too).
+        private func updateProgramChild(_ id: String, _ status: Action.ProgramStatus) {
+            if status.state == .clear {
+                programChildren = programChildren.filter { $0.key != id && !$0.key.hasPrefix(id + "/") }
+                return
+            }
+            var status = status
+            if let previous = programChildren[id], previous.state == status.state {
+                status.since = previous.since
+            }
+            programChildren[id] = status
+        }
+
+        func markProgramStatusSeen() {
+            guard var status = programStatus, status.state == .done else { return }
+            status.state = .idle
+            status.since = Date()
+            programStatus = status
+        }
+
         /// Show a user notification and associate it with this surface
-        func showUserNotification(title: String, body: String, requireFocus: Bool = true) {
+        func showUserNotification(
+            title: String,
+            body: String,
+            requireFocus: Bool = true,
+            showsTerminalTitle: Bool = true,
+            category: String = Ghostty.userNotificationCategory,
+            attachments: [UNNotificationAttachment] = []
+        ) {
             let content = UNMutableNotificationContent()
             content.title = title
-            content.subtitle = self.title
+            if showsTerminalTitle { content.subtitle = self.title }
             content.body = body
             content.sound = UNNotificationSound.default
-            content.categoryIdentifier = Ghostty.userNotificationCategory
+            content.categoryIdentifier = category
+            content.attachments = attachments
             content.userInfo = [
                 "surface": self.id.uuidString,
                 "requireFocus": requireFocus,
@@ -1846,6 +1996,7 @@ extension Ghostty {
             let windowTitleFontFamily: String?
             let windowAppearance: NSAppearance?
             let scrollbar: Ghostty.Config.Scrollbar
+            let desktopNotifications: Bool
 
             init() {
                 self.backgroundColor = Color(NSColor.windowBackgroundColor)
@@ -1855,6 +2006,7 @@ extension Ghostty {
                 self.windowTitleFontFamily = nil
                 self.windowAppearance = nil
                 self.scrollbar = .system
+                self.desktopNotifications = true
             }
 
             init(_ config: Ghostty.Config) {
@@ -1865,6 +2017,7 @@ extension Ghostty {
                 self.windowTitleFontFamily = config.windowTitleFontFamily
                 self.windowAppearance = .init(ghosttyConfig: config)
                 self.scrollbar = config.scrollbar
+                self.desktopNotifications = config.desktopNotifications
             }
         }
 

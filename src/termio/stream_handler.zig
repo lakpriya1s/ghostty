@@ -383,8 +383,9 @@ pub const StreamHandler = struct {
             .title_pop,
             .kitty_dnd,
             .osc_unknown,
-            .program_status,
             => {},
+
+            .program_status => self.programStatus(value),
         }
     }
 
@@ -1944,6 +1945,26 @@ pub const StreamHandler = struct {
     /// Display a GUI progress report.
     fn progressReport(self: *StreamHandler, report: terminal.osc.Command.ProgressReport) void {
         self.surfaceMessageWriter(.{ .progress_report = report });
+    }
+
+    /// Handle an OSC 7501 program status query or report.
+    fn programStatus(self: *StreamHandler, cmd: terminal.osc.Command.ProgramStatus) void {
+        switch (cmd) {
+            // The reply is always the same fixed bytes, so it never
+            // echoes anything the program sent back to it.
+            .query => |terminator| switch (terminator) {
+                inline else => |t| self.messageWriter(.{
+                    .write_stable = "\x1b]7501;" ++
+                        terminal.osc.program_status.query_reply ++
+                        comptime t.string(),
+                }),
+            },
+
+            // Reports about the program itself and about its child records
+            // (an `id`, e.g. a subagent) both go to the app, which keeps
+            // the records.
+            .report => |report| self.surfaceMessageWriter(.{ .program_status = .init(report) }),
+        }
     }
 };
 

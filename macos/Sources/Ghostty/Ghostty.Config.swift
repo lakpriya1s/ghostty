@@ -263,6 +263,14 @@ extension Ghostty {
             return String(cString: ptr)
         }
 
+        var desktopNotifications: Bool {
+            guard let config = self.config else { return true }
+            var v = true
+            let key = "desktop-notifications"
+            _ = ghostty_config_get(config, &v, key, UInt(key.lengthOfBytes(using: .utf8)))
+            return v
+        }
+
         var windowStepResize: Bool {
             guard let config = self.config else { return true }
             var v = false

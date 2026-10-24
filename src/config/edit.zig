@@ -11,7 +11,7 @@ const global = @import("../global.zig");
 /// On Linux, this will use the file at the XDG config path. This is the
 /// only valid path for Linux so we don't need to check for other paths.
 ///
-/// On macOS, both XDG and AppSupport paths are valid. Because Ghostty
+/// On macOS, both XDG and AppSupport paths are valid. Because KinTerm
 /// prioritizes AppSupport over XDG, we will use AppSupport if it exists,
 /// followed by XDG if it exists, and finally AppSupport if neither exist.
 /// For the existence check, we also prefer non-empty files over empty
@@ -121,7 +121,7 @@ fn configPath(alloc_arena: Allocator) !ConfigPathResult {
 /// Returns a const list of possible paths the main config file could be
 /// in for the current OS.
 fn configPathCandidates(alloc_arena: Allocator) ![]const []const u8 {
-    var paths: std.ArrayList([]const u8) = try .initCapacity(alloc_arena, 4);
+    var paths: std.ArrayList([]const u8) = try .initCapacity(alloc_arena, 8);
     errdefer paths.deinit(alloc_arena);
 
     if (comptime builtin.target.os.tag == .macos) {
@@ -131,6 +131,15 @@ fn configPathCandidates(alloc_arena: Allocator) ![]const []const u8 {
 
     paths.appendAssumeCapacity(try file_load.defaultXdgPath(alloc_arena));
     paths.appendAssumeCapacity(try file_load.legacyDefaultXdgPath(alloc_arena));
+
+    // Ghostty's config, which KinTerm uses until it has one of its own.
+    // Reversed, so the one loaded last (and so winning) is found first.
+    const ghostty_paths = try file_load.ghosttyPaths(alloc_arena);
+    var i = ghostty_paths.len;
+    while (i > 0) {
+        i -= 1;
+        paths.appendAssumeCapacity(ghostty_paths[i]);
+    }
 
     return paths.items;
 }

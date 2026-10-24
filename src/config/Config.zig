@@ -560,8 +560,8 @@ language: ?[:0]const u8 = null,
 /// include path separators unless it is an absolute pathname.
 ///
 /// The first directory is the `themes` subdirectory of your Ghostty
-/// configuration directory. This is `$XDG_CONFIG_HOME/ghostty/themes` or
-/// `~/.config/ghostty/themes`.
+/// configuration directory. This is `$XDG_CONFIG_HOME/kinterm/themes` or
+/// `~/.config/kinterm/themes` (then Ghostty's `~/.config/ghostty/themes`).
 ///
 /// The second directory is the `themes` subdirectory of the Ghostty resources
 /// directory. Ghostty ships with a multitude of themes that will be installed
@@ -2606,7 +2606,7 @@ keybind: Keybinds = .{},
 
 /// When this is true, the default configuration file paths will be loaded.
 /// The default configuration file paths are currently only the XDG
-/// config path ($XDG_CONFIG_HOME/ghostty/config.ghostty).
+/// config path ($XDG_CONFIG_HOME/kinterm/config.kinterm).
 ///
 /// If this is false, the default configuration paths will not be loaded.
 /// This is targeted directly at using Ghostty from the CLI in a way
@@ -4235,13 +4235,14 @@ fn writeConfigTemplate(path: []const u8) !void {
 }
 
 /// Load configurations from the default configuration files. The default
-/// configuration file is at `$XDG_CONFIG_HOME/ghostty/config.ghostty`.
+/// configuration file is at `$XDG_CONFIG_HOME/kinterm/config.kinterm`.
 ///
 /// On macOS, `$HOME/Library/Application Support/$CFBundleIdentifier/`
 /// is also loaded.
 ///
-/// The legacy `config` file (without extension) is first loaded,
-/// then `config.ghostty`.
+/// The `config` file (without extension) is first loaded, then
+/// `config.kinterm`. If none of these exist, Ghostty's config files are
+/// loaded instead.
 pub fn loadDefaultFiles(self: *Config, alloc: Allocator) !void {
     // Load XDG first
     const legacy_xdg_path = try file_load.legacyDefaultXdgPath(alloc);
@@ -4298,20 +4299,40 @@ pub fn loadDefaultFiles(self: *Config, alloc: Allocator) !void {
                 legacy_app_support_action != .not_found;
         };
 
-        // If both files are not found, then we create a template file.
-        // For macOS, we only create the template file in the app support
-        if (!app_support_loaded and !xdg_loaded) {
+        // If both files are not found, then we use Ghostty's config or
+        // create a template file. For macOS, we only create the template
+        // file in the app support
+        if (!app_support_loaded and !xdg_loaded and !self.loadGhosttyFiles(alloc)) {
             writeConfigTemplate(app_support_path) catch |err| {
                 log.warn("error creating template config file err={}", .{err});
             };
         }
     } else {
-        if (!xdg_loaded) {
+        if (!xdg_loaded and !self.loadGhosttyFiles(alloc)) {
             writeConfigTemplate(xdg_path) catch |err| {
                 log.warn("error creating template config file err={}", .{err});
             };
         }
     }
+}
+
+/// Load Ghostty's config files, for when KinTerm has none of its own.
+/// Returns true if any was found.
+fn loadGhosttyFiles(self: *Config, alloc: Allocator) bool {
+    const paths = file_load.ghosttyPaths(alloc) catch |err| {
+        log.warn("error finding Ghostty config files err={}", .{err});
+        return false;
+    };
+    defer file_load.freeGhosttyPaths(alloc, paths);
+
+    var loaded = false;
+    for (paths) |path| {
+        if (self.loadOptionalFile(alloc, path) != .not_found) {
+            log.info("no KinTerm config, using Ghostty config `{s}`", .{path});
+            loaded = true;
+        }
+    }
+    return loaded;
 }
 
 /// Load and parse the CLI args.

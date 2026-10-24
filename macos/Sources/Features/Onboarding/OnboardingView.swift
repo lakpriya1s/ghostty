@@ -1,0 +1,680 @@
+import SwiftUI
+import UserNotifications
+
+/// The Setup Assistant's pages. See `OnboardingController`.
+struct OnboardingView: View {
+    let finish: () -> Void
+
+    enum Step: Int, CaseIterable {
+        case welcome, faces, tabBar, claude, stayInLoop, done
+    }
+
+    @State private var step: Step = Self.firstStep
+
+    /// Debug builds can open on a page, to check its layout:
+    /// KINTERM_ONBOARDING_STEP=claude.
+    private static var firstStep: Step {
+        #if DEBUG
+        if let name = ProcessInfo.processInfo.environment["KINTERM_ONBOARDING_STEP"],
+           let step = Step.allCases.first(where: { "\($0)" == name }) {
+            return step
+        }
+        #endif
+        return .welcome
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Group {
+                switch step {
+                case .welcome: OnboardingWelcome()
+                case .faces: OnboardingFaces()
+                case .tabBar: OnboardingTabBar()
+                case .claude: OnboardingClaude()
+                case .stayInLoop: OnboardingStayInLoop()
+                case .done: OnboardingDone()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(.horizontal, 44)
+            .padding(.top, 44)
+
+            footer
+        }
+        .frame(width: 760, height: 560)
+        .background(OnboardingColors.background)
+        .foregroundColor(OnboardingColors.text)
+    }
+
+    private var footer: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 6) {
+                ForEach(Step.allCases, id: \.self) { item in
+                    Capsule()
+                        .fill(item == step ? OnboardingColors.accent : OnboardingColors.dot)
+                        .frame(width: item == step ? 18 : 6, height: 6)
+                }
+            }
+            .animation(.easeInOut(duration: 0.2), value: step)
+
+            Spacer()
+
+            if step != .welcome {
+                Button("Back") { move(-1) }
+                    .buttonStyle(OnboardingButtonStyle(primary: false))
+            }
+            Button(primaryTitle) {
+                if step == .done { finish() } else { move(1) }
+            }
+            .buttonStyle(OnboardingButtonStyle(primary: true))
+            .keyboardShortcut(.defaultAction)
+        }
+        .padding(.horizontal, 44)
+        .padding(.vertical, 20)
+        .background(OnboardingColors.footer)
+        .overlay(Rectangle().fill(OnboardingColors.border).frame(height: 1), alignment: .top)
+    }
+
+    private var primaryTitle: String {
+        switch step {
+        case .welcome: return "Get Started"
+        case .done: return "Start Using KinTerm"
+        default: return "Continue"
+        }
+    }
+
+    private func move(_ offset: Int) {
+        guard let next = Step(rawValue: step.rawValue + offset) else { return }
+        step = next
+    }
+}
+
+// MARK: - Pages
+
+private struct OnboardingWelcome: View {
+    var body: some View {
+        VStack(spacing: 18) {
+            KinTermMark().frame(width: 120, height: 120)
+            KinTermWordmark(size: 42)
+            Text("Your agents, at a glance.")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(OnboardingColors.secondary)
+            HStack(spacing: 22) {
+                ForEach(OnboardingSample.states, id: \.label) { sample in
+                    VStack(spacing: 6) {
+                        AgentFaceView(state: sample.state, size: 38, background: OnboardingColors.background)
+                        Text(sample.label).font(.system(size: 11)).foregroundColor(OnboardingColors.muted)
+                    }
+                }
+            }
+            .padding(.top, 14)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 14)
+    }
+}
+
+private struct OnboardingFaces: View {
+    @ObservedObject private var settings = AgentTabBarSettings.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            OnboardingHeading(title: "Pick your faces")
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                ForEach(AgentTabBarSettings.FaceStyle.allCases, id: \.self) { style in
+                    OnboardingChoice(value: style, selection: $settings.faceStyle) {
+                        VStack(spacing: 10) {
+                            HStack(spacing: 6) {
+                                ForEach([AgentFaceView.State.working, .blocked, .done], id: \.self) { state in
+                                    AgentFaceView(state: state, size: 30, background: OnboardingColors.card, style: style)
+                                }
+                            }
+                            Text(style.label).font(.system(size: 13, weight: .semibold))
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+
+            HStack(spacing: 12) {
+                ForEach(AgentTabBarSettings.FaceSize.allCases, id: \.self) { size in
+                    OnboardingChoice(value: size, selection: $settings.faceSize) {
+                        HStack(spacing: 12) {
+                            AgentFaceView(state: .working, size: 40 * size.scale, background: OnboardingColors.card)
+                                .frame(width: 66, height: 66)
+                            Text(size.label).font(.system(size: 15, weight: .semibold))
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+private struct OnboardingTabBar: View {
+    @ObservedObject private var settings = AgentTabBarSettings.shared
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            OnboardingHeading(title: "Where do the faces go?")
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                ForEach(AgentTabBarSettings.Position.allCases, id: \.self) { position in
+                    OnboardingChoice(value: position, selection: $settings.position) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            OnboardingTabBarSketch(position: position)
+                                .frame(height: 96)
+                            Text(position.label).font(.system(size: 13, weight: .semibold))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct OnboardingClaude: View {
+    @ObservedObject private var settings = AgentTabBarSettings.shared
+
+    @State private var folders: [URL] = []
+    @State private var chosen: Set<URL> = []
+    @State private var results: [URL: String] = [:]
+    @State private var installed: Set<URL> = []
+    @State private var didInstall = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            OnboardingHeading(title: "Connect Claude Code", detail: "Each Claude folder is an account.")
+
+            if folders.isEmpty {
+                OnboardingNote(
+                    symbol: "questionmark.folder",
+                    text: "No Claude Code config yet. Run Claude Code once, then reopen KinTerm › Setup Assistant.")
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        ForEach(folders, id: \.self) { folder in
+                            row(for: folder)
+                            if folder != folders.last {
+                                Rectangle().fill(OnboardingColors.border).frame(height: 1)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 176)
+                .background(RoundedRectangle(cornerRadius: 12).fill(OnboardingColors.card))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(OnboardingColors.border))
+
+                if installed.count == folders.count {
+                    Label(didInstall ? "Connected. Restart running sessions." : "All connected",
+                          systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(OnboardingColors.done)
+                } else {
+                    Button(installTitle) { install() }
+                        .buttonStyle(OnboardingButtonStyle(primary: true))
+                        .disabled(chosen.isEmpty)
+                }
+            }
+
+            HStack(spacing: 12) {
+                ForEach(AgentTabBarSettings.AccountStyle.allCases, id: \.self) { style in
+                    OnboardingChoice(value: style, selection: $settings.accountStyle) {
+                        HStack(spacing: 14) {
+                            OnboardingAccountSample(style: style)
+                            Text(style == .background ? "Tinted tab" : "Ring")
+                                .font(.system(size: 13, weight: .semibold))
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .onAppear(perform: load)
+    }
+
+    private func row(for folder: URL) -> some View {
+        let isInstalled = installed.contains(folder)
+        return HStack(spacing: 12) {
+            Toggle("", isOn: Binding(
+                get: { isInstalled || chosen.contains(folder) },
+                set: { on in if on { chosen.insert(folder) } else { chosen.remove(folder) } }))
+                .toggleStyle(.checkbox)
+                .labelsHidden()
+                .disabled(isInstalled)
+            Text(AgentAccountStore.name(for: folder.lastPathComponent))
+                .font(.system(size: 13, weight: .semibold))
+            Text((folder.path as NSString).abbreviatingWithTildeInPath)
+                .font(.system(size: 11.5, design: .monospaced))
+                .foregroundColor(OnboardingColors.muted)
+            Spacer()
+            if let error = results[folder] {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(OnboardingColors.error)
+                    .help(error)
+            } else if isInstalled {
+                Image(systemName: "checkmark.circle.fill").foregroundColor(OnboardingColors.done)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 9)
+    }
+
+    private var installTitle: String {
+        chosen.count == 1 ? "Connect 1 Account" : "Connect \(chosen.count) Accounts"
+    }
+
+    private func load() {
+        folders = AgentAccountStore.claudeConfigFolders()
+        installed = Set(folders.filter(AgentHookInstaller.isInstalled(in:)))
+        chosen = Set(folders).subtracting(installed)
+    }
+
+    private func install() {
+        for folder in chosen {
+            do {
+                try AgentHookInstaller.install(into: folder)
+                installed.insert(folder)
+                results[folder] = nil
+            } catch {
+                results[folder] = error.localizedDescription
+            }
+        }
+        chosen.subtract(installed)
+        didInstall = true
+    }
+}
+
+private struct OnboardingStayInLoop: View {
+    @ObservedObject private var settings = AgentTabBarSettings.shared
+    @State private var notifications: UNAuthorizationStatus = .notDetermined
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            OnboardingHeading(title: "Stay in the loop")
+
+            HStack(alignment: .top, spacing: 12) {
+                OnboardingFeature(title: "Notifications") {
+                    OnboardingBannerSample()
+                } control: {
+                    notificationControl
+                }
+
+                OnboardingFeature(title: "Dock badge") {
+                    KinTermAppIcon(front: AgentFaceView.color(for: .blocked), expression: .waiting)
+                        .frame(width: 76, height: 76)
+                        .overlay(alignment: .topTrailing) {
+                            Text("2")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 24, height: 24)
+                                .background(Circle().fill(Color(agentHex: 0xff453a)))
+                                .offset(x: 2, y: -2)
+                                .opacity(settings.showsDockBadge ? 1 : 0)
+                        }
+                } control: {
+                    Toggle("", isOn: $settings.showsDockBadge).toggleStyle(.switch).labelsHidden()
+                }
+
+                OnboardingFeature(title: "Menu bar") {
+                    OnboardingMenuBarSample(style: settings.menuBarStyle)
+                        .opacity(settings.showsMenuBarSummary ? 1 : 0.35)
+                } control: {
+                    Toggle("", isOn: $settings.showsMenuBarSummary).toggleStyle(.switch).labelsHidden()
+                }
+            }
+
+            if settings.showsMenuBarSummary {
+                HStack(spacing: 12) {
+                    ForEach(AgentTabBarSettings.MenuBarStyle.allCases, id: \.self) { style in
+                        OnboardingChoice(value: style, selection: $settings.menuBarStyle) {
+                            VStack(spacing: 8) {
+                                OnboardingMenuBarSample(style: style)
+                                Text(style.label).font(.system(size: 12, weight: .semibold))
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+                .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .onAppear(perform: refresh)
+    }
+
+    @ViewBuilder private var notificationControl: some View {
+        switch notifications {
+        case .authorized, .provisional, .ephemeral:
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 20))
+                .foregroundColor(OnboardingColors.done)
+        case .denied:
+            Button("Settings") {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            .buttonStyle(OnboardingButtonStyle(primary: false))
+        default:
+            Button("Allow") {
+                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in
+                    refresh()
+                }
+            }
+            .buttonStyle(OnboardingButtonStyle(primary: true))
+        }
+    }
+
+    private func refresh() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async { notifications = settings.authorizationStatus }
+        }
+    }
+}
+
+private struct OnboardingDone: View {
+    private let tips: [(keys: String, text: String)] = [
+        ("Right-click", "Tab bar options"),
+        ("Hover", "Agent details"),
+        ("⌘⇧A", "Every agent"),
+        ("⌘J", "Agent waiting on you"),
+    ]
+
+    var body: some View {
+        VStack(spacing: 22) {
+            KinTermMark(front: OnboardingColors.done, expression: .done).frame(width: 96, height: 96)
+            Text("You're all set").font(.system(size: 26, weight: .semibold))
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 2), spacing: 12) {
+                ForEach(tips, id: \.keys) { tip in
+                    HStack(spacing: 12) {
+                        Text(tip.keys)
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .frame(width: 96)
+                            .padding(.vertical, 5)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(OnboardingColors.cardHovered))
+                            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(OnboardingColors.border))
+                        Text(tip.text).font(.system(size: 13)).foregroundColor(OnboardingColors.secondary)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(12)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(OnboardingColors.card))
+                }
+            }
+            .frame(maxWidth: 560)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 8)
+    }
+}
+
+// MARK: - Pieces
+
+private enum OnboardingColors {
+    static let background = Color(agentHex: 0x16171b)
+    static let footer = Color(agentHex: 0x1a1b20)
+    static let card = Color(agentHex: 0x1c1d21)
+    static let cardHovered = Color(agentHex: 0x22242a)
+    static let border = Color(agentHex: 0x2e3038)
+    static let text = Color(agentHex: 0xf1f2f4)
+    static let secondary = Color(agentHex: 0xa8adb7)
+    static let muted = Color(agentHex: 0x8a8f99)
+    static let accent = Color(agentHex: 0x5ca0ff)
+    static let dot = Color(agentHex: 0x3a3d47)
+    static let done = Color(agentHex: 0x3fb950)
+    static let error = Color(agentHex: 0xff7b72)
+}
+
+private enum OnboardingSample {
+    static let states: [(state: AgentFaceView.State, label: String)] = [
+        (.idle, "Idle"), (.working, "Working"), (.blocked, "Needs you"), (.done, "Done"), (.error, "Error"),
+    ]
+}
+
+private struct OnboardingHeading: View {
+    let title: String
+    var detail: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(.system(size: 24, weight: .semibold))
+            if let detail {
+                Text(detail).font(.system(size: 13.5)).foregroundColor(OnboardingColors.secondary)
+            }
+        }
+    }
+}
+
+private struct OnboardingNote: View {
+    let symbol: String
+    let text: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: symbol).font(.system(size: 18)).foregroundColor(OnboardingColors.muted)
+            Text(text).font(.system(size: 13)).foregroundColor(OnboardingColors.secondary)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 12).fill(OnboardingColors.card))
+    }
+}
+
+/// A card that chooses `value`, outlined in blue when it's the selection.
+private struct OnboardingChoice<Value: Equatable, Content: View>: View {
+    let value: Value
+    @Binding var selection: Value
+    @ViewBuilder let content: () -> Content
+
+    @State private var hovering = false
+
+    private var selected: Bool { selection == value }
+
+    var body: some View {
+        Button { selection = value } label: {
+            content()
+                .padding(14)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(RoundedRectangle(cornerRadius: 12)
+                    .fill(hovering ? OnboardingColors.cardHovered : OnboardingColors.card))
+                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(
+                    selected ? OnboardingColors.accent : OnboardingColors.border, lineWidth: selected ? 2 : 1))
+                .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+    }
+}
+
+/// A feature shown as a picture, with its name and control below.
+private struct OnboardingFeature<Sample: View, Control: View>: View {
+    let title: String
+    @ViewBuilder let sample: () -> Sample
+    @ViewBuilder let control: () -> Control
+
+    var body: some View {
+        VStack(spacing: 12) {
+            sample()
+                .frame(height: 92)
+            HStack {
+                Text(title).font(.system(size: 13, weight: .semibold))
+                Spacer()
+                control()
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 12).fill(OnboardingColors.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(OnboardingColors.border))
+    }
+}
+
+/// A notification banner from KinTerm, in miniature.
+private struct OnboardingBannerSample: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            KinTermAppIcon(front: AgentFaceView.color(for: .done), expression: .done)
+                .frame(width: 30, height: 30)
+            VStack(alignment: .leading, spacing: 5) {
+                RoundedRectangle(cornerRadius: 2).fill(OnboardingColors.text.opacity(0.85)).frame(width: 70, height: 5)
+                RoundedRectangle(cornerRadius: 2).fill(OnboardingColors.muted).frame(width: 92, height: 4)
+                RoundedRectangle(cornerRadius: 2).fill(OnboardingColors.muted.opacity(0.6)).frame(width: 54, height: 4)
+            }
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color(agentHex: 0x2c2e35)))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(OnboardingColors.border))
+    }
+}
+
+/// The menu bar summary in a style, beside a clock, like in the menu bar.
+private struct OnboardingMenuBarSample: View {
+    let style: AgentTabBarSettings.MenuBarStyle
+
+    var body: some View {
+        HStack(spacing: 10) {
+            summary
+            Text("9:41").font(.system(size: 11, weight: .medium)).foregroundColor(OnboardingColors.secondary)
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 24)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Color(agentHex: 0x2c2e35)))
+    }
+
+    @ViewBuilder private var summary: some View {
+        let waiting = AgentFaceView.color(for: .blocked)
+        let working = AgentFaceView.color(for: .working)
+        switch style {
+        case .compact:
+            HStack(spacing: 6) {
+                dot(waiting, "1")
+                dot(working, "2")
+            }
+        case .full:
+            HStack(spacing: 8) {
+                dot(waiting, "1 waiting")
+                dot(working, "2 working")
+            }
+        case .icon:
+            Circle().fill(waiting).frame(width: 8, height: 8)
+        }
+    }
+
+    private func dot(_ color: Color, _ text: String) -> some View {
+        HStack(spacing: 3) {
+            Circle().fill(color).frame(width: 7, height: 7)
+            Text(text).font(.system(size: 11, weight: .medium)).foregroundColor(OnboardingColors.text)
+        }
+        .fixedSize()
+    }
+}
+
+/// A tab with an account color, shown either way.
+private struct OnboardingAccountSample: View {
+    let style: AgentTabBarSettings.AccountStyle
+
+    private let account = Color(agentHex: 0x8b7cf6)
+
+    var body: some View {
+        AgentFaceView(state: .working, size: 30, background: tab)
+            .overlay(Circle().strokeBorder(style == .ring ? account : .clear, lineWidth: 2))
+            .frame(width: 50, height: 50)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(tab))
+    }
+
+    private var tab: Color {
+        style == .background ? AgentTabBarColors.blend(AgentTabBarColors.bar, account, 0.18) : AgentTabBarColors.bar
+    }
+}
+
+private struct OnboardingButtonStyle: ButtonStyle {
+    let primary: Bool
+    @Environment(\.isEnabled) private var isEnabled
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(primary ? .white : OnboardingColors.text)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 8).fill(
+                primary ? OnboardingColors.accent : OnboardingColors.cardHovered))
+            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(
+                primary ? Color.clear : OnboardingColors.border))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.8 : 1) : 0.4)
+    }
+}
+
+/// A small window showing where the tab bar sits for `position`.
+private struct OnboardingTabBarSketch: View {
+    let position: AgentTabBarSettings.Position
+
+    private let faces: [Color] = [.working, .blocked, .done].map { AgentFaceView.color(for: $0) }
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let height = geo.size.height
+            let title: CGFloat = 14
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 7).fill(Color(agentHex: 0x2a2c33))
+                Rectangle().fill(Color(agentHex: 0x22242a)).frame(height: title)
+                HStack(spacing: 3) {
+                    ForEach(0..<3, id: \.self) { _ in Circle().fill(Color(agentHex: 0x4a4e59)).frame(width: 5, height: 5) }
+                }
+                .offset(x: 7, y: 4.5)
+                bar(width: width, height: height, title: title)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: 7))
+            .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Color(agentHex: 0x3a3d47)))
+        }
+    }
+
+    @ViewBuilder
+    private func bar(width: CGFloat, height: CGFloat, title: CGFloat) -> some View {
+        let dot: CGFloat = 9
+        switch position {
+        case .top:
+            row(dot: dot).offset(x: 7, y: title + 5)
+        case .titleBar:
+            row(dot: 7).offset(x: 30, y: 3.5)
+        case .bottom:
+            row(dot: dot).offset(x: 7, y: height - dot - 6)
+        case .left:
+            column(dot: dot).offset(x: 6, y: title + 6)
+        case .right:
+            column(dot: dot).offset(x: width - dot - 6, y: title + 6)
+        case .native:
+            HStack(spacing: 2) {
+                ForEach(faces.indices, id: \.self) { index in
+                    HStack(spacing: 3) {
+                        Circle().fill(faces[index]).frame(width: 5, height: 5)
+                        RoundedRectangle(cornerRadius: 1).fill(Color(agentHex: 0x6b707b)).frame(width: 18, height: 3)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 11)
+                    .background(RoundedRectangle(cornerRadius: 3)
+                        .fill(index == 0 ? Color(agentHex: 0x363944) : Color(agentHex: 0x2a2c33)))
+                }
+            }
+            .padding(.horizontal, 4)
+            .frame(width: width)
+            .offset(y: title + 2)
+        }
+    }
+
+    private func row(dot: CGFloat) -> some View {
+        HStack(spacing: 4) {
+            ForEach(faces.indices, id: \.self) { Circle().fill(faces[$0]).frame(width: dot, height: dot) }
+        }
+    }
+
+    private func column(dot: CGFloat) -> some View {
+        VStack(spacing: 4) {
+            ForEach(faces.indices, id: \.self) { Circle().fill(faces[$0]).frame(width: dot, height: dot) }
+        }
+    }
+}

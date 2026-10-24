@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agents panel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#7aa7ff}a:hover{color:#a9c6ff}
+.row{display:grid;grid-template-columns:30pxminmax(0,1.6fr) minmax(0,1.6fr) 90px 70px;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 14px;border:0;border-radius:9px;background:transparent;color:#d6d9df;font:400 13px Inter,system-ui,sans-serif;text-align:left;cursor:pointer;box-sizing:border-box}
+.row:hover{background:#2a2c33}
+.mini{display:flex;align-items:center;justify-content:center;width:30px;height:30px}
+.mini>span{display:block;transform:scale(.6)}
+.face{position:relative;display:block;width:40px;height:40px;border-radius:50%;background:var(--c,#8b9099)}
+.face .eye{position:absolute;top:14px;width:5px;height:8px;border-radius:3px;background:#15161b}
+.face .eye.l{left:11px}.face .eye.r{right:11px}
+.face .mouth{position:absolute;left:50%;top:26px;width:10px;height:2.5px;margin-left:-5px;border-radius:2px;background:#15161b}
+.f-idle{--c:#8b9099}
+.f-idle .eye{top:18px;width:7px;height:2.5px}
+.f-idle .eye.l{left:10px}.f-idle .eye.r{right:10px}
+.f-idle .mouth{width:6px;margin-left:-3px}
+.f-working{--c:#5ca0ff}
+.f-working .eye{animation:look 1.3s ease-in-out infinite}
+.f-working .mouth{width:7px;margin-left:-3.5px}
+.f-working::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:3px solid rgba(92,160,255,.18);border-top-color:#5ca0ff;animation:spin .9s linear infinite}
+.f-waiting{--c:#f5a524;animation:pulse 1.5s ease-in-out infinite}
+.f-waiting .eye{top:12px;width:6px;height:9px}
+.f-waiting .mouth{top:25px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:transparent;border:2.5px solid #15161b;box-sizing:border-box}
+.f-done{--c:#3fb950}
+.f-done .eye{top:15px;width:9px;height:5px;background:transparent;border:2.5px solid #15161b;border-bottom:0;border-radius:6px 6px 0 0;box-sizing:border-box}
+.f-done .eye.l{left:9px}.f-done .eye.r{right:9px}
+.f-done .mouth{top:22px;width:16px;height:8px;margin-left:-8px;background:transparent;border:2.5px solid #15161b;border-top:0;border-radius:0 0 10px 10px;box-sizing:border-box}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes look{0%,100%{transform:translateX(-1.5px)}50%{transform:translateX(1.5px)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,165,36,.55)}50%{box-shadow:0 0 0 8px rgba(245,165,36,0)}}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+</style>
+</helmet>
+<div style="width: 820px; height: 560px; box-sizing: border-box; padding: 36px; background: #0f1013; font-family: Inter, system-ui, sans-serif">
+  <div style="height: 100%; display: flex; flex-direction: column; border-radius: 14px; background: #1f2026; border: 1px solid #33363f; box-shadow: 0 30px 80px rgba(0,0,0,.55); overflow: hidden">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #2e3038">
+      <label for="q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Filter agents</label>
+      <input id="q" placeholder="Filter agents…" style="flex: 1; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #3a3d47; background: #16171b; color: #f1f2f4; font: 400 13.5px Inter, system-ui, sans-serif">
+      <span style="font-size: 12px; color: #8a8f99">⌘⇧A</span>
+    </div>
+    <div style="display: flex; gap: 6px; padding: 10px 18px 4px">
+      <sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+        <button style="height: 28px; padding: 0 12px; border-radius: 14px; border: 1px solid #3a3d47; background: {{f.bg}}; color: {{f.fg}}; font: 500 12px Inter, system-ui, sans-serif; cursor: pointer">{{f.label}}</button>
+      </sc-for>
+    </div>
+    <div style="display: grid; grid-template-columns: 22px minmax(0,1.6fr) minmax(0,1.6fr) 90px 70px; gap: 12px; padding: 10px 32px 6px; font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: #8a8f99">
+      <span></span><span>TAB</span><span>DOING</span><span>ACCOUNT</span><span style="text-align: right">TIME</span>
+    </div>
+    <div style="flex: 1; padding: 0 18px 12px; display: flex; flex-direction: column; gap: 2px">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+        <button class="row">
+          <span class="mini" aria-hidden="true"><span><span class="face {{r.dot}}"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></span></span></span>
+          <span style="min-width: 0; display: flex; flex-direction: column; line-height: 1.35">
+            <span class="ell" style="color: #f1f2f4; font-weight: 500">{{r.title}}</span>
+            <span class="ell" style="font-size: 11.5px; color: #8a8f99">{{r.where}}</span>
+          </span>
+          <span class="ell" style="color: {{r.doingColor}}">{{r.doing}}</span>
+          <span style="display: flex; align-items: center; gap: 6px; color: #a8adb7"><span style="width: 3px; height: 14px; border-radius: 2px; background: {{r.acctColor}}"></span>{{r.acct}}</span>
+          <span style="text-align: right; color: #8a8f99; font-variant-numeric: tabular-nums">{{r.time}}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 18px; padding: 10px 18px; border-top: 1px solid #2e3038; font-size: 12px; color: #8a8f99">
+      <span>↵ jump to tab</span><span>⌘J next waiting agent</span><span style="margin-left: auto">4 agents · 2 windows</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":820,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const W = '#8b7cf6', P = '#2dd4bf';
+    const on = { bg: '#3a3d47', fg: '#f1f2f4' }, off = { bg: 'transparent', fg: '#a8adb7' };
+    return {
+      filters: [{ label: 'All 4', ...on }, { label: 'Waiting 1', ...off }, { label: 'Working 1', ...off }, { label: 'Done 1', ...off }],
+      rows: [
+        { dot: 'f-waiting', title: 'web · refactor nav', where: 'Window 1 · tab 2 · feat/nav', doing: 'Needs permission: Bash(npm test)', doingColor: '#f5a524', acct: 'Work', acctColor: W, time: '1m' },
+        { dot: 'f-working', title: 'api · fix auth bug', where: 'Window 1 · tab 1 · fix/session-race', doing: 'Editing src/auth/session.ts', doingColor: '#c2c6cf', acct: 'Work', acctColor: W, time: '2m 14s' },
+        { dot: 'f-done', title: 'docs · changelog', where: 'Window 1 · tab 3 · main', doing: 'Finished · updated CHANGELOG.md', doingColor: '#c2c6cf', acct: 'Personal', acctColor: P, time: '3m ago' },
+        { dot: 'f-idle', title: 'infra · terraform', where: 'Window 2 · tab 1 · main', doing: 'Ready for a prompt', doingColor: '#8a8f99', acct: 'Personal', acctColor: P, time: '12m' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Face set B · Shapes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#7aa7ff}a:hover{color:#a9c6ff}
+.big{display:block;transform:scale(1.7)}
+.ic{position:relative;display:block;width:40px;height:40px}
+.ic>span{position:absolute;display:none}
+.s-done::after{content:"";position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;background:#f1f2f4;border:2px solid #1c1d21}
+.s-idle .a{display:block;inset:8px;border-radius:50%;border:3px solid #8b9099;animation:fade 3s ease-in-out infinite}
+.s-working .a,.s-working .b,.s-working .c{display:block;top:16px;width:8px;height:8px;border-radius:50%;background:#5ca0ff;animation:hop 1s ease-in-out infinite}
+.s-working .a{left:5px}
+.s-working .b{left:16px;animation-delay:.15s}
+.s-working .c{left:27px;animation-delay:.3s}
+.s-waiting{animation:bob 1.4s ease-in-out infinite}
+.s-waiting .a{display:block;inset:3px 2px 5px;background:#f5a524;clip-path:polygon(50% 4%,98% 96%,2% 96%)}
+.s-waiting .b{display:block;left:18.5px;top:14px;width:3px;height:10px;border-radius:2px;background:#15161b}
+.s-waiting .c{display:block;left:18.5px;top:27px;width:3px;height:3px;border-radius:2px;background:#15161b}
+.s-done .a{display:block;inset:5px;border-radius:50%;background:#3fb950}
+.s-done .c{display:block;left:15.5px;top:11px;width:6px;height:12px;border:solid #15161b;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.s-error .a{display:block;inset:5px;background:#f85149;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
+.s-error .b,.s-error .c{display:block;left:18.5px;top:12px;width:3px;height:16px;border-radius:2px;background:#15161b;transform:rotate(45deg)}
+.s-error .c{transform:rotate(-45deg)}
+.s-shell .a{display:block;inset:6px;border-radius:5px;background:#8b9099}
+.s-shell .b{display:block;left:11px;top:15px;width:6px;height:6px;border:solid #15161b;border-width:3px 3px 0 0;transform:rotate(45deg)}
+.s-shell .c{display:block;left:20px;top:24px;width:9px;height:3px;border-radius:2px;background:#15161b}
+@keyframes fade{50%{opacity:.45}}
+@keyframes hop{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+</style>
+</helmet>
+<div style="width: 900px; height: 520px; box-sizing: border-box; padding: 40px 48px; background: #16171b; color: #d6d9df; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div>
+    <h1 style="margin: 0 0 6px; font-size: 24px; font-weight: 600; color: #f1f2f4">Set B · Shapes</h1>
+    <p style="margin: 0; font-size: 14px; color: #a8adb7">Every state has its own silhouette, like road signs. Readable in grayscale and at tiny sizes; color is a bonus.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 10px 16px; border-radius: 14px; background: #1c1d21; border: 1px solid #2e3038">
+        <span style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px" aria-hidden="true">
+          <span class="big"><span class="ic {{r.cls}}"><span class="a"></span><span class="b"></span><span class="c"></span></span></span>
+        </span>
+        <div style="font-size: 14px; font-weight: 600; color: #f1f2f4; text-align: center">{{r.name}}</div>
+        <div style="font-size: 12px; color: #a8adb7; text-align: center; line-height: 1.45">{{r.desc}}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: #8a8f99">IN THE TAB BAR · ACTUAL SIZE</span>
+    <div style="display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px; background: #22242a; border: 1px solid #2e3038">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+        <span style="display: flex; align-items: center; justify-content: center; width: 58px; height: 58px; border-radius: 14px; background: {{r.tabBg}}" aria-hidden="true">
+          <span class="ic {{r.cls}}"><span class="a"></span><span class="b"></span><span class="c"></span></span>
+        </span>
+      </sc-for>
+      <span style="margin-left: auto; font-size: 12px; color: #8a8f99">Most color-blind friendly</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":520}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const rows = [
+      { cls: 's-idle', name: 'Idle', desc: 'Hollow ring, fading.' },
+      { cls: 's-working', name: 'Working', desc: 'Three hopping dots.' },
+      { cls: 's-waiting', name: 'Waiting on you', desc: 'Warning triangle, bobbing.' },
+      { cls: 's-done', name: 'Done', desc: 'Filled circle, check.' },
+      { cls: 's-error', name: 'Error', desc: 'Stop-sign octagon, X.' },
+      { cls: 's-shell', name: 'Plain shell', desc: 'Solid square, prompt.' }
+    ];
+    return { rows: rows.map((r, i) => ({ ...r, tabBg: i === 0 ? '#363944' : r.cls === 's-shell' ? '#22242a' : '#2a2c35' })) };
+  }
+}
+</script>
+</body>
+</html>

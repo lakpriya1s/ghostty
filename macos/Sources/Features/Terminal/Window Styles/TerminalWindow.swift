@@ -32,6 +32,13 @@ class TerminalWindow: NSWindow {
         return view
     }()
 
+    /// Face that shows what a coding agent in this tab is doing.
+    private lazy var programStatusIndicator: NSHostingView<AgentTabFaceView> = {
+        let view = NSHostingView(rootView: AgentTabFaceView(status: programStatus))
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+
     /// The configuration derived from the Ghostty config so we don't need to rely on references.
     private(set) var derivedConfig: DerivedConfig = .init()
 
@@ -68,6 +75,77 @@ class TerminalWindow: NSWindow {
             invalidateRestorableState()
         }
     }
+
+    /// The most urgent program status in this tab, shown as a face on the tab
+    /// with the details in the tab's tooltip.
+    var programStatus: Ghostty.Action.ProgramStatus? {
+        didSet {
+            guard programStatus != oldValue else { return }
+            syncProgramStatusIndicator()
+            tab.toolTip = programStatus?.tooltip
+        }
+    }
+
+    /// The face on the native tab, only while native tabs are shown. The
+    /// hidden tab bar keeps its views, and a face there would keep animating.
+    private func syncProgramStatusIndicator() {
+        let status = AgentTabBarSettings.shared.replacesNativeTabBar ? nil : programStatus
+        guard programStatusIndicator.rootView.status != status else { return }
+        programStatusIndicator.rootView = AgentTabFaceView(status: status)
+    }
+
+    /// Hide the native tab bar when the agent tab bar replaces it, and bring it
+    /// back when the user switches to native tabs.
+    func syncNativeTabBarVisibility() {
+        // AppKit adds the native tab bar as a titlebar accessory (see
+        // addTitlebarAccessoryViewController), so hiding that accessory hides
+        // the bar while the tabs keep working.
+        let hide = AgentTabBarSettings.shared.replacesNativeTabBar
+        for controller in titlebarAccessoryViewControllers where isTabBar(controller) {
+            if controller.isHidden != hide { controller.isHidden = hide }
+        }
+        syncProgramStatusIndicator()
+
+        syncAgentTabBarInTitlebar()
+    }
+
+    /// Whether this window can show the agent tab bar in its title bar. Not
+    /// without a title bar, nor in styles that already put tabs there.
+    var supportsAgentTabBarInTitlebar: Bool { styleMask.contains(.titled) }
+
+    /// Whether the agent tab bar is in the title bar, next to the window
+    /// buttons. The content then extends under the transparent title bar, and
+    /// the bar shows the title itself.
+    private(set) var agentTabBarInTitlebar = false
+
+    /// What we changed to put the agent tab bar in the title bar, to undo.
+    private var titleVisibleBeforeAgentTabBar = false
+    private var titlebarTransparentBeforeAgentTabBar = false
+
+    private func syncAgentTabBarInTitlebar() {
+        let inTitlebar = AgentTabBarSettings.shared.position == .titleBar
+            && supportsAgentTabBarInTitlebar
+            && !styleMask.contains(.fullScreen)
+        guard inTitlebar != agentTabBarInTitlebar else { return }
+        agentTabBarInTitlebar = inTitlebar
+
+        if inTitlebar {
+            titleVisibleBeforeAgentTabBar = titleVisibility == .visible
+            titlebarTransparentBeforeAgentTabBar = titlebarAppearsTransparent
+            titleVisibility = .hidden
+            titlebarAppearsTransparent = true
+            styleMask.insert(.fullSizeContentView)
+        } else {
+            styleMask.remove(.fullSizeContentView)
+            titlebarAppearsTransparent = titlebarTransparentBeforeAgentTabBar
+            if titleVisibleBeforeAgentTabBar { titleVisibility = .visible }
+        }
+        agentTabBarInTitlebarDidChange()
+    }
+
+    /// Lets a window style redo its title bar appearance when the agent tab
+    /// bar moves into or out of the title bar.
+    func agentTabBarInTitlebarDidChange() {}
 
     // MARK: NSWindow Overrides
 
@@ -166,6 +244,7 @@ class TerminalWindow: NSWindow {
         stackView.setHuggingPriority(.defaultHigh, for: .horizontal)
         stackView.spacing = 4
         stackView.alignment = .centerY
+        stackView.addArrangedSubview(programStatusIndicator)
         stackView.addArrangedSubview(tabColorIndicator)
         stackView.addArrangedSubview(keyEquivalentLabel)
         stackView.addArrangedSubview(resetZoomTabButton)
@@ -260,6 +339,7 @@ class TerminalWindow: NSWindow {
         // it. This has been verified to work on macOS 12 to 26
         if isTabBar(childViewController) {
             childViewController.identifier = Self.tabBarIdentifier
+            childViewController.isHidden = AgentTabBarSettings.shared.replacesNativeTabBar
             tabBarDidAppear()
         }
     }
@@ -392,6 +472,7 @@ class TerminalWindow: NSWindow {
             // tab title if we're using custom fonts.
             tab.attributedTitle = attributedTitle
             guard title != oldValue else { return }
+            AgentTabBarModel.setNeedsRefresh()
 
             syncWindowTitleAppearance()
         }

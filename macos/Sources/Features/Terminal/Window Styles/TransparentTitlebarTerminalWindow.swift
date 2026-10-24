@@ -58,6 +58,11 @@ class TransparentTitlebarTerminalWindow: TerminalWindow {
 
     // MARK: Appearance
 
+    override func agentTabBarInTitlebarDidChange() {
+        guard let lastSurfaceConfig else { return }
+        syncAppearance(lastSurfaceConfig)
+    }
+
     override func syncAppearance(_ surfaceConfig: Ghostty.SurfaceView.DerivedConfig) {
         super.syncAppearance(surfaceConfig)
         // override appearance based on the terminal's background color
@@ -96,7 +101,8 @@ class TransparentTitlebarTerminalWindow: TerminalWindow {
             let isTransparentTitlebar = derivedConfig.macosTitlebarStyle == .transparent ||
             derivedConfig.macosTitlebarStyle == .tabs
 
-            titlebarView.layer?.backgroundColor = (isGlassStyle && isTransparentTitlebar)
+            // The agent tab bar draws its own background under the title bar.
+            titlebarView.layer?.backgroundColor = (isGlassStyle && isTransparentTitlebar) || agentTabBarInTitlebar
                 ? NSColor.clear.cgColor
                 : preferredBackgroundColor?.cgColor
         }
@@ -122,7 +128,9 @@ class TransparentTitlebarTerminalWindow: TerminalWindow {
 
         // Setup the titlebar background color to match ours
         titlebarContainer.wantsLayer = true
-        titlebarContainer.layer?.backgroundColor = preferredBackgroundColor?.cgColor
+        titlebarContainer.layer?.backgroundColor = agentTabBarInTitlebar
+            ? NSColor.clear.cgColor
+            : preferredBackgroundColor?.cgColor
 
         // See the docs for the function that sets this to true on why
         effectViewIsHidden = false

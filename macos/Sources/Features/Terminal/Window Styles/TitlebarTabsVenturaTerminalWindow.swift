@@ -2,6 +2,10 @@ import Cocoa
 
 /// Titlebar tabs for macOS 13 to 15.
 class TitlebarTabsVenturaTerminalWindow: TerminalWindow {
+    /// This style has its own tabs (or no title bar), so the agent tab bar
+    /// stays below the title bar.
+    override var supportsAgentTabBarInTitlebar: Bool { false }
+
     /// Titlebar tabs can't support the update accessory because of the way we layout
     /// the native tabs back into the menu bar.
     override var supportsUpdateAccessory: Bool { false }
@@ -542,7 +546,7 @@ private class WindowButtonsBackdropView: NSView {
 // Custom NSToolbar subclass that displays a centered window title,
 // in order to accommodate the titlebar tabs feature.
 private class TerminalToolbar: NSToolbar, NSToolbarDelegate {
-    private let titleTextField = CenteredDynamicLabel(labelWithString: "👻 Ghostty")
+    private let titleTextField = CenteredDynamicLabel(labelWithString: "🙂 KinTerm")
 
     var titleText: String {
         get {

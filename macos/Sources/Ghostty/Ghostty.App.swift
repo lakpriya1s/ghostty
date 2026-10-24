@@ -722,6 +722,9 @@ extension Ghostty {
             case GHOSTTY_ACTION_PROGRESS_REPORT:
                 progressReport(app, target: target, v: action.action.progress_report)
 
+            case GHOSTTY_ACTION_PROGRAM_STATUS:
+                programStatus(app, target: target, v: action.action.program_status)
+
             case GHOSTTY_ACTION_CONFIG_CHANGE:
                 configChange(app, target: target, v: action.action.config_change)
 
@@ -1653,6 +1656,16 @@ extension Ghostty {
                 guard let surface = target.target.surface else { return }
                 guard let surfaceView = self.surfaceView(from: surface) else { return }
 
+                // The shell is back at its prompt, so whatever reported a
+                // program status has exited, even if it never said so (it
+                // crashed, was interrupted, or skipped its last report).
+                DispatchQueue.main.async {
+                    surfaceView.updateProgramStatus(.init(
+                        state: .clear, kind: nil, progress: nil,
+                        app: nil, title: nil, msg: nil, account: nil,
+                        context: nil, last: nil, id: nil))
+                }
+
                 // Determine if we even care about command finish notifications
                 guard let config = (NSApplication.shared.delegate as? AppDelegate)?.ghostty.config else { return }
                 switch config.notifyOnCommandFinish {
@@ -2270,6 +2283,30 @@ extension Ghostty {
             }
         }
 
+        private static func programStatus(
+            _ app: ghostty_app_t,
+            target: ghostty_target_s,
+            v: ghostty_action_program_status_s) {
+            switch target.tag {
+            case GHOSTTY_TARGET_APP:
+                Ghostty.logger.warning("program status does nothing with an app target")
+                return
+
+            case GHOSTTY_TARGET_SURFACE:
+                guard let surface = target.target.surface else { return }
+                guard let surfaceView = self.surfaceView(from: surface) else { return }
+
+                // The strings are only valid during this call, so this copies them.
+                let status = Ghostty.Action.ProgramStatus(c: v)
+                DispatchQueue.main.async {
+                    surfaceView.updateProgramStatus(status)
+                }
+
+            default:
+                assertionFailure()
+            }
+        }
+
         private static func scrollbar(
             _ app: ghostty_app_t,
             target: ghostty_target_s,
@@ -2505,7 +2542,7 @@ extension Ghostty {
             case UNNotificationDefaultActionIdentifier, Ghostty.userNotificationActionShow:
                 // The user clicked on a notification
                 surface.handleUserNotification(notification: response.notification, focus: true)
-            case UNNotificationDismissActionIdentifier:
+            case UNNotificationDismissActionIdentifier, Ghostty.agentNotificationActionDismiss:
                 // The user dismissed the notification
                 surface.handleUserNotification(notification: response.notification, focus: false)
             default:

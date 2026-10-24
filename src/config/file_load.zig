@@ -16,11 +16,11 @@ pub fn defaultXdgPath(alloc: Allocator) ![]const u8 {
         global.io(),
         alloc,
         &environ_map,
-        .{ .subdir = "ghostty/config.ghostty" },
+        .{ .subdir = "kinterm/config.kinterm" },
     );
 }
 
-/// Ghostty <1.3.0 default path for the XDG home configuration file.
+/// Default path for the XDG home configuration file without an extension.
 /// Returned value must be freed by the caller.
 pub fn legacyDefaultXdgPath(alloc: Allocator) ![]const u8 {
     var environ_map = try global.environMap();
@@ -29,7 +29,7 @@ pub fn legacyDefaultXdgPath(alloc: Allocator) ![]const u8 {
         global.io(),
         alloc,
         &environ_map,
-        .{ .subdir = "ghostty/config" },
+        .{ .subdir = "kinterm/config" },
     );
 }
 
@@ -61,11 +61,11 @@ pub fn preferredXdgPath(alloc: Allocator) ![]const u8 {
 /// Default path for the macOS Application Support configuration file.
 /// Returned value must be freed by the caller.
 pub fn defaultAppSupportPath(alloc: Allocator) ![]const u8 {
-    return try internal_os.macos.appSupportDir(alloc, "config.ghostty");
+    return try internal_os.macos.appSupportDir(alloc, "config.kinterm");
 }
 
-/// Ghostty <1.3.0 default path for the macOS Application Support
-/// configuration file. Returned value must be freed by the caller.
+/// Default path for the macOS Application Support configuration file
+/// without an extension. Returned value must be freed by the caller.
 pub fn legacyDefaultAppSupportPath(alloc: Allocator) ![]const u8 {
     return try internal_os.macos.appSupportDir(alloc, "config");
 }
@@ -95,6 +95,64 @@ pub fn preferredAppSupportPath(alloc: Allocator) ![]const u8 {
     return app_support_path;
 }
 
+/// Ghostty's configuration files, in the order Ghostty loads them. KinTerm
+/// loads these when it has no configuration file of its own, so an existing
+/// Ghostty setup keeps working. Returned values must be freed by the caller.
+pub fn ghosttyPaths(alloc: Allocator) ![]const []const u8 {
+    var environ_map = try global.environMap();
+    defer environ_map.deinit();
+
+    var paths: std.ArrayList([]const u8) = try .initCapacity(alloc, 4);
+    errdefer {
+        for (paths.items) |path| alloc.free(path);
+        paths.deinit(alloc);
+    }
+
+    for ([_][]const u8{ "ghostty/config", "ghostty/config.ghostty" }) |subdir| {
+        paths.appendAssumeCapacity(try internal_os.xdg.config(
+            global.io(),
+            alloc,
+            &environ_map,
+            .{ .subdir = subdir },
+        ));
+    }
+
+    if (comptime builtin.target.os.tag == .macos) {
+        for ([_][]const u8{ "config", "config.ghostty" }) |sub_path| {
+            paths.appendAssumeCapacity(
+                try internal_os.macos.ghosttyAppSupportDir(alloc, sub_path),
+            );
+        }
+    }
+
+    return try paths.toOwnedSlice(alloc);
+}
+
+/// Frees the result of `ghosttyPaths`.
+pub fn freeGhosttyPaths(alloc: Allocator, paths: []const []const u8) void {
+    for (paths) |path| alloc.free(path);
+    alloc.free(paths);
+}
+
+/// The Ghostty configuration file KinTerm falls back to, if any exists.
+/// Returned value must be freed by the caller.
+pub fn existingGhosttyPath(alloc: Allocator) !?[]const u8 {
+    const paths = try ghosttyPaths(alloc);
+    defer freeGhosttyPaths(alloc, paths);
+
+    // The last one loaded wins, so prefer it for editing.
+    var i = paths.len;
+    while (i > 0) {
+        i -= 1;
+        if (open(global.io(), paths[i])) |f| {
+            f.close(global.io());
+            return try alloc.dupe(u8, paths[i]);
+        } else |_| {}
+    }
+
+    return null;
+}
+
 /// Returns the path to the preferred default configuration file.
 /// This is the file where users should place their configuration.
 ///
@@ -103,6 +161,20 @@ pub fn preferredAppSupportPath(alloc: Allocator) ![]const u8 {
 ///
 /// The returned value must be freed by the caller.
 pub fn preferredDefaultFilePath(alloc: Allocator) ![]const u8 {
+    const path = try preferredKinTermFilePath(alloc);
+    if (open(global.io(), path)) |f| {
+        f.close(global.io());
+        return path;
+    } else |_| {}
+
+    // No KinTerm config yet: KinTerm is running on a Ghostty config, so
+    // that's the one to edit.
+    const ghostty_path = try existingGhosttyPath(alloc) orelse return path;
+    alloc.free(path);
+    return ghostty_path;
+}
+
+fn preferredKinTermFilePath(alloc: Allocator) ![]const u8 {
     switch (builtin.target.os.tag) {
         .macos => {
             // macOS prefers the Application Support directory

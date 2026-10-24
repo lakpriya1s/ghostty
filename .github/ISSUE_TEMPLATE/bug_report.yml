@@ -1,0 +1,45 @@
+name: Bug report
+description: Something in KinTerm doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. If it's about the terminal itself (rendering, fonts, config options) and also happens in Ghostty, please report it [upstream](https://github.com/ghostty-org/ghostty) too.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you saw, and what you expected instead. Screenshots of the tab bar help a lot.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a Claude Code tab
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: KinTerm version
+      description: KinTerm › About KinTerm
+      placeholder: "0.1.2"
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "macOS 15.5, Apple silicon"
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent
+      description: Claude Code version, or the agent or script reporting the state.
+      placeholder: "Claude Code 2.1"

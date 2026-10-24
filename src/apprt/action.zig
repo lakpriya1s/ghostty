@@ -364,6 +364,12 @@ pub const Action = union(Key) {
     /// split or the window is fullscreen.
     resize_window: ResizeWindow,
 
+    /// A program reported what it is doing with OSC 7501 (the Program
+    /// Status Protocol), for example a coding agent that is working or
+    /// waiting on the user. Only reports about the program itself (no
+    /// `id`) are sent. Each report replaces the previous one completely.
+    program_status: ProgramStatus,
+
     /// Sync with: ghostty_action_tag_e
     pub const Key = enum(c_int) {
         quit,
@@ -436,6 +442,7 @@ pub const Action = union(Key) {
         copy_title_to_clipboard,
         move_tab_to_new_window,
         resize_window,
+        program_status,
 
         test "ghostty.h Action.Key" {
             try lib.checkGhosttyHEnum(Key, "GHOSTTY_ACTION_");
@@ -476,9 +483,10 @@ pub const Action = union(Key) {
         // For ABI compatibility, we expect that this is our union size.
         // At the time of writing, we don't promise ABI compatibility
         // so we can change this but I want to be aware of it.
+        // ProgramStatus.C (six string pointers) is the largest member.
         assert(@sizeOf(CValue) == switch (@sizeOf(usize)) {
-            4 => 24,
-            8 => 24,
+            4 => 36,
+            8 => 64,
             else => unreachable,
         });
     }
@@ -795,6 +803,81 @@ pub const Pwd = struct {
         writer: *std.Io.Writer,
     ) !void {
         try writer.print("{s}{{ {s} }}", .{ @typeName(@This()), value.pwd });
+    }
+};
+
+/// An OSC 7501 program status report for a surface.
+pub const ProgramStatus = struct {
+    state: terminal.osc.Command.ProgramStatus.State,
+    kind: ?terminal.osc.Command.ProgramStatus.Kind = null,
+    progress: ?u8 = null,
+    context: ?u8 = null,
+    app: [:0]const u8 = "",
+    title: [:0]const u8 = "",
+    msg: [:0]const u8 = "",
+    account: [:0]const u8 = "",
+    last: [:0]const u8 = "",
+    id: [:0]const u8 = "",
+
+    /// Sync with: ghostty_action_program_status_state_e
+    pub const CState = enum(c_int) {
+        idle,
+        working,
+        done,
+        blocked,
+        @"error",
+        clear,
+    };
+
+    /// Sync with: ghostty_action_program_status_kind_e
+    pub const CKind = enum(c_int) {
+        none,
+        permission,
+        question,
+        auth,
+    };
+
+    // Sync with: ghostty_action_program_status_s
+    pub const C = extern struct {
+        state: CState,
+        kind: CKind,
+        /// -1 if no progress was reported, otherwise 0-100.
+        progress: i8,
+        /// -1 if no context usage was reported, otherwise 0-100.
+        context: i8,
+        app: [*:0]const u8,
+        title: [*:0]const u8,
+        msg: [*:0]const u8,
+        account: [*:0]const u8,
+        last: [*:0]const u8,
+        id: [*:0]const u8,
+    };
+
+    pub fn cval(self: ProgramStatus) C {
+        return .{
+            .state = switch (self.state) {
+                inline else => |tag| @field(CState, @tagName(tag)),
+            },
+            .kind = if (self.kind) |kind| switch (kind) {
+                inline else => |tag| @field(CKind, @tagName(tag)),
+            } else .none,
+            .progress = if (self.progress) |progress| @intCast(@min(progress, 100)) else -1,
+            .context = if (self.context) |context| @intCast(@min(context, 100)) else -1,
+            .app = self.app.ptr,
+            .title = self.title.ptr,
+            .msg = self.msg.ptr,
+            .account = self.account.ptr,
+            .last = self.last.ptr,
+            .id = self.id.ptr,
+        };
+    }
+
+    test "ghostty.h ProgramStatus.CState" {
+        try lib.checkGhosttyHEnum(CState, "GHOSTTY_PROGRAM_STATE_");
+    }
+
+    test "ghostty.h ProgramStatus.CKind" {
+        try lib.checkGhosttyHEnum(CKind, "GHOSTTY_PROGRAM_KIND_");
     }
 };
 

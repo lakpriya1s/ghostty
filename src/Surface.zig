@@ -1186,6 +1186,27 @@ pub fn handleMessage(self: *Surface, msg: Message) !void {
             };
         },
 
+        .program_status => |v| {
+            _ = self.rt_app.performAction(
+                .{ .surface = self },
+                .program_status,
+                .{
+                    .state = v.state,
+                    .kind = v.kind,
+                    .progress = v.progress,
+                    .context = v.context,
+                    .app = std.mem.sliceTo(&v.app, 0),
+                    .title = std.mem.sliceTo(&v.title, 0),
+                    .msg = std.mem.sliceTo(&v.msg, 0),
+                    .account = std.mem.sliceTo(&v.account, 0),
+                    .last = std.mem.sliceTo(&v.last, 0),
+                    .id = std.mem.sliceTo(&v.id, 0),
+                },
+            ) catch |err| {
+                log.warn("apprt failed to report program status err={}", .{err});
+            };
+        },
+
         .selection_scroll_tick => |active| {
             self.selection_scroll_active = active;
             try self.selectionScrollTick();

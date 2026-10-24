@@ -77,6 +77,14 @@ pub const max_title_bytes = 192;
 /// The longest `app` value.
 pub const max_app_bytes = 32;
 
+/// The longest `account` value. Not in the specification; see `Option`.
+pub const max_account_bytes = 32;
+
+/// The longest `last` value before and after base64 decoding, the same
+/// as `msg`. Not in the specification; see `Option`.
+pub const max_last_encoded_bytes = max_msg_encoded_bytes;
+pub const max_last_bytes = max_msg_bytes;
+
 /// The longest `id` value, the longest part between two slashes, and the
 /// most parts an id can have.
 pub const max_id_bytes = 128;
@@ -211,28 +219,29 @@ pub const Report = struct {
         return switch (option) {
             // The parser already discarded reports with an invalid id.
             .id => v,
-            .app => if (isName(v)) v else null,
+            .app, .account => if (isName(v)) v else null,
             .kind => if (self.state == .blocked) std.meta.stringToEnum(Kind, v) else null,
             .progress => switch (self.state) {
                 .working, .blocked => parseProgress(v),
                 else => null,
             },
-            .title, .msg => if (v.len > 0) v else null,
+            .context => parseProgress(v),
+            .title, .msg, .last => if (v.len > 0) v else null,
         };
     }
 
-    /// Write the decoded text of `title` or `msg` to `writer`. Writes
-    /// nothing if the program didn't send it.
+    /// Write the decoded text of `title`, `msg` or `last` to `writer`.
+    /// Writes nothing if the program didn't send it.
     ///
     /// The text is valid UTF-8 with no control characters, but it is
     /// still untrusted text from the program. It is at most
-    /// `max_title_bytes` or `max_msg_bytes` long.
+    /// `max_title_bytes`, `max_msg_bytes` or `max_last_bytes` long.
     pub fn writeText(
         self: Report,
         comptime option: Option,
         writer: *std.Io.Writer,
     ) std.Io.Writer.Error!void {
-        comptime assert(option == .title or option == .msg);
+        comptime assert(option == .title or option == .msg or option == .last);
         const encoded = self.readOption(option) orelse return;
 
         // The parser already checked that this decodes, so it can't fail.
@@ -265,9 +274,19 @@ pub const Report = struct {
 /// - `msg`: one line of text for people, saying what the record is
 ///   doing, waiting for, or has finished. Don't try to read meaning into
 ///   it.
+/// - `account`: which account or profile of the program is running, such
+///   as a Claude Code config folder (`.claude-work`), so a terminal can
+///   tell several of them apart. A name, like `app`. This key is an
+///   extension, not part of the specification; terminals that don't know
+///   it skips it.
+/// - `context`: how much of the program's context window is used, from
+///   0 to 100, such as an AI agent's conversation. Read in any state. A
+///   value outside that range reads as null. An extension, like `account`.
+/// - `last`: the last thing the program said to the user, such as an AI
+///   agent's last reply, encoded like `msg`. An extension, like `account`.
 ///
-/// `readOption` returns `title` and `msg` still encoded as base64. Use
-/// `writeText` to read their text.
+/// `readOption` returns `title`, `msg` and `last` still encoded as
+/// base64. Use `writeText` to read their text.
 pub const Option = enum {
     id,
     kind,
@@ -275,12 +294,15 @@ pub const Option = enum {
     app,
     title,
     msg,
+    account,
+    context,
+    last,
 
     pub fn Type(comptime self: Option) type {
         return switch (self) {
             .kind => Kind,
-            .progress => u8,
-            .id, .app, .title, .msg => []const u8,
+            .progress, .context => u8,
+            .id, .app, .title, .msg, .account, .last => []const u8,
         };
     }
 };
@@ -304,8 +326,8 @@ pub const Option = enum {
 ///   throws out the report instead of skipping the pair, so a report
 ///   meant for one record never falls back to the root record. For
 ///   `state=clear`, that would remove every record.
-/// - `title` or `msg` isn't valid base64, or decodes to text that isn't
-///   UTF-8 or contains a control character.
+/// - `title`, `msg` or `last` isn't valid base64, or decodes to text
+///   that isn't UTF-8 or contains a control character.
 pub fn parse(parser: *Parser, terminator_ch: ?u8) ?*OSCCommand {
     assert(parser.state == .@"7501");
 
@@ -363,8 +385,10 @@ fn validate(data: []const u8) error{
     while (ids.next()) |v| try validateId(v);
     inline for (.{
         .{ "app", max_app_bytes },
+        .{ "account", max_account_bytes },
         .{ "title", max_title_encoded_bytes },
         .{ "msg", max_msg_encoded_bytes },
+        .{ "last", max_last_encoded_bytes },
     }) |limit| {
         var it: kitty_metadata.ValueIterator(limit[0], null) = .init(data);
         while (it.next()) |v| if (v.len > limit[1]) return error.TooLong;
@@ -375,6 +399,7 @@ fn validate(data: []const u8) error{
         if ((try decodeText(v, &buf)).len > max_title_bytes) return error.TooLong;
     }
     if (lastValue("msg", data)) |v| _ = try decodeText(v, &buf);
+    if (lastValue("last", data)) |v| _ = try decodeText(v, &buf);
 
     // An unknown state discards the report rather than guessing, so a
     // state added in a later revision never turns into something else.
@@ -415,8 +440,8 @@ fn validateId(value: []const u8) error{ InvalidId, TooLong }!void {
     }
 }
 
-/// Parse a whole number from 0 to 100. Anything else is treated as
-/// absent. This doesn't use std.fmt because it accepts underscores.
+/// Parse a whole number from 0 to 100, a `progress` or `context`
+/// value. Anything else is treated as absent. This doesn't use std.fmt because it accepts underscores.
 fn parseProgress(value: []const u8) ?u8 {
     if (value.len == 0) return null;
     var n: u16 = 0;
@@ -520,6 +545,57 @@ test "OSC 7501: all keys" {
         "Apply 3 to add, 1 to change, 0 to destroy?",
         msg.buffered(),
     );
+}
+
+test "OSC 7501: account" {
+    const testing = std.testing;
+
+    var p: Parser = .init(testing.allocator);
+    defer p.deinit();
+
+    p.nextSlice("7501;state=working:app=claude-code:account=.claude-work");
+    try testing.expectEqualStrings(
+        ".claude-work",
+        p.end('\x1b').?.program_status.report.readOption(.account).?,
+    );
+
+    // Not a name, so it reads as null like an invalid app.
+    p.reset();
+    p.nextSlice("7501;state=working:account=a/b");
+    try testing.expect(p.end('\x1b').?.program_status.report.readOption(.account) == null);
+
+    // Longer than max_account_bytes (33 bytes) discards the report.
+    p.reset();
+    p.nextSlice("7501;state=working:account=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    try testing.expect(p.end('\x1b') == null);
+}
+
+test "OSC 7501: context and last" {
+    const testing = std.testing;
+
+    var p: Parser = .init(testing.allocator);
+    defer p.deinit();
+
+    // "Done. Tests pass."
+    p.nextSlice("7501;state=done:context=42:last=RG9uZS4gVGVzdHMgcGFzcy4=");
+    const report = p.end('\x1b').?.program_status.report;
+    try testing.expectEqual(42, report.readOption(.context).?);
+
+    var buf: [max_last_bytes]u8 = undefined;
+    var last: std.Io.Writer = .fixed(&buf);
+    try report.writeText(.last, &last);
+    try testing.expectEqualStrings("Done. Tests pass.", last.buffered());
+
+    // Out of range reads as null, like progress.
+    p.reset();
+    p.nextSlice("7501;state=idle:context=101");
+    try testing.expect(p.end('\x1b').?.program_status.report.readOption(.context) == null);
+
+    // A last that decodes to invalid UTF-8 (0xFF) discards the report,
+    // like msg.
+    p.reset();
+    p.nextSlice("7501;state=done:last=/w");
+    try testing.expect(p.end('\x1b') == null);
 }
 
 test "OSC 7501: base64 padding is optional" {

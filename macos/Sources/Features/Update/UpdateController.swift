@@ -21,6 +21,21 @@ class UpdateController {
         viewModel.state.shouldTerminateWithoutWarning
     }
 
+    /// KinTerm's update feed. Only release builds have one: the release
+    /// workflow writes it into Info.plist (`KinTermFeedURL`), along with the
+    /// key that update signatures are checked against (`SUPublicEDKey`).
+    static var feedURL: String? {
+        guard let url = Bundle.main.infoDictionary?["KinTermFeedURL"] as? String, !url.isEmpty else { return nil }
+        return url
+    }
+
+    /// Updates need both the feed and the key; without them (dev builds) the
+    /// updater stays off.
+    static var isEnabled: Bool {
+        guard let key = Bundle.main.infoDictionary?["SUPublicEDKey"] as? String, !key.isEmpty else { return false }
+        return feedURL != nil
+    }
+
     /// Initialize a new update controller.
     init() {
         let hostBundle = Bundle.main
@@ -40,6 +55,7 @@ class UpdateController {
     /// This must be called before the updater can check for updates. If starting fails,
     /// the error will be shown to the user.
     func startUpdater() {
+        guard Self.isEnabled else { return }
         do {
             try updater.start()
         } catch {
@@ -60,6 +76,8 @@ class UpdateController {
     ///
     /// This is typically connected to a menu item action.
     func checkForUpdates() {
+        guard Self.isEnabled else { return }
+
         // If we're already idle, then just check for updates immediately.
         if viewModel.state == .idle {
             updater.checkForUpdates()

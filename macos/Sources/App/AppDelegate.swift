@@ -194,6 +194,8 @@ class AppDelegate: NSObject,
             UserDefaults.ghostty.removePersistentDomain(forName: suite)
         }
         #endif
+
+        UserDefaults.migrateAgentSettingsFromGhostty()
         UserDefaults.ghostty.register(defaults: [
             // Disable the automatic full screen menu item because we handle
             // it manually.
@@ -229,14 +231,19 @@ class AppDelegate: NSObject,
         // Initial config loading
         ghosttyConfigDidChange(config: ghostty.config)
 
-        // Start our update checker.
+        // Start our update checker. Builds without a feed have no updates.
         updateController.startUpdater()
+        menuCheckForUpdates?.isHidden = !UpdateController.isEnabled
 
         // Register our service provider. This must happen after everything is initialized.
         NSApp.servicesProvider = ServiceProvider()
 
         // This registers the Ghostty => Services menu to exist.
         NSApp.servicesMenu = menuServices
+
+        // Follow agents in every tab for the dock badge and menu bar summary.
+        AgentSummary.shared.start()
+        OnboardingController.shared.start()
 
         // Setup a local event monitor for app-level keyboard shortcuts. See
         // localEventHandler for more info why.
@@ -305,7 +312,17 @@ class AppDelegate: NSObject,
                 actions: actions,
                 intentIdentifiers: [],
                 options: [.customDismissAction]
-            )
+            ),
+            UNNotificationCategory(
+                identifier: Ghostty.agentNotificationCategory,
+                actions: [
+                    UNNotificationAction(
+                        identifier: Ghostty.userNotificationActionShow, title: "Open tab", options: [.foreground]),
+                    UNNotificationAction(identifier: Ghostty.agentNotificationActionDismiss, title: "Dismiss"),
+                ],
+                intentIdentifiers: [],
+                options: [.customDismissAction]
+            ),
         ])
         center.delegate = self
 
@@ -523,7 +540,7 @@ class AppDelegate: NSObject,
                 Self.logger.warning("refusing to execute file with control characters path=\(filename.debugDescription, privacy: .public)")
                 let alert = NSAlert()
                 alert.messageText = "Cannot Execute File"
-                alert.informativeText = "This file's path contains hidden control characters, which could make Ghostty run a different command than the one shown."
+                alert.informativeText = "This file's path contains hidden control characters, which could make KinTerm run a different command than the one shown."
                 alert.addButton(withTitle: "OK")
                 alert.alertStyle = .warning
                 alert.runModal()
@@ -552,7 +569,7 @@ class AppDelegate: NSObject,
             // may want to show this as a sheet on the focused window (especially if we're
             // opening a tab). I'm not sure.
             let alert = NSAlert()
-            alert.messageText = "Allow Ghostty to execute \"\(filename)\"?"
+            alert.messageText = "Allow KinTerm to execute \"\(filename)\"?"
             alert.addButton(withTitle: "Allow")
             alert.addButton(withTitle: "Cancel")
             alert.alertStyle = .warning
@@ -746,7 +763,7 @@ class AppDelegate: NSObject,
         }
     }
 
-    private func syncDockBadge() {
+    func syncDockBadge() {
         let center = UNUserNotificationCenter.current()
         center.getNotificationSettings { settings in
             switch settings.authorizationStatus {
@@ -802,8 +819,11 @@ class AppDelegate: NSObject,
         let bellCount = NSApp.windows
             .compactMap { $0.windowController as? BaseTerminalController }
             .reduce(0) { $0 + ($1.bell ? 1 : 0) }
-        let wantsBadge = ghostty.config.bellFeatures.contains(.attention) && bellCount > 0
-        let label = wantsBadge ? (bellCount > 99 ? "99+" : String(bellCount)) : nil
+        let bells = ghostty.config.bellFeatures.contains(.attention) ? bellCount : 0
+        // Agents waiting on the user or done and unseen count too.
+        let agents = AgentTabBarSettings.shared.showsDockBadge ? AgentSummary.shared.attentionCount : 0
+        let count = bells + agents
+        let label = count > 0 ? (count > 99 ? "99+" : String(count)) : nil
         NSApp.dockTile.badgeLabel = label
         NSApp.dockTile.display()
     }
@@ -1378,7 +1398,7 @@ extension AppDelegate {
         if controllersNeedConfirmation.count == 1 {
             Task {
                 let response = await controllersNeedConfirmation[0].confirmCloseAsync(
-                    messageText: "Quit Ghostty?",
+                    messageText: "Quit KinTerm?",
                     informativeText: "The terminal still has a running process. If you quit, the process will be killed.",
                     confirmButtonTitle: "Terminate",
                 )
@@ -1412,7 +1432,7 @@ extension AppDelegate {
         Task {
             for controller in controllers {
                 let response = await controller.confirmCloseAsync(
-                    messageText: "Quit Ghostty?",
+                    messageText: "Quit KinTerm?",
                     informativeText: "The terminal still has a running process. If you quit, the process will be killed.",
                     confirmButtonTitle: "Terminate",
                 )

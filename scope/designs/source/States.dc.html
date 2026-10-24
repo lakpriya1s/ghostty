@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Agent faces</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#7aa7ff}a:hover{color:#a9c6ff}
+.big{display:block;transform:scale(1.8)}
+.face{position:relative;display:block;width:40px;height:40px;border-radius:50%;background:var(--c,#8b9099)}
+.face .eye{position:absolute;top:14px;width:5px;height:8px;border-radius:3px;background:#15161b}
+.face .eye.l{left:11px}.face .eye.r{right:11px}
+.face .mouth{position:absolute;left:50%;top:26px;width:10px;height:2.5px;margin-left:-5px;border-radius:2px;background:#15161b}
+.f-idle{--c:#8b9099}
+.f-idle .eye{top:18px;width:7px;height:2.5px}
+.f-idle .eye.l{left:10px}.f-idle .eye.r{right:10px}
+.f-idle .mouth{width:6px;margin-left:-3px}
+.f-idle::after{content:"z";position:absolute;right:-5px;top:-9px;font:700 11px Inter,system-ui,sans-serif;color:#a8adb7;animation:zz 2.6s ease-in-out infinite}
+.f-working{--c:#5ca0ff}
+.f-working .eye{animation:look 1.3s ease-in-out infinite}
+.f-working .mouth{width:7px;margin-left:-3.5px}
+.f-working::before{content:"";position:absolute;inset:-6px;border-radius:50%;border:2.5px solid rgba(92,160,255,.18);border-top-color:#5ca0ff;animation:spin .9s linear infinite}
+.f-waiting{--c:#f5a524;animation:pulse 1.5s ease-in-out infinite,bob 1.5s ease-in-out infinite}
+.f-waiting .eye{top:12px;width:6px;height:9px}
+.f-waiting .mouth{top:25px;width:9px;height:9px;margin-left:-4.5px;border-radius:50%;background:transparent;border:2.5px solid #15161b;box-sizing:border-box}
+.f-waiting::after{content:"?";position:absolute;right:-6px;top:-10px;font:800 14px Inter,system-ui,sans-serif;color:#f5a524}
+.f-done{--c:#3fb950}
+.f-done .eye{top:15px;width:9px;height:5px;background:transparent;border:2.5px solid #15161b;border-bottom:0;border-radius:6px 6px 0 0;box-sizing:border-box}
+.f-done .eye.l{left:9px}.f-done .eye.r{right:9px}
+.f-done .mouth{top:22px;width:16px;height:8px;margin-left:-8px;background:transparent;border:2.5px solid #15161b;border-top:0;border-radius:0 0 10px 10px;box-sizing:border-box}
+.f-done::after{content:"";position:absolute;right:-3px;top:-3px;width:11px;height:11px;border-radius:50%;background:#f1f2f4;border:2px solid #16171b}
+.f-error{--c:#f85149}
+.f-error .eye{top:13px;width:8px;height:8px;background:transparent}
+.f-error .eye::before,.f-error .eye::after{content:"";position:absolute;left:3px;top:-1px;width:2.5px;height:10px;background:#15161b;border-radius:1px;transform:rotate(45deg)}
+.f-error .eye::after{transform:rotate(-45deg)}
+.f-error .eye.l{left:9px}.f-error .eye.r{right:9px}
+.f-error .mouth{top:26px;width:12px;height:6px;margin-left:-6px;background:transparent;border:2.5px solid #15161b;border-bottom:0;border-radius:8px 8px 0 0;box-sizing:border-box}
+.f-shell{--c:#2a2c33;border-radius:11px;box-shadow:inset 0 0 0 1.5px #4a4e59}
+.f-shell .eye,.f-shell .mouth{display:none}
+.f-shell::before{content:">_";position:absolute;inset:0;line-height:40px;text-align:center;font:600 13px 'JetBrains Mono',ui-monospace,monospace;color:#c2c6cf}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes look{0%,100%{transform:translateX(-1.5px)}50%{transform:translateX(1.5px)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,165,36,.55)}50%{box-shadow:0 0 0 7px rgba(245,165,36,0)}}
+@keyframes bob{0%,100%{translate:0 0}50%{translate:0 -2px}}
+@keyframes zz{0%,100%{opacity:.25;translate:0 2px}50%{opacity:1;translate:2px -2px}}
+</style>
+</helmet>
+<div style="width: 900px; height: 800px; box-sizing: border-box; padding: 48px; background: #16171b; color: #d6d9df; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column; gap: 32px">
+  <div>
+    <h1 style="margin: 0 0 8px; font-size: 26px; font-weight: 600; color: #f1f2f4">Agent faces</h1>
+    <p style="margin: 0; font-size: 14px; color: #a8adb7">Each state has its own color, expression and motion, so you can tell them apart at a glance, even without color.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+    <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 34px 16px 20px; border-radius: 14px; background: #1c1d21; border: 1px solid #2e3038">
+        <span style="display: flex; align-items: center; justify-content: center; width: 90px; height: 90px" aria-hidden="true">
+          <span class="big"><span class="face {{r.cls}}"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></span></span>
+        </span>
+        <div style="font-size: 15px; font-weight: 600; color: #f1f2f4">{{r.name}}</div>
+        <div style="font-size: 12.5px; color: #a8adb7; text-align: center; line-height: 1.5">{{r.desc}}</div>
+        <div style="font: 500 11.5px ui-monospace, monospace; color: #8a8f99; text-align: center">{{r.hook}}</div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; font-size: 13px; line-height: 1.55; color: #a8adb7">
+    <div><strong style="display: block; color: #f1f2f4; margin-bottom: 4px">Tint = account</strong>The tab takes a light tint of its Claude account's color.</div>
+    <div><strong style="display: block; color: #f1f2f4; margin-bottom: 4px">Badge = subagents</strong>A small number shows how many subagents that session is running.</div>
+    <div><strong style="display: block; color: #f1f2f4; margin-bottom: 4px">White dot = unread</strong>Done stays happy until you open the tab, then goes back to sleep (idle).</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      rows: [
+        { cls: 'f-idle', name: 'Idle', desc: 'Sleeping. Ready for a prompt.', hook: 'SessionStart · after read' },
+        { cls: 'f-working', name: 'Working', desc: 'Eyes moving, spinner ring.', hook: 'UserPromptSubmit · PreToolUse' },
+        { cls: 'f-waiting', name: 'Waiting on you', desc: 'Surprised, bouncing, pulsing.', hook: 'Notification' },
+        { cls: 'f-done', name: 'Done', desc: 'Happy, with an unread dot.', hook: 'Stop' },
+        { cls: 'f-error', name: 'Error', desc: 'X eyes. Something failed.', hook: 'API or session error (TBD)' },
+        { cls: 'f-shell', name: 'Plain shell', desc: 'No agent, just a terminal.', hook: 'no hooks' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

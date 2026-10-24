@@ -6,6 +6,10 @@ import GhosttyKit
 
 /// A classic, tabbed terminal experience.
 class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Controller {
+    /// The tabs of this window's tab group, drawn by the agent tab bar.
+    private lazy var agentTabBarModel = AgentTabBarModel(controller: self)
+    override var agentTabBar: AgentTabBarModel? { agentTabBarModel }
+
     override var windowNibName: NSNib.Name? {
         let defaultValue = "Terminal"
 
@@ -593,6 +597,9 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
     /// changes, when a window is closed, and when tabs are reordered
     /// with the mouse.
     func relabelTabs() {
+        // The agent tab bar shows the tabs' shortcuts and order.
+        defer { AgentTabBarModel.setNeedsRefresh() }
+
         // We only listen for frame changes if we have more than 1 window,
         // otherwise the accessory view doesn't matter.
         tabListenForFrame = window?.tabbedWindows?.count ?? 0 > 1
@@ -1124,6 +1131,12 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
         container.initialContentSize = focusedSurface?.initialSize
 
         window.contentView = container
+
+        // Fill in the agent tab bar as soon as the window exists, so it shows
+        // even before a second tab is opened.
+        agentTabBar?.refresh()
+        AgentLauncher.installShortcuts()
+        AgentsPanel.installShortcuts()
 
         // If we have a default size, we want to apply it.
         if let defaultSize {
