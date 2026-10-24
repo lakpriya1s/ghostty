@@ -198,12 +198,14 @@ h2 .mute{color:var(--muted)}
 .dock .app .bdg{position:absolute;right:-5px;top:-5px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:#ff3b30;color:#fff;font:700 11.5px/20px var(--sans);text-align:center;transform:scale(0);transition:transform .3s cubic-bezier(.3,1.6,.5,1)}
 .dock .app .bdg.on{transform:scale(1)}
 .dock .dot{position:absolute;left:50%;bottom:-6px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--muted)}
-.banner{position:absolute;z-index:15;right:14px;top:46px;width:min(300px,calc(100% - 28px));display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border-radius:14px;background:rgba(44,46,53,.92);border:1px solid var(--edge2);box-shadow:0 14px 40px rgba(0,0,0,.5);backdrop-filter:blur(12px);font-size:12.5px;line-height:1.4;transform:translateX(calc(100% + 30px));opacity:0;transition:transform .55s cubic-bezier(.2,1.2,.3,1),opacity .3s}
+.banner{position:absolute;z-index:15;right:12px;top:36px;width:min(330px,calc(100% - 24px));display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:18px;background:rgba(70,72,82,.78);border:1px solid rgba(255,255,255,.14);box-shadow:0 20px 50px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.4);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);font-size:13px;line-height:1.35;transform:translateX(calc(100% + 30px));opacity:0;transition:transform .55s cubic-bezier(.2,1.2,.3,1),opacity .3s}
 .banner.on{transform:none;opacity:1}
-.banner svg{width:30px;height:30px;flex:none}
-.banner b{display:block;color:var(--text)}
-.banner span{color:var(--soft)}
-.banner small{margin-left:auto;color:var(--muted)}
+.banner>div{flex:1;min-width:0}
+.banner svg{width:36px;height:36px;flex:none}
+.banner .app{display:flex;justify-content:space-between;font-size:11px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.banner .app em{font-style:normal;text-transform:none;font-weight:400}
+.banner b{display:block;margin-top:1px;color:#fff;font-size:13.5px}
+.banner span{color:rgba(255,255,255,.82)}
 .win.jolt{animation:jolt .4s}
 @keyframes jolt{25%{translate:-5px 0}50%{translate:4px 0}75%{translate:-2px 0}}
 
@@ -582,9 +584,9 @@ h2 .mute{color:var(--muted)}
               <div class="bar" role="tablist" aria-label="Agent tabs"></div>
               <div class="pane" id="storyPane" aria-live="polite"></div>
             </div>
-            <div class="banner" id="banner"><span data-mark="banner"></span><div><b>web is done</b><span>Rate limiting is in. 18 tests pass.</span></div><small>now</small></div>
             <div class="card"></div>
           </div>
+          <div class="banner" id="banner" role="status"><span data-mark="banner"></span><div><small class="app">KinTerm<em>now</em></small><b>web is done</b><span>Rate limiting is in. 18 tests pass.</span></div></div>
           <div class="dock" aria-hidden="true"><div class="app"><span class="dot"></span></div><div class="app"></div><div class="app kt" id="dockIcon"><span class="bdg" id="dockBadge"></span><span class="dot"></span></div></div>
         </div>
       </div>
@@ -960,7 +962,7 @@ BEATS.forEach((b, i) => {
 });
 $('#dockIcon').insertAdjacentHTML('afterbegin', iconSVG());
 $('#banner [data-mark]').innerHTML = markSVG('done');
-$('#banner [data-mark] svg').style.cssText = 'width:30px;height:30px';
+$('#banner [data-mark] svg').style.cssText = 'width:36px;height:36px;display:block';
 
 const URGENCY = ['waiting', 'error', 'done', 'working', 'idle'];
 const timers = [];
