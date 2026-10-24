@@ -22,6 +22,13 @@ notifications, so clicking focuses that surface.
 - [x] The agent's face in that state, in the chosen face set, as the image
       (`AgentNotificationIcon`). macOS always shows the app icon, so it's an
       attachment on the right. (It was a `>_` with a state-colored dot.)
+- [x] A sound per state when you're not looking (`AgentSounds`): Ping for
+      needs you, Glass for finished, Basso for error. Plays even with
+      notifications off; the banners themselves are silent. Turned off or
+      changed in View › Agent Sounds, the tab bar's right-click menu
+      (Sounds) and the Setup Assistant's "Stay in the loop" page, where
+      each state's pill plays its sound. Heard on screen (2026-10-25)
+      with the tab in the background; the wizard row seen by the user.
 
 ## Notes
 

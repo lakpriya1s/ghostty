@@ -601,6 +601,38 @@ struct AgentTabBarMenu: View {
                 Text(style.label).tag(style)
             }
         }
+        AgentSoundsMenu()
+    }
+}
+
+/// "Sounds": on or off, and a sound per state. Choosing one plays it.
+private struct AgentSoundsMenu: View {
+    @ObservedObject private var sounds = AgentSounds.shared
+
+    var body: some View {
+        Menu("Sounds") {
+            Toggle("Play Sounds", isOn: $sounds.isEnabled)
+            Divider()
+            ForEach(AgentSounds.states, id: \.self) { state in
+                Picker(AgentSounds.label(for: state), selection: binding(for: state)) {
+                    Text("None").tag(String?.none)
+                    Divider()
+                    ForEach(AgentSounds.choices, id: \.self) { name in
+                        Text(name).tag(String?.some(name))
+                    }
+                }
+                .disabled(!sounds.isEnabled)
+            }
+        }
+    }
+
+    private func binding(for state: AgentSounds.State) -> Binding<String?> {
+        Binding(
+            get: { sounds.sound(for: state) },
+            set: {
+                sounds.setSound($0, for: state)
+                sounds.preview(state)
+            })
     }
 }
 

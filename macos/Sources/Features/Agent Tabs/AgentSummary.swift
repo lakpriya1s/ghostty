@@ -80,6 +80,8 @@ final class AgentSummary {
         let menuBar = NSMenuItem(title: "Agents in Menu Bar", action: nil, keyEquivalent: "")
         menuBar.submenu = menuBarMenu(tracked: true)
         view.addItem(menuBar)
+
+        view.addItem(AgentSounds.shared.menuItem())
     }
 
     /// Hidden, Full, Compact, Icon Only. `tracked` items get their check mark
