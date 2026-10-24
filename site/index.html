@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&family=Caveat:wght@600&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#0c0d10;--panel:#131418;--card:#1b1c21;--raise:#22242a;--edge:#2a2c33;--edge2:#3a3d47;
@@ -69,11 +69,17 @@ button{font:inherit;color:inherit}
 .mark-btn .front{transition:fill .45s}
 .mark-btn:active svg{transform:scale(.97)}
 .mark-btn svg{transition:transform .2s}
-.poke{position:absolute;left:calc(100% + 14px);top:60%;display:flex;align-items:center;gap:6px;padding:5px 11px 5px 8px;border-radius:999px;background:#24262d;border:1px solid var(--edge2);font:600 12.5px var(--sans);color:var(--text);white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;translate:8px 0;transition:opacity .6s,translate .6s;pointer-events:none}
-.poke svg{width:16px;height:16px;color:var(--blue)}
-.poke.on{opacity:1;translate:0 0;animation:nudge 2.4s ease-in-out 1s infinite}
-@keyframes nudge{0%,70%,100%{translate:0 0}80%{translate:-5px 0}90%{translate:0 0}}
-@media (max-width:560px){.poke{left:auto;right:-6px;top:auto;bottom:-14px}.poke svg{rotate:45deg}}
+.poke{position:absolute;left:calc(100% - 4px);top:52%;width:120px;pointer-events:none;opacity:0;transition:opacity .4s}
+.poke svg{display:block;width:96px;height:76px;color:var(--soft);overflow:visible}
+.poke path{stroke-dasharray:1;stroke-dashoffset:1}
+.poke span{display:block;margin:-4px 0 0 52px;font:600 24px/1 Caveat,cursive;color:var(--text);rotate:-6deg;white-space:nowrap}
+.poke.on{opacity:1}
+.poke.on .line{animation:draw .9s ease-out forwards}
+.poke.on .head{animation:draw .25s ease-out .85s forwards}
+.poke.on svg{animation:wiggle 2.6s ease-in-out 1.8s infinite}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes wiggle{0%,75%,100%{translate:0 0}85%{translate:-4px -3px}}
+@media (max-width:560px){.poke{left:calc(100% - 14px);top:56%;width:96px}.poke svg{width:58px;height:46px}.poke span{margin:-2px 0 0 26px;font-size:19px}}
 .blinker{transform-box:fill-box;transform-origin:center}
 .blinker.blink{animation:blink-eye .18s ease-in-out}
 @keyframes blink-eye{50%{transform:scaleY(.1)}}
@@ -539,7 +545,7 @@ h2 .mute{color:var(--muted)}
     <div class="drift" id="drift" aria-hidden="true"></div>
     <div class="hero-in">
       <button class="mark-btn" id="heroMark" aria-label="The KinTerm mark. Click to change its mood.">
-        <span class="poke" id="poke" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8H3M7 4L3 8l4 4"/></svg>Poke me</span>
+        <span class="poke" id="poke" aria-hidden="true"><svg viewBox="0 0 96 76" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path class="line" pathLength="1" d="M78 70C62 72 46 64 48 50C50 38 66 36 66 47C66 60 44 62 32 50C22 40 16 28 9 14"/><path class="head" pathLength="1" d="M18 15L9 14L7 23"/></svg><span>Poke me!</span></span>
       </button>
       <h1 class="wm" aria-label="KinTerm"><span class="k" id="wmK"></span><span class="t" id="wmT"></span><i class="cur" aria-hidden="true"></i></h1>
       <p class="tag">Your agents, at a glance.</p>
