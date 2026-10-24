@@ -114,6 +114,21 @@ release is on GitHub and running copies offer it on their next check (or
 from KinTerm › Check for Updates…). How eagerly is the `auto-update`
 config key: `check` (the default prompt), `download`, or `off`.
 
+## The web page
+
+`site/` is the KinTerm page: one `index.html`, no build step. Open it
+locally with `python3 -m http.server -d site`. To publish it:
+
+```sh
+scripts/publish-site.sh
+```
+
+It copies `site/` to the `gh-pages` branch next to `appcast.xml` (which it
+leaves alone). The first time, turn Pages on: Settings › Pages › Deploy
+from a branch › `gh-pages`, `/ (root)`. The page is then at
+`https://lakpriya1s.github.io/kinterm/`. Its Download buttons open
+`releases/latest`, so they work once a release is on GitHub.
+
 ## Bringing in Ghostty's changes
 
 ```sh
