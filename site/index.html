@@ -53,7 +53,7 @@ button{font:inherit;color:inherit}
 .btn.ghost:hover{box-shadow:inset 0 0 0 1px var(--muted)}
 
 /* ── hero ── */
-.hero{position:relative;min-height:100svh;display:flex;align-items:center;justify-content:center;padding:96px 0 64px;overflow:hidden;isolation:isolate}
+.hero{position:relative;height:100svh;min-height:520px;display:flex;align-items:center;justify-content:center;padding:64px 0 56px;overflow:hidden;isolation:isolate}
 .hero::before{content:"";position:absolute;inset:-20%;z-index:-2;background:
   radial-gradient(40% 35% at 42% 42%,rgba(47,211,184,.16),transparent 70%),
   radial-gradient(40% 35% at 58% 52%,rgba(92,160,255,.16),transparent 70%)}
@@ -62,8 +62,8 @@ button{font:inherit;color:inherit}
 .drift .fx{position:absolute;opacity:.13;animation:float var(--d,9s) ease-in-out infinite alternate;animation-delay:var(--dl,0s)}
 .drift .fx>span{display:block}
 @keyframes float{from{translate:0 0}to{translate:var(--fx,10px) var(--fy,-24px)}}
-.hero-in{display:flex;flex-direction:column;align-items:center;text-align:center;gap:22px;padding:0 var(--gutter)}
-.mark-btn{position:relative;border:0;background:none;padding:0;cursor:pointer;width:min(240px,52vw);aspect-ratio:1;border-radius:24%;-webkit-tap-highlight-color:transparent}
+.hero-in{display:flex;flex-direction:column;align-items:center;text-align:center;gap:clamp(10px,2.2svh,22px);padding:0 var(--gutter)}
+.mark-btn{position:relative;border:0;background:none;padding:0;cursor:pointer;width:min(240px,52vw,26svh);aspect-ratio:1;border-radius:24%;-webkit-tap-highlight-color:transparent}
 .mark-btn svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 30px 60px rgba(0,0,0,.5))}
 .mark-btn:focus-visible{outline:2px solid var(--blue);outline-offset:8px}
 .mark-btn .front{transition:fill .45s}
@@ -83,16 +83,16 @@ button{font:inherit;color:inherit}
 .blinker{transform-box:fill-box;transform-origin:center}
 .blinker.blink{animation:blink-eye .18s ease-in-out}
 @keyframes blink-eye{50%{transform:scaleY(.1)}}
-.wm{margin:6px 0 0;font-size:clamp(52px,10vw,104px);font-weight:900;letter-spacing:-.045em;line-height:1;display:flex;align-items:baseline;min-height:1em}
+.wm{margin:0;font-size:clamp(44px,min(10vw,11svh),104px);font-weight:900;letter-spacing:-.045em;line-height:1;display:flex;align-items:baseline;min-height:1em}
 .wm .t{color:var(--muted)}
 .wm .cur{display:inline-block;width:.42em;height:.09em;margin-left:.08em;border-radius:.04em;background:var(--blue);animation:cur 1.05s steps(1) infinite}
 @keyframes cur{50%{opacity:0}}
-.tag{margin:0;font-size:clamp(20px,2.6vw,28px);font-weight:600;letter-spacing:-.02em;color:var(--soft)}
-.lede{margin:0;max-width:540px;color:var(--muted);font-size:17px}
-.cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.tag{margin:0;font-size:clamp(18px,min(2.6vw,3.2svh),28px);font-weight:600;letter-spacing:-.02em;color:var(--soft)}
+.lede{margin:0;max-width:540px;color:var(--muted);font-size:clamp(15px,2svh,17px)}
+.cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 .fine{font-size:13px;color:var(--dim)}
 .fine b{color:var(--muted);font-weight:500}
-.scrollcue{position:absolute;bottom:22px;left:50%;translate:-50% 0;width:22px;height:36px;border:1.5px solid var(--edge2);border-radius:12px}
+.scrollcue{position:absolute;bottom:18px;left:50%;translate:-50% 0;width:22px;height:36px;border:1.5px solid var(--edge2);border-radius:12px}
 .scrollcue::after{content:"";position:absolute;left:50%;top:7px;width:3px;height:7px;margin-left:-1.5px;border-radius:2px;background:var(--muted);animation:cue 1.8s ease-in-out infinite}
 @keyframes cue{0%{opacity:0;translate:0 0}30%{opacity:1}100%{opacity:0;translate:0 12px}}
 
@@ -312,6 +312,7 @@ h2 .mute{color:var(--muted)}
   .tile{grid-column:auto}
     .nav a.link.hide-sm{display:none}
 }
+@media (max-height:760px){.scrollcue{display:none}}
 @media (max-width:700px){.drift{display:none}.desk .win{margin:14px 12px 0}}
 @media (max-width:560px){
     .dock .app:not(.kt){display:none}
