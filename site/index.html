@@ -69,9 +69,11 @@ button{font:inherit;color:inherit}
 .mark-btn .front{transition:fill .45s}
 .mark-btn:active svg{transform:scale(.97)}
 .mark-btn svg{transition:transform .2s}
-.poke{position:absolute;right:-8%;top:2%;font:500 12px var(--mono);color:var(--muted);rotate:8deg;opacity:0;transition:opacity .6s}
-.poke.on{opacity:1}
-.poke::before{content:"";position:absolute;left:-26px;top:14px;width:22px;height:1px;background:var(--muted);rotate:30deg}
+.poke{position:absolute;left:calc(100% + 14px);top:60%;display:flex;align-items:center;gap:6px;padding:5px 11px 5px 8px;border-radius:999px;background:#24262d;border:1px solid var(--edge2);font:600 12.5px var(--sans);color:var(--text);white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;translate:8px 0;transition:opacity .6s,translate .6s;pointer-events:none}
+.poke svg{width:16px;height:16px;color:var(--blue)}
+.poke.on{opacity:1;translate:0 0;animation:nudge 2.4s ease-in-out 1s infinite}
+@keyframes nudge{0%,70%,100%{translate:0 0}80%{translate:-5px 0}90%{translate:0 0}}
+@media (max-width:560px){.poke{left:auto;right:-6px;top:auto;bottom:-14px}.poke svg{rotate:45deg}}
 .blinker{transform-box:fill-box;transform-origin:center}
 .blinker.blink{animation:blink-eye .18s ease-in-out}
 @keyframes blink-eye{50%{transform:scaleY(.1)}}
@@ -537,7 +539,7 @@ h2 .mute{color:var(--muted)}
     <div class="drift" id="drift" aria-hidden="true"></div>
     <div class="hero-in">
       <button class="mark-btn" id="heroMark" aria-label="The KinTerm mark. Click to change its mood.">
-        <span class="poke" id="poke">poke me</span>
+        <span class="poke" id="poke" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8H3M7 4L3 8l4 4"/></svg>Poke me</span>
       </button>
       <h1 class="wm" aria-label="KinTerm"><span class="k" id="wmK"></span><span class="t" id="wmT"></span><i class="cur" aria-hidden="true"></i></h1>
       <p class="tag">Your agents, at a glance.</p>
