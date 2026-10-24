@@ -645,14 +645,14 @@ private struct AgentAccountColorMenu: View {
 private struct AgentNewTabButton: View {
     let size: CGFloat
 
-    /// Called with the button's frame in the window's SwiftUI coordinates.
+    /// Called with the button's frame on screen.
     let action: (CGRect) -> Void
 
     @State private var hovering = false
-    @State private var frame: CGRect = .zero
+    @State private var anchor = AgentScreenAnchor()
 
     var body: some View {
-        Button { action(frame) } label: {
+        Button { action(anchor.screenRect) } label: {
             Text("+")
                 .font(.system(size: 20, weight: .regular))
                 .foregroundColor(hovering ? AgentTabBarColors.plusTextHovered : AgentTabBarColors.plusText)
@@ -665,11 +665,7 @@ private struct AgentNewTabButton: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .background(GeometryReader { geometry in
-            Color.clear
-                .onAppear { frame = geometry.frame(in: .global) }
-                .onChange(of: geometry.frame(in: .global)) { frame = $0 }
-        })
+        .background(AgentScreenAnchorView(anchor: anchor))
         .accessibilityLabel("New Tab Menu")
     }
 }
@@ -686,7 +682,7 @@ private struct AgentTabButton: View {
 
     @ObservedObject private var settings = AgentTabBarSettings.shared
     @State private var hovering = false
-    @State private var frame: CGRect = .zero
+    @State private var anchor = AgentScreenAnchor()
 
     /// The tab's background. With an account and the background style, the
     /// usual background gets a light tint of the account color, so the face
@@ -736,11 +732,7 @@ private struct AgentTabButton: View {
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
-        .background(GeometryReader { geometry in
-            Color.clear
-                .onAppear { frame = geometry.frame(in: .global) }
-                .onChange(of: geometry.frame(in: .global)) { frame = $0 }
-        })
+        .background(AgentScreenAnchorView(anchor: anchor))
         .onHover { isHovering in
             hovering = isHovering
             if isHovering {
@@ -750,7 +742,7 @@ private struct AgentTabButton: View {
                     AgentTabCardPanel.shared.show(
                         AgentTabCard(tab: tab),
                         barEdge: barEdge,
-                        anchor: frame,
+                        anchor: anchor.screenRect,
                         in: window)
                 }
             } else {
@@ -1002,8 +994,8 @@ final class AgentTabCardPanel {
     private var barEdge: Edge = .top
     private var anchor: CGRect = .zero
 
-    /// Show a card next to `anchor`, a frame in the window's SwiftUI global
-    /// coordinates, on the side away from a tab bar at `barEdge`.
+    /// Show a card next to `anchor`, a frame on screen, on the side away
+    /// from a tab bar at `barEdge`.
     func show<Card: View>(_ card: Card, barEdge: Edge, anchor: CGRect, in window: NSWindow) {
         self.barEdge = barEdge
         self.anchor = anchor
@@ -1015,9 +1007,8 @@ final class AgentTabCardPanel {
         host.frame.size = host.fittingSize
         panel.contentView = host
 
-        let face = window.screenRect(fromSwiftUIGlobal: anchor)
         let size = host.fittingSize
-        let origin = face.popupOrigin(size: size, awayFrom: barEdge, gap: 8, on: window.screen)
+        let origin = anchor.popupOrigin(size: size, awayFrom: barEdge, gap: 8, on: window.screen)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
         if parent !== window {
             parent?.removeChildWindow(panel)

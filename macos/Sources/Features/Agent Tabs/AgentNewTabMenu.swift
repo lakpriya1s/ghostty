@@ -717,9 +717,8 @@ final class AgentMenuPanel {
         host.frame.size = host.fittingSize
         panel.contentView = host
 
-        let button = window.screenRect(fromSwiftUIGlobal: anchor)
         let size = host.fittingSize
-        let origin = button.popupOrigin(size: size, awayFrom: barEdge, gap: 6, on: window.screen)
+        let origin = anchor.popupOrigin(size: size, awayFrom: barEdge, gap: 6, on: window.screen)
         panel.setFrame(NSRect(origin: origin, size: size), display: true)
 
         window.addChildWindow(panel, ordered: .above)
@@ -755,17 +754,35 @@ final class AgentMenuPanel {
     }
 }
 
-extension NSWindow {
-    /// A rect in this window's SwiftUI global coordinates (from the top left
-    /// of the content view) in screen coordinates.
-    func screenRect(fromSwiftUIGlobal rect: CGRect) -> NSRect {
-        guard let contentView else { return .zero }
-        let flipped = NSRect(
-            x: rect.minX,
-            y: contentView.bounds.height - rect.maxY,
-            width: rect.width,
-            height: rect.height)
-        return convertToScreen(contentView.convert(flipped, to: nil))
+/// Where a SwiftUI view is on screen, read from a plain AppKit view behind
+/// it (`AgentScreenAnchorView`). SwiftUI's global coordinates don't start at
+/// the content view in every window style (the title bar can shift them), so
+/// converting those put popups too far from the bar.
+final class AgentScreenAnchor {
+    fileprivate weak var view: NSView?
+
+    var screenRect: NSRect {
+        guard let view, let window = view.window else { return .zero }
+        return window.convertToScreen(view.convert(view.bounds, to: nil))
+    }
+}
+
+struct AgentScreenAnchorView: NSViewRepresentable {
+    let anchor: AgentScreenAnchor
+
+    func makeNSView(context: Context) -> NSView {
+        let view = PassthroughView()
+        anchor.view = view
+        return view
+    }
+
+    /// Only measures; clicks and hovers go to the SwiftUI view in front.
+    private final class PassthroughView: NSView {
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        anchor.view = nsView
     }
 }
 
