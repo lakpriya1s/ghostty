@@ -23,16 +23,23 @@ struct AgentFaceView: View {
     /// faces nobody can see stay still.
     var motion: Motion
 
+    /// A face set to draw instead of the chosen one, for previews.
+    var styleOverride: Style?
+
     @ObservedObject private var settings = AgentTabBarSettings.shared
 
-    init(state: State, size: CGFloat = 40, background: Color = AgentTabBarColors.bar, motion: Motion = .all) {
+    init(
+        state: State, size: CGFloat = 40, background: Color = AgentTabBarColors.bar, motion: Motion = .all,
+        style: Style? = nil
+    ) {
         self.state = state
         self.size = size
         self.background = background
         self.motion = motion
+        self.styleOverride = style
     }
 
-    private var style: Style { settings.faceStyle }
+    private var style: Style { styleOverride ?? settings.faceStyle }
 
     enum Motion {
         /// Every state that moves.
@@ -63,6 +70,7 @@ struct AgentFaceView: View {
                 gc.translateBy(x: Self.pad, y: Self.pad)
                 switch style {
                 case .faces: draw(in: &gc, time: time)
+                case .squares: drawSquare(in: &gc, time: time)
                 case .orbs: drawOrb(in: &gc, time: time)
                 case .shapes: drawShape(in: &gc, time: time)
                 case .bots: drawBot(in: &gc, time: time)
@@ -235,29 +243,25 @@ struct AgentFaceView: View {
 struct ShellGlyphView: View {
     var size: CGFloat = 40
 
-    /// Only the Orbs cursor blinks, and only while every face may move.
-    var motion: AgentFaceView.Motion = .none
+    /// A face set to draw instead of the chosen one, for previews.
+    var styleOverride: AgentTabBarSettings.FaceStyle?
 
     @ObservedObject private var settings = AgentTabBarSettings.shared
 
-    init(size: CGFloat = 40, motion: AgentFaceView.Motion = .none) {
+    init(size: CGFloat = 40, style: AgentTabBarSettings.FaceStyle? = nil) {
         self.size = size
-        self.motion = motion
+        self.styleOverride = style
     }
 
     var body: some View {
-        if settings.faceStyle == .faces {
+        let style = styleOverride ?? settings.faceStyle
+        if style == .faces {
             facesGlyph
         } else {
-            let style = settings.faceStyle
             let scale = size / 40
-            let blinks = style == .orbs && motion == .all
-            TimelineView(.animation(minimumInterval: 0.55, paused: !blinks)) { context in
-                let time = blinks ? context.date.timeIntervalSinceReferenceDate : 0
-                Canvas { gc, _ in
-                    gc.scaleBy(x: scale, y: scale)
-                    AgentFaceSets.drawShell(style, in: &gc, time: time)
-                }
+            Canvas { gc, _ in
+                gc.scaleBy(x: scale, y: scale)
+                AgentFaceSets.drawShell(style, in: &gc)
             }
             .frame(width: size, height: size)
         }

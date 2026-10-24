@@ -1,10 +1,106 @@
 import SwiftUI
 
-/// The face sets other than the original faces: Orbs, Shapes, Bots and Spark.
+/// The face sets other than the original faces: Square faces, Orbs, Shapes,
+/// Bots and Spark.
 /// Each draws the same states on the same 40x40 grid as `AgentFaceView`, with
 /// the same colors, so only the look changes.
 /// See scope/designs/06-face-sets.md for the design.
 extension AgentFaceView {
+    // MARK: Square faces
+
+    /// The original faces on rounded-square heads with pill eyes, the shape
+    /// of the KinTerm logo.
+    func drawSquare(in gc: inout GraphicsContext, time: TimeInterval) {
+        guard state != .clear else { return }
+        let color = Self.color(for: state)
+        let ink = GraphicsContext.Shading.color(Self.ink)
+        let line = StrokeStyle(lineWidth: 2.5, lineCap: .butt)
+        let pill = { (rect: CGRect) in Path(roundedRect: rect, cornerRadius: min(rect.width, rect.height) / 2) }
+        let head = { (outset: CGFloat) in
+            Path(roundedRect: CGRect(x: -outset, y: -outset, width: 40 + outset * 2, height: 40 + outset * 2),
+                 cornerRadius: 12 + outset, style: .continuous)
+        }
+
+        switch state {
+        case .blocked:
+            // Bounces up 2 units and pulses: a halo that grows to 7 units
+            // while fading out, every 1.5s.
+            let pulse = Self.wave(time, period: 1.5)
+            gc.translateBy(x: 0, y: -2 * pulse)
+            gc.fill(head(7 * pulse), with: .color(color.opacity(0.55 * (1 - pulse))))
+        case .error:
+            gc.translateBy(x: AgentFaceSets.shake(time), y: 0)
+        default:
+            break
+        }
+
+        gc.fill(head(0), with: .color(color))
+
+        switch state {
+        case .clear:
+            break
+
+        case .idle:
+            // Eyes shut, a small mouth, and a "z" that drifts and fades.
+            gc.fill(pill(CGRect(x: 10, y: 18, width: 7, height: 2.5)), with: ink)
+            gc.fill(pill(CGRect(x: 23, y: 18, width: 7, height: 2.5)), with: ink)
+            gc.fill(pill(CGRect(x: 17, y: 27, width: 6, height: 2.5)), with: ink)
+            let drift = Self.wave(time, period: 2.6)
+            var z = gc
+            z.opacity = 0.25 + 0.75 * drift
+            z.draw(
+                Text("z").font(.system(size: 11, weight: .bold)).foregroundColor(Color(agentHex: 0xa8adb7)),
+                at: CGPoint(x: 42 + 2 * drift, y: -0.5 - 4 * drift))
+
+        case .working:
+            // Pill eyes look left and right every 1.3s.
+            let look = -1.5 * cos(2 * .pi * time / 1.3)
+            gc.fill(pill(CGRect(x: 10 + look, y: 13, width: 6, height: 10)), with: ink)
+            gc.fill(pill(CGRect(x: 24 + look, y: 13, width: 6, height: 10)), with: ink)
+            gc.fill(pill(CGRect(x: 16.5, y: 27, width: 7, height: 2.5)), with: ink)
+
+        case .blocked:
+            // Surprised: tall eyes, an "o" mouth and a "?".
+            gc.fill(pill(CGRect(x: 10, y: 11, width: 6, height: 11)), with: ink)
+            gc.fill(pill(CGRect(x: 24, y: 11, width: 6, height: 11)), with: ink)
+            gc.stroke(Path(roundedRect: CGRect(x: 17.25, y: 27.25, width: 5.5, height: 5.5), cornerRadius: 1.75),
+                      with: ink, lineWidth: 2.5)
+            gc.draw(
+                Text("?").font(.system(size: 14, weight: .heavy)).foregroundColor(color),
+                at: CGPoint(x: 42, y: -2.5))
+
+        case .done:
+            // Happy: arched eyes and a smile, plus a white dot until it's seen.
+            var eyes = Path()
+            for center in [12.5, 27.5] {
+                eyes.move(to: CGPoint(x: center - 3.25, y: 19))
+                eyes.addArc(center: CGPoint(x: center, y: 18.5), radius: 3.25,
+                            startAngle: .degrees(180), endAngle: .degrees(0), clockwise: false)
+                eyes.addLine(to: CGPoint(x: center + 3.25, y: 19))
+            }
+            gc.stroke(eyes, with: ink, style: line)
+            var smile = Path()
+            smile.addArc(center: CGPoint(x: 20, y: 22), radius: 6.75,
+                         startAngle: .degrees(0), endAngle: .degrees(180), clockwise: false)
+            gc.stroke(smile, with: ink, style: line)
+            drawUnreadDot(in: &gc)
+
+        case .error:
+            // X eyes and a frown.
+            let bar = CGRect(x: -1.25, y: -5, width: 2.5, height: 10)
+            for center in [13.25, 27.25] {
+                for angle in [45.0, -45] {
+                    let eye = Path(roundedRect: bar.offsetBy(dx: center, dy: 17), cornerRadius: 1)
+                    gc.fill(AgentFaceSets.rotated(eye, by: angle), with: ink)
+                }
+            }
+            var frown = Path()
+            frown.addArc(center: CGPoint(x: 20, y: 33), radius: 4.75,
+                         startAngle: .degrees(180), endAngle: .degrees(360), clockwise: false)
+            gc.stroke(frown, with: ink, style: line)
+        }
+    }
+
     // MARK: Orbs
 
     /// No face, just a glowing dot: it breathes, orbits, ripples, holds
@@ -26,8 +122,7 @@ extension AgentFaceView {
             orb.fill(dot(10), with: .color(color))
 
         case .working:
-            // Glowing, with a ring turning every 0.9s and a fainter outer
-            // one turning back every 1.6s.
+            // Glowing, with a ring turning every 0.9s.
             var glow = gc
             glow.addFilter(.shadow(color: color.opacity(0.7), radius: 6))
             glow.fill(dot(12), with: .color(color))
@@ -36,9 +131,6 @@ extension AgentFaceView {
                       with: .color(color), lineWidth: 3)
             gc.stroke(AgentFaceSets.arc(radius: 16.5, from: -45 + turn, to: 45 + turn),
                       with: .color(color.opacity(0.35)), lineWidth: 3)
-            let back = -AgentFaceSets.phase(time, period: 1.6) * 360
-            gc.stroke(AgentFaceSets.arc(radius: 22, from: 45 + back, to: 135 + back),
-                      with: .color(Color(agentHex: 0x9fd0ff, opacity: 0.7)), lineWidth: 2)
 
         case .blocked:
             // Two rings ripple out from the dot, 0.8s apart.
@@ -354,9 +446,8 @@ enum AgentFaceSets {
         }
     }
 
-    /// The face for a tab without an agent, in each set's style. Only the
-    /// Orbs cursor moves: it blinks every 1.1s.
-    static func drawShell(_ style: AgentTabBarSettings.FaceStyle, in gc: inout GraphicsContext, time: TimeInterval) {
+    /// The face for a tab without an agent, in each set's style.
+    static func drawShell(_ style: AgentTabBarSettings.FaceStyle, in gc: inout GraphicsContext) {
         let ink = GraphicsContext.Shading.color(AgentFaceView.ink)
         let well = GraphicsContext.Shading.color(Color(agentHex: 0x2a2c33))
         let edge = GraphicsContext.Shading.color(Color(agentHex: 0x4a4e59))
@@ -367,15 +458,26 @@ enum AgentFaceSets {
             // Drawn by ShellGlyphView itself.
             break
 
+        case .squares:
+            // A dark head with no face, just a ">" and "_".
+            let head = CGRect(x: 0, y: 0, width: 40, height: 40)
+            gc.fill(Path(roundedRect: head, cornerRadius: 12, style: .continuous), with: well)
+            gc.stroke(Path(roundedRect: head.insetBy(dx: 0.75, dy: 0.75), cornerRadius: 11.25, style: .continuous),
+                      with: edge, lineWidth: 1.5)
+            var chevron = Path()
+            chevron.addRect(CGRect(x: 11, y: 16, width: 8.5, height: 2.5))
+            chevron.addRect(CGRect(x: 17, y: 16, width: 2.5, height: 8.5))
+            gc.fill(rotated(chevron, by: 45, about: CGPoint(x: 15.25, y: 20.25)), with: .color(prompt))
+            gc.fill(Path(roundedRect: CGRect(x: 20, y: 24, width: 10, height: 2.5), cornerRadius: 1.25),
+                    with: .color(prompt))
+
         case .orbs:
-            // A dark square with a blinking cursor block.
+            // A dark square with a cursor block.
             gc.fill(Path(roundedRect: CGRect(x: 6, y: 6, width: 28, height: 28), cornerRadius: 9), with: well)
             gc.stroke(Path(roundedRect: CGRect(x: 6.75, y: 6.75, width: 26.5, height: 26.5), cornerRadius: 8.25),
                       with: edge, lineWidth: 1.5)
-            if phase(time, period: 1.1) < 0.5 {
-                gc.fill(Path(roundedRect: CGRect(x: 14, y: 13, width: 7, height: 13), cornerRadius: 1),
-                        with: .color(prompt))
-            }
+            gc.fill(Path(roundedRect: CGRect(x: 14, y: 13, width: 7, height: 13), cornerRadius: 1),
+                    with: .color(prompt))
 
         case .shapes:
             // A solid square with a ">" and "_".

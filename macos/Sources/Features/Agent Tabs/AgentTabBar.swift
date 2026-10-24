@@ -133,6 +133,9 @@ final class AgentTabBarSettings: ObservableObject {
         /// Faces with eyes and a mouth, the original design.
         case faces
 
+        /// The faces on rounded-square heads, like the KinTerm logo.
+        case squares
+
         /// A glowing dot; motion does the talking.
         case orbs
 
@@ -148,6 +151,7 @@ final class AgentTabBarSettings: ObservableObject {
         var label: String {
             switch self {
             case .faces: return "Faces"
+            case .squares: return "Square Faces"
             case .orbs: return "Orbs"
             case .shapes: return "Shapes"
             case .bots: return "Bots"
@@ -709,7 +713,7 @@ private struct AgentTabButton: View {
                 if let status = tab.status, status.state != .clear {
                     AgentFaceView(state: status.state, size: faceSize, background: background, motion: model.faceMotion)
                 } else {
-                    ShellGlyphView(size: faceSize, motion: model.faceMotion)
+                    ShellGlyphView(size: faceSize)
                 }
             }
             .frame(width: slot, height: slot)
