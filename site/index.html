@@ -63,9 +63,9 @@ button{font:inherit;color:inherit}
 .bigface{--cut:var(--bg);display:flex;align-items:center;justify-content:center;width:var(--fsize,240px);height:var(--fsize,240px)}
 .bigface>.fx{transform:scale(var(--fs,6))}
 .bigface .sq .el,.bigface .sq .er{translate:var(--lx,0) var(--ly,0);transition:translate .12s ease-out}
-.h1{margin:clamp(30px,5.5svh,56px) 0 0;font-size:clamp(40px,min(7vw,9svh),96px);line-height:1;font-weight:900;letter-spacing:-.05em;color:var(--text)}
+.h1{margin:clamp(26px,4.5svh,48px) 0 0;font-size:clamp(36px,min(6.2vw,7.4svh),84px);line-height:1;font-weight:900;letter-spacing:-.05em;color:var(--text)}
 .say{margin:clamp(14px,2.4svh,22px) 0 0;min-height:1.6em;font-size:clamp(16px,2.2svh,19px);color:var(--muted)}
-.say b{font-weight:600}
+.when{display:inline-block;color:#8b9099}
 .cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 .poke{position:absolute;left:calc(100% + 26px);top:40%;width:190px;pointer-events:none;opacity:0;transition:opacity .4s}
 .poke svg{display:block;width:144px;height:114px;color:var(--soft);overflow:visible}
@@ -536,7 +536,7 @@ h2 .mute{color:var(--muted)}
         <span class="bigface"><span class="fx" data-set="squares" data-face="idle"></span></span>
         <span class="poke" id="poke" aria-hidden="true"><svg viewBox="0 0 96 76" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path class="line" pathLength="1" d="M78 70C62 72 46 64 48 50C50 38 66 36 66 47C66 60 44 62 32 50C22 40 16 28 9 14"/><path class="head" pathLength="1" d="M18 15L9 14L7 23"/></svg><span>Poke me!</span></span>
       </button>
-      <h1 class="h1">This is your agent.</h1>
+      <h1 class="h1">This is your agent<br><span class="when" id="heroWhen">when it&rsquo;s asleep.</span></h1>
       <p class="say" id="heroSay" aria-live="polite">Scroll to see how it's doing &darr;</p>
     </div>
     <div class="scrollcue" aria-hidden="true"></div>
@@ -761,19 +761,24 @@ const baseTitle = document.title;
 
 /* ── hero: your agent; poke it and it changes ── */
 const hero = $('#hero'), heroBtn = $('#heroFace'), heroFace = $('#heroFace .fx'), heroSay = $('#heroSay');
-const SAY = {
-  idle: 'Asleep until you need it.',
-  working: 'You ask. It works.',
-  waiting: 'It needs you.',
-  done: 'It’s done. Come and look.',
-  error: 'It tripped. You know right away.',
+// The end of the headline, and a line about it, for each state.
+const WHEN = {
+  idle: ['when it’s asleep.', 'Ready for a prompt. Poke it.'],
+  working: ['when it’s working.', 'Eyes moving, busy on your task. Go do something else.'],
+  waiting: ['when it needs you.', 'It bounces until you answer, and pings you if you’re elsewhere.'],
+  done: ['when it’s done.', 'Happy, with a little dot until you come and look.'],
+  error: ['when it trips.', 'You know right away, not ten minutes later.'],
 };
+const heroWhen = $('#heroWhen');
 const POKES = ['working', 'waiting', 'done', 'error', 'idle'];
 let poked = -1;
 function setHero(st) {
   setFace(heroFace, st);
   hero.style.setProperty('--hc', C[st]);
-  heroSay.innerHTML = `<b style="color:${C[st]}">${LABEL[st]}</b> · ${SAY[st]}`;
+  heroWhen.textContent = WHEN[st][0];
+  heroWhen.style.color = C[st];
+  heroSay.textContent = WHEN[st][1];
+  if (!reduce) heroWhen.animate([{ opacity: 0, transform: 'translateY(.25em)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'ease-out' });
 }
 heroBtn.addEventListener('click', () => {
   poked = (poked + 1) % POKES.length;
