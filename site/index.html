@@ -92,8 +92,8 @@ button{font:inherit;color:inherit}
 .bigface>.fx{transform:scale(var(--fs,6))}
 .bigface .sq .el,.bigface .sq .er{translate:var(--lx,0) var(--ly,0);transition:translate .12s ease-out}
 .h1{margin:clamp(26px,4.5svh,48px) 0 0;font-size:clamp(36px,min(6.2vw,7.4svh),84px);line-height:1;font-weight:900;letter-spacing:-.05em;color:var(--text)}
-.say{margin:clamp(14px,2.4svh,22px) 0 0;min-height:1.6em;font-size:clamp(16px,2.2svh,19px);color:var(--muted)}
-.when{display:inline-block;color:#8b9099}
+.say{margin:clamp(14px,2.4svh,22px) 0 0;min-height:3.2em;max-width:34em;text-wrap:balance;font-size:clamp(16px,2.2svh,19px);color:var(--muted)}
+.when{display:inline-block;white-space:nowrap;color:#8b9099}
 .cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 .poke{position:absolute;left:calc(100% + 26px);top:40%;width:190px;pointer-events:none;opacity:0;transition:opacity .4s}
 .poke svg{display:block;width:144px;height:114px;color:var(--soft);overflow:visible}
@@ -199,7 +199,7 @@ section[id]{scroll-margin-top:64px}
 .menubar b{font-weight:700;color:var(--text)}
 .menubar .mi{color:var(--muted)}
 .menubar .sum{margin-left:auto;display:flex;align-items:center;gap:10px;font-variant-numeric:tabular-nums}
-.menubar .sum span{display:inline-flex;align-items:center;gap:5px;transition:opacity .3s}
+.menubar .sum span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:opacity .3s}
 .menubar .sum i{width:8px;height:8px;border-radius:50%}
 .sysbar{display:inline-flex;align-items:center;gap:13px;color:#e6e8ec;white-space:nowrap;flex:none}
 .sysbar svg{display:block;height:14px;width:auto;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;opacity:.92}
@@ -390,6 +390,26 @@ section[id]{scroll-margin-top:64px}
 @media (max-height:760px){.scrollcue{display:none}}
 @media (max-width:700px){.desk .win{margin:14px 12px 0}}
 @media (max-width:560px){
+  .h1{font-size:min(9.4vw,46px)}
+  /* The story: start under the nav, no reserved room for the hidden ⌘J row,
+     and a menu bar that only shows the KinTerm count. */
+  .stage{align-items:flex-start;padding-top:76px}
+  .keys{display:none}
+  .beats{min-height:0}
+  .rail{margin-top:12px}
+  .stage-grid{gap:18px}
+  .menubar .sysbar{display:none}
+  .menubar .sum{gap:8px;white-space:nowrap}
+  .menubar .sum span{white-space:nowrap}
+  /* The Agents panel: chips stay on one line, and only face, tab and time show. */
+  .ap-chips{flex-wrap:nowrap;overflow:hidden}
+  .ap-chips span{white-space:nowrap;padding:0 9px;flex:none}
+  .ap-hd small{display:none}
+  .ap-g{grid-template-columns:24px minmax(0,1fr) 58px}
+  .ap-g .d,.ap-g .a,.ap-cols span:nth-child(3),.ap-cols .acc{display:none}
+  .ap-cols{padding:9px 24px 5px}
+  .ap-row{padding:7px 8px}
+  .ap-ft span:nth-child(2){display:none}
   .pg-sec{padding-top:72px}
   .pg .sub{display:none}
   .sets{grid-template-columns:repeat(6,1fr);gap:5px}
