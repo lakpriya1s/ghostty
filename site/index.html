@@ -59,7 +59,7 @@ button{font:inherit;color:inherit}
   radial-gradient(40% 35% at 58% 52%,rgba(92,160,255,.16),transparent 70%)}
 .hero::after{content:"";position:absolute;inset:0;z-index:-2;background-image:linear-gradient(var(--edge) 1px,transparent 1px),linear-gradient(90deg,var(--edge) 1px,transparent 1px);background-size:56px 56px;opacity:.28;-webkit-mask-image:radial-gradient(60% 55% at 50% 45%,#000 10%,transparent 75%);mask-image:radial-gradient(60% 55% at 50% 45%,#000 10%,transparent 75%)}
 .drift{position:absolute;inset:0;z-index:-1;pointer-events:none}
-.drift .fx{position:absolute;opacity:.2;animation:float var(--d,9s) ease-in-out infinite alternate;animation-delay:var(--dl,0s)}
+.drift .fx{position:absolute;opacity:.13;animation:float var(--d,9s) ease-in-out infinite alternate;animation-delay:var(--dl,0s)}
 .drift .fx>span{display:block}
 @keyframes float{from{translate:0 0}to{translate:var(--fx,10px) var(--fy,-24px)}}
 .hero-in{display:flex;flex-direction:column;align-items:center;text-align:center;gap:22px;padding:0 var(--gutter)}
@@ -84,9 +84,6 @@ button{font:inherit;color:inherit}
 .cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:6px}
 .fine{font-size:13px;color:var(--dim)}
 .fine b{color:var(--muted);font-weight:500}
-.lineup{display:flex;gap:18px;margin-top:22px}
-.lineup .fx{transition:transform .3s}
-.lineup .fx:hover{transform:translateY(-4px) scale(1.12)}
 .scrollcue{position:absolute;bottom:22px;left:50%;translate:-50% 0;width:22px;height:36px;border:1.5px solid var(--edge2);border-radius:12px}
 .scrollcue::after{content:"";position:absolute;left:50%;top:7px;width:3px;height:7px;margin-left:-1.5px;border-radius:2px;background:var(--muted);animation:cue 1.8s ease-in-out infinite}
 @keyframes cue{0%{opacity:0;translate:0 0}30%{opacity:1}100%{opacity:0;translate:0 12px}}
@@ -132,6 +129,7 @@ h2 .mute{color:var(--muted)}
 .plus{flex:none;width:30px;height:30px;margin:0 4px;border:1.5px dashed #4a4e59;border-radius:50%;background:transparent;color:var(--muted);font-size:18px;line-height:1;cursor:pointer}
 .pane{flex:1;min-width:0;min-height:0;padding:16px 20px;font:400 13px/1.75 var(--mono);color:#d6d9df;overflow:hidden}
 .pane .ln{white-space:pre;overflow:hidden;text-overflow:ellipsis;animation:ln .25s ease-out both}
+.pane .ask{white-space:normal;padding:8px 12px;border:1.5px solid var(--waiting);border-radius:8px;max-width:380px}
 @keyframes ln{from{opacity:0;translate:-6px 0}}
 .c-dim{color:var(--dim)}.c-mut{color:var(--muted)}.c-blue{color:var(--blue)}.c-grn{color:var(--done)}.c-amb{color:var(--waiting)}.c-red{color:var(--error)}.c-teal{color:var(--teal)}.c-hi{color:var(--text)}
 .caret{display:inline-block;width:.6em;height:1.15em;vertical-align:-.2em;background:var(--soft);animation:cur 1.05s steps(1) infinite}
@@ -156,10 +154,10 @@ h2 .mute{color:var(--muted)}
 
 /* ── story (pinned) ── */
 .story{height:600vh}
-.stage{position:sticky;top:0;height:100svh;display:flex;flex-direction:column;justify-content:center;padding:70px 0 24px;overflow:hidden}
-.stage-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:clamp(24px,5vw,72px);align-items:center}
-.beats{position:relative;min-height:300px}
-.beat{position:absolute;inset:0;opacity:0;translate:0 18px;transition:opacity .5s,translate .5s;pointer-events:none}
+.stage{position:sticky;top:0;height:100svh;display:flex;align-items:center;padding:72px 0 28px;overflow:hidden}
+.stage-grid{display:grid;grid-template-columns:minmax(0,.75fr) minmax(0,1.25fr);gap:clamp(28px,5vw,72px);align-items:center}
+.beats{display:grid}
+.beat{grid-area:1/1;opacity:0;translate:0 18px;transition:opacity .5s,translate .5s;pointer-events:none}
 .beat.on{opacity:1;translate:0 0;pointer-events:auto}
 .beat .k{display:inline-flex;align-items:center;gap:8px;font:600 12px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
 .beat .k::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 12px var(--c)}
@@ -168,20 +166,21 @@ h2 .mute{color:var(--muted)}
 .rail{display:flex;gap:8px;margin-top:28px}
 .rail i{width:28px;height:4px;border-radius:2px;background:var(--edge2);transition:background .4s,width .4s}
 .rail i.on{width:48px;background:var(--c)}
-.menubar{display:flex;align-items:center;gap:18px;height:28px;padding:0 14px;margin-bottom:16px;border-radius:9px;background:rgba(34,36,42,.7);border:1px solid var(--edge);font-size:12.5px;color:var(--soft);backdrop-filter:blur(8px)}
+.menubar{display:flex;align-items:center;gap:16px;height:26px;padding:0 14px;background:rgba(20,21,25,.55);border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;color:var(--soft);backdrop-filter:blur(10px)}
 .menubar b{font-weight:700;color:var(--text)}
 .menubar .mi{color:var(--muted)}
 .menubar .sum{margin-left:auto;display:flex;align-items:center;gap:10px;font-variant-numeric:tabular-nums}
 .menubar .sum span{display:inline-flex;align-items:center;gap:5px;transition:opacity .3s}
 .menubar .sum i{width:8px;height:8px;border-radius:50%}
-.story .win{height:min(400px,52svh)}
-.under{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;min-height:64px}
-.keys{display:flex;align-items:center;gap:6px;opacity:0;transition:opacity .3s;font-size:14px;color:var(--muted)}
+.desk{position:relative;border-radius:20px;overflow:hidden;border:1px solid var(--edge);background:radial-gradient(70% 80% at 15% 0%,rgba(47,211,184,.22),transparent 60%),radial-gradient(70% 80% at 100% 100%,rgba(92,160,255,.22),transparent 60%),#121318;padding-bottom:84px}
+.desk .win{margin:22px 26px 0;height:min(380px,48svh)}
+.desk .dock{position:absolute;left:50%;bottom:12px;translate:-50% 0}
+.keys{display:flex;align-items:center;gap:6px;margin-top:22px;opacity:0;transition:opacity .3s;font-size:14px;color:var(--muted)}
 .keys.on{opacity:1}
 .keys .kbd{font-size:16px;transition:transform .1s,background .1s}
 .keys .kbd.press{transform:translateY(2px);background:#363944;border-bottom-width:1px}
 .dock{display:flex;align-items:flex-end;gap:10px;padding:8px 10px;border-radius:18px;background:rgba(34,36,42,.6);border:1px solid var(--edge);backdrop-filter:blur(8px)}
-.dock .app{position:relative;width:48px;height:48px;border-radius:12px;background:#2a2c33}
+.dock .app{position:relative;width:44px;height:44px;border-radius:11px;background:#2a2c33}
 .dock .app:nth-child(1){background:linear-gradient(#3a8cff,#1f5fd1)}
 .dock .app:nth-child(2){background:linear-gradient(#ffcf4a,#f29a1a)}
 .dock .app.kt{background:none}
@@ -214,32 +213,27 @@ h2 .mute{color:var(--muted)}
 .seg button.on{background:#363944;color:var(--text)}
 .seg.size button{display:flex;align-items:center;gap:7px}
 .seg.size button i{display:block;border-radius:50%;background:currentColor}
-.pg .win{height:470px}
+.pg .win{height:400px}
 .pg .hint{margin-top:12px;font-size:13px;color:var(--dim);text-align:center}
-.portrait{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:56px}
-.portrait div{display:flex;flex-direction:column;align-items:center;gap:18px;padding:30px 8px 18px;border-radius:16px;background:var(--panel);border:1px solid var(--edge);font-size:13px;font-weight:600;color:var(--soft);--cut:var(--panel)}
-.portrait .big{display:block;transform:scale(1.7);margin:14px 0 8px}
-.portrait span{text-align:center}
-.portrait small{display:block;margin-top:2px;font:400 11.5px var(--mono);color:var(--dim)}
 ::view-transition-group(*){animation-duration:.45s;animation-timing-function:cubic-bezier(.2,.8,.2,1)}
 
 /* ── bento ── */
 .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:48px}
-.tile{position:relative;grid-column:span 2;display:flex;flex-direction:column;min-height:300px;padding:22px;border-radius:20px;background:var(--panel);border:1px solid var(--edge);overflow:hidden}
-.tile.w3{grid-column:span 3}
+.tile{position:relative;grid-column:span 2;display:flex;flex-direction:column;padding:22px;border-radius:20px;background:var(--panel);border:1px solid var(--edge);overflow:hidden}
 .tile h3{margin:0;font-size:19px;letter-spacing:-.02em}
 .tile p{margin:6px 0 0;font-size:14.5px;color:var(--muted)}
-.tile .demo{flex:1;display:flex;align-items:center;justify-content:center;margin-top:18px;position:relative;--cut:var(--panel)}
+.tile .demo{height:200px;display:flex;align-items:center;justify-content:center;margin-top:auto;padding-top:18px;position:relative;--cut:var(--panel)}
 .panel{width:100%;max-width:420px;border-radius:12px;background:#1c1d21;border:1px solid var(--edge);overflow:hidden}
 .panel .hd{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--edge);font-size:12px;color:var(--muted)}
 .panel .hd .kbd{margin-left:auto;font-size:11px}
-.panel .row{display:flex;align-items:center;gap:12px;padding:8px 12px;font-size:13px;--cut:#1c1d21;transition:background .3s}
+.panel .row{display:flex;align-items:center;gap:10px;padding:6px 12px;font-size:13px;--cut:#1c1d21;transition:background .3s}
 .panel .row+.row{border-top:1px solid #24262d}
 .panel .row .fx{transform:scale(.7);margin:-6px}
 .panel .row b{font-weight:600;color:var(--text)}
 .panel .row span{color:var(--muted);font-size:12px}
 .panel .row em{margin-left:auto;font:600 11.5px var(--sans);font-style:normal}
 .panel .row.hot{background:rgba(245,165,36,.07)}
+.panel .row:nth-child(n+4){display:none}
 .notes{position:relative;width:100%;max-width:320px;height:150px}
 .note{position:absolute;inset:auto 0 0;display:flex;gap:10px;align-items:center;padding:11px 12px;border-radius:14px;background:#2a2c33;border:1px solid var(--edge2);font-size:12.5px;line-height:1.35;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:transform .6s cubic-bezier(.2,1,.3,1),opacity .6s;--cut:#2a2c33}
 .note .fx{transform:scale(.75);margin:-5px}
@@ -296,7 +290,7 @@ h2 .mute{color:var(--muted)}
 
 /* ── responsive ── */
 @media (max-width:900px){
-  .stage-grid,.pg,.proto{grid-template-columns:1fr}
+  .stage-grid,.pg,.proto{grid-template-columns:minmax(0,1fr)}
   .stage{padding-top:64px;justify-content:flex-start}
   .beats{min-height:150px}
   .beat p{font-size:15px;margin-top:8px}
@@ -305,19 +299,17 @@ h2 .mute{color:var(--muted)}
   .story .win{height:min(330px,42svh)}
   .menubar .mi{display:none}
   .bento{grid-template-columns:1fr}
-  .tile,.tile.w3{grid-column:auto;min-height:260px}
-  .portrait{grid-template-columns:repeat(3,1fr)}
-  .nav a.link.hide-sm{display:none}
+  .tile{grid-column:auto}
+    .nav a.link.hide-sm{display:none}
 }
+@media (max-width:700px){.drift{display:none}.desk .win{margin:14px 12px 0}.crowd{gap:10px}}
 @media (max-width:560px){
-  .portrait{grid-template-columns:repeat(2,1fr)}
-  .dock .app:not(.kt){display:none}
+    .dock .app:not(.kt){display:none}
   .under{min-height:56px}
   .pane{font-size:11.5px;padding:12px 14px}
   .pg .win{height:380px}
   .card{width:250px}
-  .lineup{gap:12px}
-}
+  }
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
   html{scroll-behavior:auto}
@@ -558,7 +550,6 @@ h2 .mute{color:var(--muted)}
         <a class="btn ghost" href="#story">See it in action</a>
       </div>
       <div class="fine"><b>Free</b> · macOS 13+ · Apple silicon &amp; Intel · Signed &amp; notarized</div>
-      <div class="lineup" id="lineup" aria-hidden="true"></div>
     </div>
     <div class="scrollcue" aria-hidden="true"></div>
   </section>
@@ -566,31 +557,27 @@ h2 .mute{color:var(--muted)}
   <!-- Story -->
   <section class="story" id="story">
     <div class="stage">
-      <div class="wrap">
-        <div class="menubar" aria-hidden="true">
-          <span>&#63743;</span><b>KinTerm</b><span class="mi">Shell</span><span class="mi">Edit</span><span class="mi">View</span><span class="mi">Window</span>
-          <span class="sum" id="mbSum"></span>
+      <div class="wrap stage-grid">
+        <div class="copy">
+          <div class="beats" id="beats"></div>
+          <div class="rail" id="rail" aria-hidden="true"></div>
+          <div class="keys" id="keys"><span class="kbd">&#8984;</span><span class="kbd">J</span><span id="keysLabel">jump to who's waiting</span></div>
         </div>
-        <div class="stage-grid">
-          <div>
-            <div class="beats" id="beats"></div>
-            <div class="rail" id="rail" aria-hidden="true"></div>
+        <div class="desk">
+          <div class="menubar" aria-hidden="true">
+            <span>&#63743;</span><b>KinTerm</b><span class="mi">Shell</span><span class="mi">Edit</span><span class="mi">View</span><span class="mi">Window</span>
+            <span class="sum" id="mbSum"></span>
           </div>
-          <div>
-            <div class="win pos-top" id="storyWin" data-size="m">
-              <div class="chrome"><i></i><i></i><i></i><span class="ttl" id="storyTitle">api · Claude Code</span></div>
-              <div class="body">
-                <div class="bar" role="tablist" aria-label="Agent tabs"></div>
-                <div class="pane" id="storyPane" aria-live="polite"></div>
-              </div>
-              <div class="banner" id="banner"><span data-mark="banner"></span><div><b>web is done</b><span>Rate limiting is in. 18 tests pass.</span></div><small>now</small></div>
-              <div class="card"></div>
+          <div class="win pos-top" id="storyWin" data-size="m">
+            <div class="chrome"><i></i><i></i><i></i><span class="ttl" id="storyTitle">api · Claude Code</span></div>
+            <div class="body">
+              <div class="bar" role="tablist" aria-label="Agent tabs"></div>
+              <div class="pane" id="storyPane" aria-live="polite"></div>
             </div>
-            <div class="under">
-              <div class="keys" id="keys"><span class="kbd">&#8984;</span><span class="kbd">J</span><span id="keysLabel">jump to who's waiting</span></div>
-              <div class="dock" aria-hidden="true"><div class="app"><span class="dot"></span></div><div class="app"></div><div class="app kt" id="dockIcon"><span class="bdg" id="dockBadge"></span><span class="dot"></span></div></div>
-            </div>
+            <div class="banner" id="banner"><span data-mark="banner"></span><div><b>web is done</b><span>Rate limiting is in. 18 tests pass.</span></div><small>now</small></div>
+            <div class="card"></div>
           </div>
+          <div class="dock" aria-hidden="true"><div class="app"><span class="dot"></span></div><div class="app"></div><div class="app kt" id="dockIcon"><span class="bdg" id="dockBadge"></span><span class="dot"></span></div></div>
         </div>
       </div>
     </div>
@@ -622,7 +609,6 @@ h2 .mute{color:var(--muted)}
           <div class="hint">Hover a face (or tap it) for the details.</div>
         </div>
       </div>
-      <div class="portrait reveal" id="portrait"></div>
     </div>
   </section>
 
@@ -634,12 +620,12 @@ h2 .mute{color:var(--muted)}
         <h2>It tells you.<br><span class="mute">You don't go looking.</span></h2>
       </div>
       <div class="bento">
-        <article class="tile w3 reveal">
+        <article class="tile reveal">
           <h3>Agents panel</h3>
           <p>Every agent in every window, most urgent first. <span class="kbd">&#8984;</span><span class="kbd">&#8679;</span><span class="kbd">A</span></p>
           <div class="demo"><div class="panel"><div class="hd">Agents<span class="kbd">&#8984;J</span></div><div id="agentRows"></div></div></div>
         </article>
-        <article class="tile w3 reveal">
+        <article class="tile reveal">
           <h3>Notifications</h3>
           <p>Done, stuck or waiting while you're in another app? You'll hear about it.</p>
           <div class="demo"><div class="notes" id="notes"></div></div>
@@ -659,15 +645,10 @@ h2 .mute{color:var(--muted)}
           <p>The icon changes colour and expression, with a badge for who's waiting.</p>
           <div class="demo"><div class="icon-cyc" id="iconCyc"><span class="bdg" id="iconBdg">1</span></div></div>
         </article>
-        <article class="tile w3 reveal">
+        <article class="tile reveal">
           <h3>Setup Assistant</h3>
           <p>Choose everything by looking at it on first launch. It installs the Claude Code hook for you.</p>
           <div class="demo"><div class="wiz" id="wiz"></div></div>
-        </article>
-        <article class="tile w3 reveal">
-          <h3>Hover for the story</h3>
-          <p>The last message, how much context is used, the branch and the account.</p>
-          <div class="demo" id="cardDemo"></div>
         </article>
       </div>
     </div>
@@ -853,10 +834,10 @@ requestAnimationFrame(eyesLoop);
   setTimeout(step, 450);
 })();
 
-// Kin drifting in the background, and a lineup of the five states.
+// Kin drifting at the edges of the hero.
 (function drift() {
   const host = $('#drift');
-  const spots = [[6,18],[14,70],[22,38],[9,88],[30,12],[78,14],[88,40],[70,78],[92,72],[84,90],[60,8],[36,86],[48,94],[18,52],[94,20],[66,60]];
+  const spots = [[7,20],[13,62],[5,84],[24,12],[90,18],[82,48],[93,74],[76,88]];
   const sets = Object.keys(SETS);
   spots.forEach(([x, y], i) => {
     const f = face(STATES[i % 5], sets[(i * 7) % sets.length]);
@@ -869,8 +850,6 @@ requestAnimationFrame(eyesLoop);
     const mx = e.clientX / innerWidth - .5, my = e.clientY / innerHeight - .5;
     host.querySelectorAll('.fx').forEach(f => { f.style.transform = `translate(${-mx * f.dataset.depth}px,${-my * f.dataset.depth}px)`; });
   }, { passive: true });
-  const line = $('#lineup');
-  STATES.forEach(s => line.append(face(s)));
 })();
 
 /* ── window mock ── */
@@ -956,7 +935,7 @@ const BEATS = [
     lines:[P + '<span class="c-hi">add rate limiting to the login route</span>', '', DOT('hi') + 'Read <span class="c-mut">src/routes/login.ts</span>', DOT('hi') + 'Read <span class="c-mut">src/middleware/index.ts</span>', DOT('grn') + 'Update <span class="c-mut">src/middleware/rateLimit.ts</span> <span class="c-grn">+42</span>', DOT('grn') + 'Bash <span class="c-mut">npm test -- login</span>', '  <span class="c-dim">&#9151;</span> running 18 tests…', '', '<span class="c-amb">&#10043;</span> <span class="c-amb">Thinking…</span> <span class="c-dim">(esc to interrupt)</span>'] },
   { key:'waiting', h:'Amber means it needs you.', p:'A surprised face and a “?”. One shortcut takes you straight there.',
     states:['working','waiting','working','working','shell'], active:0, jump:1,
-    lines:[DOT('grn') + 'Update <span class="c-mut">src/auth/session.ts</span>', '', '<span class="c-amb">&#9581;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9582;</span>', '<span class="c-amb">&#9474;</span> <span class="c-hi">Edit file src/auth/session.ts?</span>', '<span class="c-amb">&#9474;</span>', '<span class="c-amb">&#9474;</span>  <span class="c-blue">&#10095; 1. Yes</span>', '<span class="c-amb">&#9474;</span>    2. Yes, and don\'t ask again', '<span class="c-amb">&#9474;</span>    3. No, and tell Claude what to do', '<span class="c-amb">&#9584;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9583;</span>'] },
+    lines:[DOT('grn') + 'Update <span class="c-mut">src/auth/session.ts</span>', '', '<div class="ask"><span class="c-hi">Edit file src/auth/session.ts?</span><br><span class="c-blue">&#10095; 1. Yes</span><br>&nbsp; 2. Yes, and don\'t ask again<br>&nbsp; 3. No, tell Claude what to do</div>'] },
   { key:'error', h:'Red means it broke.', p:'X eyes and a little shake. You see it before you would think to check.',
     states:['working','working','done','error','shell'], active:3,
     lines:[P + '<span class="c-hi">plan the new staging cluster</span>', '', DOT('grn') + 'Bash <span class="c-mut">terraform plan -out staging.tfplan</span>', '  <span class="c-dim">&#9151;</span> Refreshing state… <span class="c-dim">(212 resources)</span>', '', DOT('red') + '<span class="c-red">API Error: 529 Overloaded</span>', '  <span class="c-dim">Retried 10 times. Try again in a moment.</span>'] },
@@ -1096,16 +1075,6 @@ const seg = (host, items, key, apply) => items.forEach(([v, label]) => {
 });
 seg($('#sizes'), [['s', '<i style="width:7px;height:7px"></i>S'], ['m', '<i style="width:10px;height:10px"></i>M'], ['l', '<i style="width:13px;height:13px"></i>L']], 'size', v => { pgWin.dataset.size = v; });
 seg($('#poss'), [['top', 'Top'], ['bottom', 'Bottom'], ['left', 'Left'], ['right', 'Right']], 'pos', v => { pgWin.className = pgWin.className.replace(/pos-\w+/, 'pos-' + v); });
-const portrait = $('#portrait');
-STATES.forEach(s => {
-  const d = document.createElement('div');
-  const big = document.createElement('span');
-  big.className = 'big';
-  big.append(face(s));
-  d.append(big);
-  d.insertAdjacentHTML('beforeend', `<span>${LABEL[s]}<small>${s === 'waiting' ? 'state=blocked' : 'state=' + s}</small></span>`);
-  portrait.append(d);
-});
 
 /* ── bento ── */
 (function agents() {
@@ -1224,15 +1193,6 @@ STATES.forEach(s => {
   paint();
   setInterval(() => { i = (i + 1) % 3; paint(); }, 1500);
 })();
-(function cardDemo() {
-  const host = $('#cardDemo');
-  const t = { name:'web', acct:'Personal', ac:'#c08bff', cwd:'~/code/web · fix/session', ctx:64, last:'Sessions now refresh before they expire.', age:'2m', detail: () => 'Finished. 18 tests pass.' };
-  t.el = face('done');
-  host.innerHTML = `<div class="card on" style="position:relative;pointer-events:auto">${cardHTML(t, 1)}</div>`;
-  const meter = host.querySelector('.meter i');
-  let v = 64;
-  setInterval(() => { v = v >= 88 ? 24 : v + 8; meter.style.width = v + '%'; meter.style.background = v > 75 ? C.waiting : C.working; host.querySelector('.ctx span:last-child').textContent = v + '%'; }, 1400);
-})();
 
 /* ── protocol ── */
 (function osc() {
@@ -1281,14 +1241,21 @@ STATES.forEach(s => {
     });
     btns.append(b);
   });
+  // Run one the first time it's seen, so the terminal isn't empty.
+  const seen = new IntersectionObserver(([e]) => {
+    if (!e.isIntersecting) return;
+    seen.disconnect();
+    setTimeout(() => btns.children[1].click(), 500);
+  }, { threshold: .5 });
+  seen.observe(pre);
 })();
 
 /* ── end ── */
 (function crowd() {
   const host = $('#crowd');
   const sets = Object.keys(SETS);
-  for (let i = 0; i < 18; i++) {
-    const f = face(i % 7 === 3 ? 'waiting' : i % 5 === 1 ? 'working' : 'done', sets[i % sets.length]);
+  for (let i = 0; i < 12; i++) {
+    const f = face(i === 4 ? 'waiting' : i === 8 ? 'working' : 'done', sets[i % sets.length]);
     f.style.setProperty('--i', i);
     host.append(f);
   }
