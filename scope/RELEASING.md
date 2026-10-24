@@ -21,6 +21,28 @@ No App Store Connect login or GitHub secrets needed. The app carries the
 update feed and key, so it takes later updates once they're published.
 It leaves a ReleaseFast core behind: `scripts/dev-run.sh --core` after.
 
+### Publishing it (how 0.1.2 went out)
+
+The CI secrets aren't set yet, so 0.1.2 was published by hand:
+
+```sh
+V=0.1.2
+B=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" macos/build/Release/KinTerm.app/Contents/Info.plist)
+C=$(/usr/libexec/PlistBuddy -c "Print :GhosttyCommit" macos/build/Release/KinTerm.app/Contents/Info.plist)
+cp macos/build/dmg/KinTerm-$V.dmg /tmp/rel/KinTerm.dmg      # the feed expects this name
+cd /tmp/rel
+# Sparkle's tool, from Xcode's package cache (DerivedData/Ghostty-*/SourcePackages/artifacts/sparkle/Sparkle/bin)
+sign_update --account kinterm KinTerm.dmg > sign_update.txt
+curl -sfO https://lakpriya.com/kinterm/appcast.xml || true  # keep earlier releases
+KINTERM_VERSION=$V KINTERM_BUILD=$B KINTERM_COMMIT=$C KINTERM_COMMIT_LONG=$(git rev-parse $C) \
+  KINTERM_TAG=kinterm-v$V GITHUB_REPOSITORY=lakpriya1s/kinterm \
+  python3 path/to/dist/macos/kinterm_appcast.py && mv appcast_new.xml appcast.xml
+gh release create kinterm-v$V KinTerm.dmg --target $(git rev-parse $C) --title "KinTerm $V" --notes-file notes.md
+```
+
+Then commit `appcast.xml` to the `gh-pages` branch, next to the site. Tag
+the commit the app was built from (`GhosttyCommit` in its Info.plist).
+
 ## One-time setup (CI releases)
 
 ### 1. Developer ID certificate
