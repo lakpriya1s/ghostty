@@ -1849,6 +1849,7 @@ extension Ghostty {
             guard previous?.state != status.state else { return }
             let isVisible = focused && NSApp.isActive && (window?.isKeyWindow ?? false)
             guard !isVisible else { return }
+            AgentSounds.shared.play(for: status.state)
             guard derivedConfig.desktopNotifications else { return }
 
             // Named after the tab, like "web · refactor nav needs you".
@@ -1881,13 +1882,15 @@ extension Ghostty {
 
         /// Notify about the agent in this terminal: no subtitle, "Open tab"
         /// and "Dismiss", and the agent's face in that state as the image.
-        /// Clicking it focuses this split.
+        /// Clicking it focuses this split. Silent: `AgentSounds` plays the
+        /// state's own sound.
         private func showAgentNotification(title: String, body: String, state: Action.ProgramStatus.State) {
             showUserNotification(
                 title: title,
                 body: body,
                 requireFocus: false,
                 showsTerminalTitle: false,
+                playsSound: false,
                 category: Ghostty.agentNotificationCategory,
                 attachments: [AgentNotificationIcon.attachment(for: state)].compactMap { $0 })
         }
@@ -1920,6 +1923,7 @@ extension Ghostty {
             body: String,
             requireFocus: Bool = true,
             showsTerminalTitle: Bool = true,
+            playsSound: Bool = true,
             category: String = Ghostty.userNotificationCategory,
             attachments: [UNNotificationAttachment] = []
         ) {
@@ -1927,7 +1931,7 @@ extension Ghostty {
             content.title = title
             if showsTerminalTitle { content.subtitle = self.title }
             content.body = body
-            content.sound = UNNotificationSound.default
+            content.sound = playsSound ? UNNotificationSound.default : nil
             content.categoryIdentifier = category
             content.attachments = attachments
             content.userInfo = [

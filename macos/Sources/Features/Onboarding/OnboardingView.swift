@@ -342,6 +342,8 @@ private struct OnboardingStayInLoop: View {
                 }
                 .fixedSize(horizontal: false, vertical: true)
             }
+
+            OnboardingSounds()
         }
         .onAppear(perform: refresh)
     }
@@ -507,6 +509,47 @@ private struct OnboardingFeature<Sample: View, Control: View>: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity)
+        .background(RoundedRectangle(cornerRadius: 12).fill(OnboardingColors.card))
+        .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(OnboardingColors.border))
+    }
+}
+
+/// Sounds on or off, with a button per state that plays its sound.
+private struct OnboardingSounds: View {
+    @ObservedObject private var sounds = AgentSounds.shared
+
+    var body: some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text("Sounds").font(.system(size: 13, weight: .semibold))
+                Text("A different sound for each, when you're not looking")
+                    .font(.system(size: 11))
+                    .foregroundColor(OnboardingColors.muted)
+            }
+            Spacer(minLength: 8)
+            ForEach(AgentSounds.states, id: \.self) { state in
+                Button { sounds.preview(state) } label: {
+                    HStack(spacing: 6) {
+                        AgentFaceView(state: state, size: 18, background: OnboardingColors.background)
+                        Text(AgentSounds.label(for: state)).font(.system(size: 12, weight: .medium))
+                        Image(systemName: "speaker.wave.2.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(OnboardingColors.muted)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Capsule().fill(OnboardingColors.background))
+                    .overlay(Capsule().strokeBorder(OnboardingColors.border))
+                    .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help("Play the \(AgentSounds.label(for: state).lowercased()) sound")
+            }
+            .opacity(sounds.isEnabled ? 1 : 0.35)
+            .disabled(!sounds.isEnabled)
+            Toggle("", isOn: $sounds.isEnabled).toggleStyle(.switch).labelsHidden()
+        }
+        .padding(14)
         .background(RoundedRectangle(cornerRadius: 12).fill(OnboardingColors.card))
         .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(OnboardingColors.border))
     }
