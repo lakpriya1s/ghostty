@@ -275,10 +275,10 @@ h2 .mute{color:var(--muted)}
 /* ── end ── */
 .end{text-align:center;padding:clamp(100px,14vw,170px) 0 60px;overflow:hidden}
 .end h2{font-size:clamp(40px,7vw,84px)}
-.crowd{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;margin:44px auto 0;max-width:640px}
-.crowd .fx{transition:transform .3s}
-.end.in .crowd .fx{animation:wave .8s cubic-bezier(.3,1.6,.5,1) both;animation-delay:calc(var(--i)*60ms)}
-@keyframes wave{from{transform:translateY(30px) scale(.5);opacity:0}}
+.end-icon{width:112px;height:112px;margin:0 auto 26px;filter:drop-shadow(0 20px 40px rgba(92,160,255,.25))}
+.end-icon svg{width:100%;height:100%}
+.end.in .end-icon{animation:pop .7s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes pop{from{transform:translateY(24px) scale(.6);opacity:0}}
 .foot{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;align-items:center;padding:28px 0 40px;border-top:1px solid var(--edge);font-size:13px;color:var(--dim)}
 .foot a{color:var(--muted);text-decoration:none}
 .foot a:hover{color:var(--text)}
@@ -302,7 +302,7 @@ h2 .mute{color:var(--muted)}
   .tile{grid-column:auto}
     .nav a.link.hide-sm{display:none}
 }
-@media (max-width:700px){.drift{display:none}.desk .win{margin:14px 12px 0}.crowd{gap:10px}}
+@media (max-width:700px){.drift{display:none}.desk .win{margin:14px 12px 0}}
 @media (max-width:560px){
     .dock .app:not(.kt){display:none}
   .under{min-height:56px}
@@ -674,6 +674,7 @@ h2 .mute{color:var(--muted)}
   <!-- End -->
   <section class="end" id="end">
     <div class="wrap">
+      <div class="end-icon" id="endIcon" aria-hidden="true"></div>
       <div class="eyebrow">KinTerm for macOS</div>
       <h2>Bring your kin home.</h2>
       <p class="sub" style="margin:18px auto 0">Free. A signed, notarized DMG that keeps itself up to date.</p>
@@ -681,7 +682,6 @@ h2 .mute{color:var(--muted)}
         <a class="btn" data-dl href="https://github.com/lakpriya1s/kinterm/releases/latest">Download for macOS</a>
         <a class="btn ghost" href="https://github.com/lakpriya1s/kinterm">Star on GitHub</a>
       </div>
-      <div class="crowd" id="crowd" aria-hidden="true"></div>
     </div>
   </section>
 </main>
@@ -1251,14 +1251,13 @@ seg($('#poss'), [['top', 'Top'], ['bottom', 'Bottom'], ['left', 'Left'], ['right
 })();
 
 /* ── end ── */
-(function crowd() {
-  const host = $('#crowd');
-  const sets = Object.keys(SETS);
-  for (let i = 0; i < 12; i++) {
-    const f = face(i === 4 ? 'waiting' : i === 8 ? 'working' : 'done', sets[i % sets.length]);
-    f.style.setProperty('--i', i);
-    host.append(f);
-  }
+(function endIcon() {
+  const host = $('#endIcon');
+  host.innerHTML = iconSVG('smile');
+  // Happy to see you when you get here.
+  new IntersectionObserver(([e]) => {
+    host.innerHTML = iconSVG(e.isIntersecting ? 'done' : 'smile');
+  }, { threshold: .6 }).observe(host);
 })();
 
 /* ── reveal on scroll ── */
