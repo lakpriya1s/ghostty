@@ -533,7 +533,7 @@ h2 .mute{color:var(--muted)}
   <section class="hero" id="hero">
     <div class="hero-in">
       <button class="agent-btn" id="heroFace" aria-label="Your agent. Click it to change what it's doing.">
-        <span class="bigface"><span class="fx" data-set="squares" data-face="idle" data-awake></span></span>
+        <span class="bigface"><span class="fx" data-set="squares" data-face="idle"></span></span>
         <span class="poke" id="poke" aria-hidden="true"><svg viewBox="0 0 96 76" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path class="line" pathLength="1" d="M78 70C62 72 46 64 48 50C50 38 66 36 66 47C66 60 44 62 32 50C22 40 16 28 9 14"/><path class="head" pathLength="1" d="M18 15L9 14L7 23"/></svg><span>Poke me!</span></span>
       </button>
       <h1 class="h1">Your agent<br><span class="when" id="heroWhen">when it&rsquo;s asleep.</span></h1>
@@ -715,8 +715,7 @@ function face(state, set) {
 function setFace(el, state) {
   el.dataset.face = state;
   const set = el.dataset.set || globalSet;
-  // The hero face stays as poked, so it always matches its headline.
-  const shown = asleep && state !== 'shell' && !('awake' in el.dataset) ? 'idle' : state;
+  const shown = asleep && state !== 'shell' ? 'idle' : state;
   const key = set + ':' + shown;
   if (el.dataset.shown === key) return;
   el.dataset.shown = key;
@@ -772,18 +771,22 @@ const WHEN = {
 };
 const heroWhen = $('#heroWhen');
 const POKES = ['working', 'waiting', 'done', 'error', 'idle'];
-let poked = -1;
-function setHero(st) {
-  setFace(heroFace, st);
+let poked = -1, heroState = null;
+// Shows the poked state, or asleep while the page dozes; the face and its
+// headline always change together.
+function showHero() {
+  const st = asleep ? 'idle' : heroState || 'idle';
+  setFace(heroFace, heroState || 'idle');
   hero.style.setProperty('--hc', C[st]);
   heroWhen.textContent = WHEN[st][0];
   heroWhen.style.color = C[st];
-  heroSay.textContent = WHEN[st][1];
+  heroSay.textContent = heroState || asleep ? WHEN[st][1] : 'Scroll to see how it’s doing ↓';
   if (!reduce) heroWhen.animate([{ opacity: 0, transform: 'translateY(.25em)' }, { opacity: 1, transform: 'none' }], { duration: 320, easing: 'ease-out' });
 }
 heroBtn.addEventListener('click', () => {
   poked = (poked + 1) % POKES.length;
-  setHero(POKES[poked]);
+  heroState = POKES[poked];
+  showHero();
   $('#poke').classList.remove('on');
   heroBtn.animate([{ transform: 'scale(1)' }, { transform: 'scale(.92) rotate(-4deg)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'ease-out' });
 });
@@ -1222,13 +1225,14 @@ let idleTimer;
 const toast = $('#toast');
 function wake() {
   clearTimeout(idleTimer);
-  if (asleep) { asleep = false; toast.classList.remove('on'); refreshFaces(); }
+  if (asleep) { asleep = false; toast.classList.remove('on'); refreshFaces(); showHero(); }
   idleTimer = setTimeout(sleep, 20000);
 }
 function sleep() {
   if (reduce) return;
   asleep = true;
   refreshFaces();
+  showHero();
   toast.classList.add('on');
 }
 ['pointermove', 'pointerdown', 'keydown', 'scroll', 'touchstart', 'wheel'].forEach(ev => addEventListener(ev, wake, { passive: true }));
