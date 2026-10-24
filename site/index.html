@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KinTerm · Your agents, at a glance</title>
-<meta name="description" content="KinTerm is a macOS terminal where every tab is a face that shows what the coding agent inside is doing: working, waiting on you, done or stuck.">
-<meta property="og:title" content="KinTerm · Your agents, at a glance">
-<meta property="og:description" content="Every tab is a face. Know which agent needs you without opening a single tab.">
+<title>KinTerm · The terminal for AI coding agents</title>
+<meta name="description" content="KinTerm is the terminal for AI coding agents. Run Claude Code in every tab; each tab's face shows what its agent is doing, so you know who's working, who's done and who needs you.">
+<meta property="og:title" content="KinTerm · The terminal for AI coding agents">
+<meta property="og:description" content="Run Claude Code in every tab. Each tab's face shows what its agent is doing: working, done or waiting on you.">
 <meta property="og:image" content="https://lakpriya1s.github.io/kinterm/icon.png">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
@@ -53,7 +53,7 @@ button{font:inherit;color:inherit}
 .btn.ghost:hover{box-shadow:inset 0 0 0 1px var(--muted)}
 
 /* ── hero ── */
-.hero{position:relative;height:100svh;min-height:520px;display:flex;align-items:center;justify-content:center;padding:64px 0 56px;overflow:hidden;isolation:isolate}
+.hero{position:relative;height:100svh;min-height:520px;display:flex;align-items:center;justify-content:center;padding:76px 0 44px;overflow:hidden;isolation:isolate}
 .hero::before{content:"";position:absolute;inset:-20%;z-index:-2;background:
   radial-gradient(40% 35% at 42% 42%,rgba(47,211,184,.16),transparent 70%),
   radial-gradient(40% 35% at 58% 52%,rgba(92,160,255,.16),transparent 70%)}
@@ -63,7 +63,7 @@ button{font:inherit;color:inherit}
 .drift .fx>span{display:block}
 @keyframes float{from{translate:0 0}to{translate:var(--fx,10px) var(--fy,-24px)}}
 .hero-in{display:flex;flex-direction:column;align-items:center;text-align:center;gap:clamp(10px,2.2svh,22px);padding:0 var(--gutter)}
-.mark-btn{position:relative;border:0;background:none;padding:0;cursor:pointer;width:min(240px,52vw,26svh);aspect-ratio:1;border-radius:24%;-webkit-tap-highlight-color:transparent}
+.mark-btn{position:relative;border:0;background:none;padding:0;cursor:pointer;width:min(240px,52vw,24svh);aspect-ratio:1;border-radius:24%;-webkit-tap-highlight-color:transparent}
 .mark-btn svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 30px 60px rgba(0,0,0,.5))}
 .mark-btn:focus-visible{outline:2px solid var(--blue);outline-offset:8px}
 .mark-btn .front{transition:fill .45s}
@@ -87,8 +87,11 @@ button{font:inherit;color:inherit}
 .wm .t{color:var(--muted)}
 .wm .cur{display:inline-block;width:.42em;height:.09em;margin-left:.08em;border-radius:.04em;background:var(--blue);animation:cur 1.05s steps(1) infinite}
 @keyframes cur{50%{opacity:0}}
+.cat{display:inline-flex;align-items:center;gap:8px;margin:0;padding:6px 14px 6px 12px;border-radius:999px;background:rgba(34,36,42,.7);border:1px solid var(--edge2);font-size:13px;font-weight:600;color:var(--soft);backdrop-filter:blur(8px)}
+.cat i{width:7px;height:7px;border-radius:50%;background:var(--done);box-shadow:0 0 0 0 rgba(63,185,80,.6);animation:live 2s ease-out infinite}
+@keyframes live{0%{box-shadow:0 0 0 0 rgba(63,185,80,.6)}70%,100%{box-shadow:0 0 0 7px rgba(63,185,80,0)}}
 .tag{margin:0;font-size:clamp(18px,min(2.6vw,3.2svh),28px);font-weight:600;letter-spacing:-.02em;color:var(--soft)}
-.lede{margin:0;max-width:540px;color:var(--muted);font-size:clamp(15px,2svh,17px)}
+.lede{margin:0;max-width:560px;text-wrap:balance;color:var(--muted);font-size:clamp(15px,2svh,17px)}
 .cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
 .fine{font-size:13px;color:var(--dim)}
 .fine b{color:var(--muted);font-weight:500}
@@ -546,12 +549,13 @@ h2 .mute{color:var(--muted)}
   <section class="hero">
     <div class="drift" id="drift" aria-hidden="true"></div>
     <div class="hero-in">
+      <p class="cat"><i></i>The terminal for AI coding agents</p>
       <button class="mark-btn" id="heroMark" aria-label="The KinTerm mark. Click to change its mood.">
         <span class="poke" id="poke" aria-hidden="true"><svg viewBox="0 0 96 76" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path class="line" pathLength="1" d="M78 70C62 72 46 64 48 50C50 38 66 36 66 47C66 60 44 62 32 50C22 40 16 28 9 14"/><path class="head" pathLength="1" d="M18 15L9 14L7 23"/></svg><span>Poke me!</span></span>
       </button>
       <h1 class="wm" aria-label="KinTerm"><span class="k" id="wmK"></span><span class="t" id="wmT"></span><i class="cur" aria-hidden="true"></i></h1>
       <p class="tag">Your agents, at a glance.</p>
-      <p class="lede">A terminal where every tab is a face. See who's working, who's done and who needs you, without opening a single tab.</p>
+      <p class="lede">Run Claude Code in every tab. Each tab's face shows what its agent is doing, so you know who's working, who's done and who needs you.</p>
       <div class="cta">
         <a class="btn" data-dl href="https://github.com/lakpriya1s/kinterm/releases/latest">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8 1.6 0 2 .8 3.4.8 1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.7-1-2.7-4.1zM13.9 5c.7-.9 1.2-2 1.1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.1.1 2.3-.6 3-1.5z"/></svg>
