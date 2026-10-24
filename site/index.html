@@ -67,10 +67,10 @@ button{font:inherit;color:inherit}
 .say{margin:clamp(14px,2.4svh,22px) 0 0;min-height:1.6em;font-size:clamp(16px,2.2svh,19px);color:var(--muted)}
 .say b{font-weight:600}
 .cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
-.poke{position:absolute;left:calc(100% - 4px);top:52%;width:120px;pointer-events:none;opacity:0;transition:opacity .4s}
-.poke svg{display:block;width:96px;height:76px;color:var(--soft);overflow:visible}
+.poke{position:absolute;left:calc(100% + 26px);top:40%;width:190px;pointer-events:none;opacity:0;transition:opacity .4s}
+.poke svg{display:block;width:144px;height:114px;color:var(--soft);overflow:visible}
 .poke path{stroke-dasharray:1;stroke-dashoffset:1}
-.poke span{display:block;margin:-4px 0 0 52px;font:600 24px/1 Caveat,cursive;color:var(--text);rotate:-6deg;white-space:nowrap}
+.poke span{display:block;margin:-6px 0 0 80px;font:600 36px/1 Caveat,cursive;color:var(--text);rotate:-6deg;white-space:nowrap}
 .poke.on{opacity:1}
 .poke.on .line{animation:draw .9s ease-out forwards}
 .poke.on .head{animation:draw .25s ease-out .85s forwards}
@@ -78,7 +78,7 @@ button{font:inherit;color:inherit}
 @keyframes draw{to{stroke-dashoffset:0}}
 @keyframes cur{50%{opacity:0}}
 @keyframes wiggle{0%,75%,100%{translate:0 0}85%{translate:-4px -3px}}
-@media (max-width:560px){.poke{left:calc(100% - 14px);top:56%;width:96px}.poke svg{width:58px;height:46px}.poke span{margin:-2px 0 0 26px;font-size:19px}}
+@media (max-width:560px){.poke{left:calc(100% - 22px);top:52%;width:96px}.poke svg{width:66px;height:52px}.poke span{margin:-4px 0 0 24px;font-size:21px}}
 .scrollcue{position:absolute;bottom:18px;left:50%;translate:-50% 0;width:22px;height:36px;border:1.5px solid var(--edge2);border-radius:12px}
 .scrollcue::after{content:"";position:absolute;left:50%;top:7px;width:3px;height:7px;margin-left:-1.5px;border-radius:2px;background:var(--muted);animation:cue 1.8s ease-in-out infinite}
 @keyframes cue{0%{opacity:0;translate:0 0}30%{opacity:1}100%{opacity:0;translate:0 12px}}
@@ -781,7 +781,7 @@ heroBtn.addEventListener('click', () => {
   $('#poke').classList.remove('on');
   heroBtn.animate([{ transform: 'scale(1)' }, { transform: 'scale(.92) rotate(-4deg)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'ease-out' });
 });
-setTimeout(() => { if (poked < 0) $('#poke').classList.add('on'); }, 2500);
+setTimeout(() => { if (poked < 0) $('#poke').classList.add('on'); }, 300);
 // The face is drawn on a 40 unit grid and scaled to fit the screen.
 function sizeHero() {
   const px = Math.round(Math.min(240, innerWidth * .5, innerHeight * .28));
