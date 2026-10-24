@@ -56,8 +56,9 @@ jobs:
 
       - name: Extract version and build info
         run: |
-          # GitHub Pages serves the repo at /<name>; the feed URL goes into
-          # the app, so renaming the repo later strands installed copies.
+          # GitHub Pages serves the repo at lakpriya.com/<name> (the owner's
+          # custom domain). The feed URL goes into the app, so renaming the
+          # repo or dropping the domain later strands installed copies.
           {
             echo "KINTERM_TAG=$GITHUB_REF_NAME"
             echo "KINTERM_VERSION=${GITHUB_REF_NAME#kinterm-v}"
@@ -66,7 +67,7 @@ jobs:
             echo "KINTERM_BUILD=$(date -u +%Y%m%d%H%M)"
             echo "KINTERM_COMMIT=$(git rev-parse --short HEAD)"
             echo "KINTERM_COMMIT_LONG=$(git rev-parse HEAD)"
-            echo "KINTERM_FEED_URL=https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/appcast.xml"
+            echo "KINTERM_FEED_URL=https://lakpriya.com/${GITHUB_REPOSITORY#*/}/appcast.xml"
           } >> "$GITHUB_ENV"
 
       - name: Setup Zig

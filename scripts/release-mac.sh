@@ -28,7 +28,7 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 TEAM=L84DL8HSN6
 PROFILE=${NOTARY_PROFILE:-burnarc-notary}
 SPARKLE_PUBLIC_KEY=I+15Sod1ZqusN/7p7LtpYJmTDPwT2k5kZtun2bhZSsU=
-FEED_URL=https://lakpriya1s.github.io/kinterm/appcast.xml
+FEED_URL=https://lakpriya.com/kinterm/appcast.xml
 OUT="$ROOT/macos/build/dmg"
 APP="$ROOT/macos/build/Release/KinTerm.app"
 DMG="$OUT/KinTerm-$VERSION.dmg"

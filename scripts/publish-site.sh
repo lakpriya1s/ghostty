@@ -1,6 +1,7 @@
 #!/bin/sh
 # Publishes site/ (the KinTerm web page) to the gh-pages branch, which
-# GitHub Pages serves at https://lakpriya1s.github.io/kinterm/.
+# GitHub Pages serves at https://lakpriya.com/kinterm/ (the owner's
+# custom domain).
 #
 #   scripts/publish-site.sh
 #
@@ -30,4 +31,4 @@ if git -C "$PAGES" diff --cached --quiet; then
 fi
 git -C "$PAGES" commit -m "site: $(git rev-parse --short HEAD)"
 git -C "$PAGES" push origin gh-pages
-echo "Published. Live in a minute at https://lakpriya1s.github.io/kinterm/"
+echo "Published. Live in a minute at https://lakpriya.com/kinterm/"

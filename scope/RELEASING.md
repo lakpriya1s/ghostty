@@ -3,7 +3,7 @@
 Pushing a `kinterm-vX.Y.Z` tag runs `.github/workflows/kinterm-release.yml`.
 It builds KinTerm, signs and notarizes it, publishes a GitHub release with
 `KinTerm.dmg`, and adds it to the update feed at
-`https://lakpriya1s.github.io/kinterm/appcast.xml`. Installed copies find
+`https://lakpriya.com/kinterm/appcast.xml`. Installed copies find
 the update there through Sparkle.
 
 Dev builds have no feed or update key, so they never update. Only builds
@@ -96,10 +96,14 @@ done
 
 The first release creates the `gh-pages` branch. Then: Settings › Pages ›
 Deploy from a branch › `gh-pages`, `/ (root)`. Check that
-`https://lakpriya1s.github.io/kinterm/appcast.xml` loads.
+`https://lakpriya.com/kinterm/appcast.xml` loads.
 
 **Don't rename the repo after the first release.** The feed URL is built
-into every copy, and Pages URLs don't redirect after a rename.
+into every copy, and Pages URLs don't redirect after a rename. The pages are
+served on the owner's custom domain, lakpriya.com (set on the
+lakpriya1s.github.io repo, behind Cloudflare). Keep it: the plain
+`lakpriya1s.github.io/kinterm/` address redirects through http, which
+macOS blocks for the update check.
 
 ## Each release
 
@@ -126,7 +130,7 @@ scripts/publish-site.sh
 It copies `site/` to the `gh-pages` branch next to `appcast.xml` (which it
 leaves alone). The first time, turn Pages on: Settings › Pages › Deploy
 from a branch › `gh-pages`, `/ (root)`. The page is then at
-`https://lakpriya1s.github.io/kinterm/`. Its Download buttons open
+`https://lakpriya.com/kinterm/`. Its Download buttons open
 `releases/latest`, so they work once a release is on GitHub.
 
 ## Bringing in Ghostty's changes
