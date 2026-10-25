@@ -53,8 +53,7 @@ internals keep their names so upstream merges still work:
 - Brand: `macos/Sources/Features/Branding/KinTermMark.swift` (mark, app
   icon, wordmark), `images/KinTerm.icon` (app icon), `images/kinterm/`
   (README images), `site/icon.png`; regenerate with
-  `scripts/render-brand.swift`. The mark is one glossy face: brushed
-  aluminium with a blue `>` prompt for eyes. The site draws the same faces
+  `scripts/render-brand.swift`. The mark is one glossy face: silver with a blue `>` prompt for eyes. The site draws the same faces
   in `markInner` in `site/index.html`. The dock icon is a status light
   (`AgentSummary.updateDockIcon`): the face takes the state's color and its
   Square faces expression.

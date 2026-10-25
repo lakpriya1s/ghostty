@@ -11,7 +11,7 @@
 <meta property="og:url" content="https://lakpriya.com/kinterm/">
 <meta property="og:title" content="KinTerm · The terminal for AI coding agents">
 <meta property="og:description" content="Run Claude Code in every tab. Each tab's face shows what its agent is doing: working, done or waiting on you. Free and open source for macOS.">
-<meta property="og:image" content="https://lakpriya.com/kinterm/og.png?v=2">
+<meta property="og:image" content="https://lakpriya.com/kinterm/og.png?v=3">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="KinTerm, the terminal for AI coding agents, with its five agent faces">
@@ -19,7 +19,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="KinTerm · The terminal for AI coding agents">
 <meta name="twitter:description" content="Every tab is a face that shows what its agent is doing. Free and open source for macOS.">
-<meta name="twitter:image" content="https://lakpriya.com/kinterm/og.png?v=2">
+<meta name="twitter:image" content="https://lakpriya.com/kinterm/og.png?v=3">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -28,7 +28,7 @@
   "description": "The terminal for AI coding agents. Every tab is a face that shows what its agent is doing: working, done or waiting on you.",
   "url": "https://lakpriya.com/kinterm/",
   "downloadUrl": "https://github.com/lakpriya1s/kinterm/releases/latest/download/KinTerm.dmg",
-  "image": "https://lakpriya.com/kinterm/og.png?v=2",
+  "image": "https://lakpriya.com/kinterm/og.png?v=3",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS 13 or later",
   "license": "https://opensource.org/licenses/MIT",
@@ -853,25 +853,21 @@ const PROMPT = `<path d="M29 37L43 47.5L29 58" fill="none" stroke="#5ca0ff" stro
 const exprSVG = e => e === 'prompt' ? PROMPT : `<g transform="scale(3)">${EXPR[e]}</g>`;
 // A color mixed toward another by f.
 const mix = (a, b, f) => '#' + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - f) + parseInt(b.substr(i, 2), 16) * f).toString(16).padStart(2, '0')).join('');
-const SILVER = [[0, '#f4f5f7'], [.45, '#c9ccd2'], [.55, '#b7bbc2'], [1, '#8e939b']];
 
 // One glossy agent face, 120 square: lit from above, a reflection over the
-// top half, a rim, and the features pressed in. The brand face is brushed
-// aluminium.
+// top half, a rim, and the features pressed in. The brand face is silver.
 let uid = 0;
 function markInner(expr = 'prompt') {
-  const id = 'km' + (++uid), brand = expr === 'prompt';
-  const c = C[expr];
-  const stops = brand ? SILVER : [[0, mix(c, '#ffffff', .3)], [.55, c], [1, mix(c, '#000000', .2)]];
+  const id = 'km' + (++uid);
+  const c = expr === 'prompt' ? '#c9ccd2' : C[expr];
+  const stops = [[0, mix(c, '#ffffff', .3)], [.55, c], [1, mix(c, '#000000', .2)]];
   const face = 'x="0" y="0" width="120" height="120" rx="30"';
   return `<defs><linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1">${stops.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('')}</linearGradient>`
-    + `<linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="${brand ? .6 : .5}"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`
+    + `<linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`
     + `<linearGradient id="${id}r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".25" stop-color="#fff" stop-opacity=".15"/><stop offset=".8" stop-color="#000" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient>`
     + `<clipPath id="${id}c"><rect ${face}/></clipPath>`
     + `<filter id="${id}e" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.6" stdDeviation=".3" flood-color="#fff" flood-opacity=".45"/></filter>`
-    + (brand ? `<filter id="${id}n" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.003 0.9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>` : '')
     + `</defs><rect class="front" ${face} fill="url(#${id}b)"/>`
-    + (brand ? `<g clip-path="url(#${id}c)" opacity=".5"><rect ${face} filter="url(#${id}n)"/></g>` : '')
     + `<path d="M30 2h60a28 28 0 0 1 28 28v8C90 54 30 54 2 40V30A28 28 0 0 1 30 2z" fill="url(#${id}g)"/>`
     + `<rect ${face} fill="none" stroke="url(#${id}r)" stroke-width="4" clip-path="url(#${id}c)"/>`
     + `<g class="expr" fill="${INK}" filter="url(#${id}e)">${exprSVG(expr)}</g>`;

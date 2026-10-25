@@ -5,13 +5,14 @@ enum KinTermBrand {
     static let blue = Color(red: 0x5c / 255, green: 0xa0 / 255, blue: 0xff / 255)
     static let ink = Color(red: 0x15 / 255, green: 0x16 / 255, blue: 0x1b / 255)
     static let term = Color(red: 0x8b / 255, green: 0x90 / 255, blue: 0x99 / 255)
+    static let silver = Color(red: 0xc9 / 255, green: 0xcc / 255, blue: 0xd2 / 255)
 }
 
-/// The KinTerm mark: a glossy agent face. The brand face is brushed
-/// aluminium with a blue prompt for eyes; as a status light it takes the
-/// state's color and expression.
+/// The KinTerm mark: a glossy agent face. The brand face is silver with a
+/// blue prompt for eyes; as a status light it takes the state's color and
+/// expression.
 struct KinTermMark: View {
-    /// The face's color, or nil for the aluminium brand face.
+    /// The face's color, or nil for the silver brand face.
     var front: Color?
     var expression: Expression = .prompt
 
@@ -48,43 +49,18 @@ struct KinTermMark: View {
         let face = Path(roundedRect: rect(0, 0, 120, 120), cornerRadius: cornerRadius * unit, style: .continuous)
 
         // The body: lit from above, darker toward the bottom.
-        let stops: [Gradient.Stop]
-        if let front {
-            let base = NSColor(front)
-            stops = [
-                .init(color: Color(nsColor: base.blended(withFraction: 0.3, of: .white) ?? base), location: 0),
-                .init(color: front, location: 0.55),
-                .init(color: Color(nsColor: base.blended(withFraction: 0.2, of: .black) ?? base), location: 1),
-            ]
-        } else {
-            stops = [
-                .init(color: Color(red: 0xf4 / 255, green: 0xf5 / 255, blue: 0xf7 / 255), location: 0),
-                .init(color: Color(red: 0xc9 / 255, green: 0xcc / 255, blue: 0xd2 / 255), location: 0.45),
-                .init(color: Color(red: 0xb7 / 255, green: 0xbb / 255, blue: 0xc2 / 255), location: 0.55),
-                .init(color: Color(red: 0x8e / 255, green: 0x93 / 255, blue: 0x9b / 255), location: 1),
-            ]
-        }
+        let front = front ?? KinTermBrand.silver
+        let base = NSColor(front)
+        let stops: [Gradient.Stop] = [
+            .init(color: Color(nsColor: base.blended(withFraction: 0.3, of: .white) ?? base), location: 0),
+            .init(color: front, location: 0.55),
+            .init(color: Color(nsColor: base.blended(withFraction: 0.2, of: .black) ?? base), location: 1),
+        ]
         context.fill(face, with: .linearGradient(
             Gradient(stops: stops), startPoint: point(0, 0), endPoint: point(0, 120)))
 
         context.drawLayer { layer in
             layer.clip(to: face)
-
-            // Brushed metal: fine horizontal streaks, the same every time.
-            if front == nil {
-                var seed: UInt32 = 7
-                func random() -> CGFloat {
-                    seed = seed &* 1_664_525 &+ 1_013_904_223
-                    return CGFloat(seed >> 8) / CGFloat(1 << 24)
-                }
-                var y: CGFloat = 0
-                while y < 120 {
-                    let light = random() < 0.5
-                    layer.fill(Path(rect(0, y, 120, 0.35)), with: .color(
-                        (light ? Color.white : Color.black).opacity(0.02 + random() * 0.07)))
-                    y += 0.5 + random() * 0.4
-                }
-            }
 
             // The gloss: a reflection over the top half, inset from a
             // rounded edge so the rim shows.
@@ -99,7 +75,7 @@ struct KinTermMark: View {
             gloss.addCurve(to: point(0, 40), control1: point(90, 54), control2: point(30, 54))
             gloss.closeSubpath()
             layer.fill(gloss, with: .linearGradient(
-                Gradient(colors: [.white.opacity(front == nil ? 0.6 : 0.5), .white.opacity(0)]),
+                Gradient(colors: [.white.opacity(0.5), .white.opacity(0)]),
                 startPoint: point(0, 0), endPoint: point(0, 50)))
         }
 
