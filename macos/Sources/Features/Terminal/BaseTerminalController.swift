@@ -108,6 +108,15 @@ class BaseTerminalController: NSWindowController,
     @Published private(set) var subagentCount: Int = 0
     private var subagentCancellable: AnyCancellable?
 
+    /// How many splits have a program reporting its status, such as two
+    /// coding agents side by side.
+    @Published private(set) var agentCount: Int = 0
+
+    /// How many shells those programs have left running in the background,
+    /// across all splits.
+    @Published private(set) var shellCount: Int = 0
+    private var agentCountCancellable: AnyCancellable?
+
     /// When this controller (a tab or window) was created.
     let createdAt = Date()
 
@@ -1743,6 +1752,22 @@ extension BaseTerminalController {
                 guard let self else { return }
                 programStatus = status
                 (window as? TerminalWindow)?.programStatus = status
+                AgentTabBarModel.setNeedsRefresh()
+            }
+
+        agentCountCancellable = surfaceValuesPublisher(
+            valueKeyPath: \.programStatus,
+            publisherKeyPath: \.$programStatus
+        )
+            .map { statuses in
+                let agents = statuses.values.compactMap { $0 }.filter { $0.state != .clear }
+                return [agents.count, agents.reduce(0) { $0 + Int($1.shells ?? 0) }]
+            }
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] counts in
+                self?.agentCount = counts[0]
+                self?.shellCount = counts[1]
                 AgentTabBarModel.setNeedsRefresh()
             }
 

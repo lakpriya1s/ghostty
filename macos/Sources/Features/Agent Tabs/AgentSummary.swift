@@ -324,7 +324,9 @@ private struct AgentSummaryCard: View {
         HStack(alignment: .top, spacing: 10) {
             // Moving, as in the tabs: the menu is only open while someone
             // is looking at it.
-            AgentFaceView(state: status.state, size: 26, background: .clear, motion: .all)
+            AgentFaceView(
+                state: status.state, size: 26, background: .clear, motion: .all,
+                agents: entry.controller.agentCount, shells: entry.controller.shellCount)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)

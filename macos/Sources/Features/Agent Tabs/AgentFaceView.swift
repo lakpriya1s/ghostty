@@ -26,17 +26,25 @@ struct AgentFaceView: View {
     /// A face set to draw instead of the chosen one, for previews.
     var styleOverride: Style?
 
+    /// How many agents the face stands for, such as two side by side in
+    /// splits, and how many shells they left running in the background,
+    /// such as a dev server. Shown as badges; see `drawBadges`.
+    var agents: Int
+    var shells: Int
+
     @ObservedObject private var settings = AgentTabBarSettings.shared
 
     init(
         state: State, size: CGFloat = 40, background: Color = AgentTabBarColors.bar, motion: Motion = .all,
-        style: Style? = nil
+        style: Style? = nil, agents: Int = 1, shells: Int = 0
     ) {
         self.state = state
         self.size = size
         self.background = background
         self.motion = motion
         self.styleOverride = style
+        self.agents = agents
+        self.shells = shells
     }
 
     private var style: Style { styleOverride ?? settings.faceStyle }
@@ -68,6 +76,8 @@ struct AgentFaceView: View {
             Canvas { gc, _ in
                 gc.scaleBy(x: scale, y: scale)
                 gc.translateBy(x: Self.pad, y: Self.pad)
+                // The faces move the context around, the badges stay put.
+                var badges = gc
                 switch style {
                 case .faces: draw(in: &gc, time: time)
                 case .squares: drawSquare(in: &gc, time: time)
@@ -76,6 +86,7 @@ struct AgentFaceView: View {
                 case .bots: drawBot(in: &gc, time: time)
                 case .spark: drawSpark(in: &gc, time: time)
                 }
+                drawBadges(in: &badges)
             }
         }
         .frame(width: Self.side(for: size), height: Self.side(for: size))
@@ -97,14 +108,18 @@ struct AgentFaceView: View {
     }
 
     private var accessibilityText: String {
+        var parts: [String]
         switch state {
-        case .idle: return "Idle"
-        case .working: return "Working"
-        case .done: return "Done"
-        case .blocked: return "Waiting on you"
-        case .error: return "Error"
-        case .clear: return ""
+        case .idle: parts = ["Idle"]
+        case .working: parts = ["Working"]
+        case .done: parts = ["Done"]
+        case .blocked: parts = ["Waiting on you"]
+        case .error: parts = ["Error"]
+        case .clear: parts = []
         }
+        if agents > 1 { parts.append("\(agents) agents") }
+        if shells > 0 { parts.append("\(shells) \(shells == 1 ? "shell" : "shells") running") }
+        return parts.joined(separator: ", ")
     }
 
     // MARK: Colors
@@ -227,6 +242,44 @@ struct AgentFaceView: View {
                          startAngle: .degrees(180), endAngle: .degrees(360), clockwise: false)
             gc.stroke(frown, with: ink, style: line)
         }
+    }
+
+    static let agentsBadgeColor = Color(agentHex: 0xa8adb7)
+    static let shellsBadgeColor = Color(agentHex: 0x5ca0ff)
+
+    /// The badges at the bottom right: how many agents, when more than one,
+    /// in gray, and how many shells, in blue. Alone, each shows its count.
+    /// Together, the agents badge is in front and the shells badge peeks
+    /// out from behind it without its count.
+    private func drawBadges(in gc: inout GraphicsContext) {
+        guard state != .clear else { return }
+        let front = CGRect(x: 27, y: 27, width: 16, height: 16)
+        switch (agents > 1, shells > 0) {
+        case (false, false):
+            break
+        case (false, true):
+            drawBadge(in: &gc, front, color: Self.shellsBadgeColor, count: shells)
+        case (true, false):
+            drawBadge(in: &gc, front, color: Self.agentsBadgeColor, count: agents)
+        case (true, true):
+            drawBadge(in: &gc, front.offsetBy(dx: -6, dy: 0), color: Self.shellsBadgeColor, count: nil)
+            drawBadge(in: &gc, front, color: Self.agentsBadgeColor, count: agents)
+        }
+    }
+
+    /// A 16 unit badge with its count if given, cut out of what's under it
+    /// so it reads on any background.
+    private func drawBadge(in gc: inout GraphicsContext, _ rect: CGRect, color: Color, count: Int?) {
+        var cut = gc
+        cut.blendMode = .clear
+        cut.fill(Path(ellipseIn: rect.insetBy(dx: -2, dy: -2)), with: .color(.black))
+        gc.fill(Path(ellipseIn: rect), with: .color(color))
+        guard let count else { return }
+        gc.draw(
+            Text(count > 9 ? "9+" : "\(count)")
+                .font(.system(size: count > 9 ? 9 : 12, weight: .heavy))
+                .foregroundColor(Self.ink),
+            at: CGPoint(x: rect.midX, y: rect.midY))
     }
 
     /// The white dot on a done face until it's seen, cut out of the

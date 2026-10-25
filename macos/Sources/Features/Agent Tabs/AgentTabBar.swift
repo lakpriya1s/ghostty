@@ -275,6 +275,12 @@ struct AgentTab: Identifiable, Equatable {
 
     /// Subagents working for the agent in this tab.
     let subagents: Int
+
+    /// Agents in this tab's splits.
+    let agents: Int
+
+    /// Shells the agents in this tab have left running in the background.
+    let shells: Int
 }
 
 /// The tabs of one window's tab group, kept up to date for the agent tab bar.
@@ -356,7 +362,9 @@ final class AgentTabBarModel: ObservableObject {
                 branch: AgentGitBranch.shared.branch(at: tabController?.focusedSurface?.pwd),
                 openedAt: tabController?.createdAt ?? Date(),
                 account: account,
-                subagents: tabController?.subagentCount ?? 0
+                subagents: tabController?.subagentCount ?? 0,
+                agents: tabController?.agentCount ?? 0,
+                shells: tabController?.shellCount ?? 0
             )
         }
 
@@ -742,7 +750,11 @@ private struct AgentTabButton: View {
         } label: {
             ZStack {
                 if let status = tab.status, status.state != .clear {
-                    AgentFaceView(state: status.state, size: faceSize, background: background, motion: model.faceMotion)
+                    // The subagent badge takes the corner while it shows.
+                    let subagentBadge = status.state == .working && tab.subagents > 0
+                    AgentFaceView(
+                        state: status.state, size: faceSize, background: background, motion: model.faceMotion,
+                        agents: subagentBadge ? 1 : tab.agents, shells: subagentBadge ? 0 : tab.shells)
                 } else {
                     ShellGlyphView(size: faceSize)
                 }
@@ -903,6 +915,10 @@ private struct AgentTabCard: View {
         if status.state == .working, tab.subagents > 0 {
             text += " (\(tab.subagents) \(tab.subagents == 1 ? "subagent" : "subagents") running)"
         }
+        var counts: [String] = []
+        if tab.agents > 1 { counts.append("\(tab.agents) agents") }
+        if tab.shells > 0 { counts.append("\(tab.shells) \(tab.shells == 1 ? "shell" : "shells") running") }
+        if !counts.isEmpty { text += " · " + counts.joined(separator: " · ") }
         return text
     }
 

@@ -1790,9 +1790,9 @@ extension Ghostty {
         /// reports (older versions, `claude -p`), the hook's reports are used
         /// in full.
         ///
-        /// Context used and the last message come only from the hook, and
-        /// not with every report, so a report without them keeps the ones
-        /// the terminal already had.
+        /// Context used, background shells and the last message come only
+        /// from the hook, and not with every report, so a report without
+        /// them keeps the ones the terminal already had.
         func updateProgramStatus(_ status: Action.ProgramStatus) {
             if let id = status.id {
                 updateProgramChild(id, status)
@@ -1812,6 +1812,7 @@ extension Ghostty {
 
             if previous?.app == status.app {
                 status.context = status.context ?? previous?.context
+                status.shells = status.shells ?? previous?.shells
                 status.last = status.last ?? previous?.last
             }
 
@@ -1821,9 +1822,11 @@ extension Ghostty {
             } else if programReportsOwnStatus, var previous {
                 if previous.account != status.account
                     || previous.context != status.context
+                    || previous.shells != status.shells
                     || previous.last != status.last {
                     previous.account = status.account
                     previous.context = status.context
+                    previous.shells = status.shells
                     previous.last = status.last
                     programStatus = previous
                 }

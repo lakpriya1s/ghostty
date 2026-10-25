@@ -65,11 +65,32 @@ context_percent() {
   ' 2>/dev/null
 }
 
+# How many shells Claude Code is running, such as a dev server it left
+# running in the background: its Bash tool runs commands as children of
+# Claude Code, sourcing a shell snapshot. Hooks run under Claude Code too,
+# so count the children of this hook's nearest ancestors, skipping the
+# ancestors. Only call it when no foreground command can be running.
+count_shells() {
+  ancestors=""
+  pid=$PPID
+  i=0
+  while [ "${pid:-0}" -gt 1 ] && [ "$i" -lt 4 ]; do
+    ancestors="$ancestors $pid"
+    pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+    i=$((i + 1))
+  done
+  ps -A -o pid= -o ppid= -o command= 2>/dev/null | awk -v ancestors="$ancestors" '
+    BEGIN { n = split(ancestors, a, " "); for (i = 1; i <= n; i++) up[a[i]] = 1 }
+    ($2 in up) && !($1 in up) && /shell-snapshots\/snapshot-/ { shells++ }
+    END { print shells + 0 }'
+}
+
 event=$(field hook_event_name)
 cwd=$(field cwd)
 kind=""
 msg=""
 last=""
+shells=""
 
 case "$event" in
   SessionStart)
@@ -79,6 +100,7 @@ case "$event" in
   UserPromptSubmit)
     state=working
     msg=$(field prompt)
+    shells=$(count_shells)
     ;;
   PreToolUse)
     state=working
@@ -92,6 +114,12 @@ case "$event" in
   PostToolUse)
     state=working
     msg="Thinking"
+    # A command just went to the background. Other tools' events leave
+    # the count alone: commands running in parallel would count too.
+    if [ "$(field tool_name)" = Bash ] && command -v jq >/dev/null 2>&1 &&
+      [ "$(printf '%s' "$input" | jq -r '.tool_input.run_in_background // false' 2>/dev/null)" = true ]; then
+      shells=$(count_shells)
+    fi
     ;;
   Notification)
     msg=$(field message)
@@ -103,11 +131,15 @@ case "$event" in
       *) kind=question ;;
     esac
     state=blocked
+    shells=$(count_shells)
     ;;
   Stop)
     state=done
     msg="Finished"
     last=$(field last_assistant_message)
+    # Claude can finish its turn with shells still running in the
+    # background, such as a dev server. KinTerm shows them as a badge.
+    shells=$(count_shells)
     ;;
   StopFailure)
     # The turn ended on an API error: rate limit, overloaded, auth...
@@ -115,6 +147,7 @@ case "$event" in
     msg=$(field error_details)
     [ -n "$msg" ] || msg="Error: $(field error)"
     last=$(field last_assistant_message)
+    shells=$(count_shells)
     ;;
   SessionEnd)
     state=clear
@@ -134,6 +167,7 @@ report="state=$state:app=claude-code"
 [ -n "$cwd" ] && report="$report:title=$(encode "$(basename "$cwd")")"
 [ -n "$msg" ] && report="$report:msg=$(encode "$msg")"
 [ -n "$last" ] && report="$report:last=$(encode "$last")"
+[ -n "$shells" ] && report="$report:shells=$shells"
 if [ "$state" != clear ]; then
   context=$(context_percent)
   [ -n "$context" ] && report="$report:context=$context"
