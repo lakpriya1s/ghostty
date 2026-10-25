@@ -81,6 +81,19 @@ enum AgentHookInstaller {
         try data.write(to: settingsURL, options: .atomic)
     }
 
+    /// Replace an installed hook that differs from the one in this app, so
+    /// an update's hook changes reach settings that already run it. Does
+    /// nothing if the hook isn't installed.
+    static func updateInstalledHook() {
+        DispatchQueue.global(qos: .utility).async {
+            guard FileManager.default.fileExists(atPath: hookURL.path),
+                  let bundled = Bundle.main.url(forResource: hookName, withExtension: nil),
+                  let new = try? Data(contentsOf: bundled),
+                  (try? Data(contentsOf: hookURL)) != new else { return }
+            try? installHook()
+        }
+    }
+
     /// Copy the bundled hook to `hookURL`, replacing an older copy.
     private static func installHook() throws {
         guard let bundled = Bundle.main.url(forResource: hookName, withExtension: nil) else {
