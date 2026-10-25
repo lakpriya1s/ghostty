@@ -225,7 +225,7 @@ pub const Report = struct {
                 .working, .blocked => parseProgress(v),
                 else => null,
             },
-            .context => parseProgress(v),
+            .context, .shells => parseProgress(v),
             .title, .msg, .last => if (v.len > 0) v else null,
         };
     }
@@ -284,6 +284,10 @@ pub const Report = struct {
 ///   value outside that range reads as null. An extension, like `account`.
 /// - `last`: the last thing the program said to the user, such as an AI
 ///   agent's last reply, encoded like `msg`. An extension, like `account`.
+/// - `shells`: how many shells the program has left running in the
+///   background, such as an AI agent's dev server, from 0 to 100. Read in
+///   any state. A value outside that range reads as null. An extension,
+///   like `account`.
 ///
 /// `readOption` returns `title`, `msg` and `last` still encoded as
 /// base64. Use `writeText` to read their text.
@@ -297,11 +301,12 @@ pub const Option = enum {
     account,
     context,
     last,
+    shells,
 
     pub fn Type(comptime self: Option) type {
         return switch (self) {
             .kind => Kind,
-            .progress, .context => u8,
+            .progress, .context, .shells => u8,
             .id, .app, .title, .msg, .account, .last => []const u8,
         };
     }
@@ -440,8 +445,8 @@ fn validateId(value: []const u8) error{ InvalidId, TooLong }!void {
     }
 }
 
-/// Parse a whole number from 0 to 100, a `progress` or `context`
-/// value. Anything else is treated as absent. This doesn't use std.fmt because it accepts underscores.
+/// Parse a whole number from 0 to 100, a `progress`, `context` or
+/// `shells` value. Anything else is treated as absent. This doesn't use std.fmt because it accepts underscores.
 fn parseProgress(value: []const u8) ?u8 {
     if (value.len == 0) return null;
     var n: u16 = 0;
@@ -590,6 +595,14 @@ test "OSC 7501: context and last" {
     p.reset();
     p.nextSlice("7501;state=idle:context=101");
     try testing.expect(p.end('\x1b').?.program_status.report.readOption(.context) == null);
+
+    // Shells, in any state.
+    p.reset();
+    p.nextSlice("7501;state=done:shells=2");
+    try testing.expectEqual(2, p.end('\x1b').?.program_status.report.readOption(.shells).?);
+    p.reset();
+    p.nextSlice("7501;state=done:shells=-1");
+    try testing.expect(p.end('\x1b').?.program_status.report.readOption(.shells) == null);
 
     // A last that decodes to invalid UTF-8 (0xFF) discards the report,
     // like msg.
