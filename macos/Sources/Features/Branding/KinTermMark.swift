@@ -2,25 +2,23 @@ import SwiftUI
 
 /// KinTerm's colors, from the "Name & logo" design.
 enum KinTermBrand {
-    static let teal = Color(red: 0x2f / 255, green: 0xd3 / 255, blue: 0xb8 / 255)
     static let blue = Color(red: 0x5c / 255, green: 0xa0 / 255, blue: 0xff / 255)
     static let ink = Color(red: 0x15 / 255, green: 0x16 / 255, blue: 0x1b / 255)
-    static let tile = Color(red: 0x1b / 255, green: 0x1c / 255, blue: 0x21 / 255)
-    static let tileEdge = Color(red: 0x2c / 255, green: 0x2e / 255, blue: 0x35 / 255)
     static let term = Color(red: 0x8b / 255, green: 0x90 / 255, blue: 0x99 / 255)
 }
 
-/// The KinTerm mark: two agent faces. The one in front has a small smile,
-/// the one behind is a sibling peeking over its shoulder. As a status light
-/// the front face takes the state's color and expression.
+/// The KinTerm mark: a glossy agent face. The brand face is brushed
+/// aluminium with a blue prompt for eyes; as a status light it takes the
+/// state's color and expression.
 struct KinTermMark: View {
-    var front: Color = KinTermBrand.blue
-    var expression: Expression = .smile
+    /// The face's color, or nil for the aluminium brand face.
+    var front: Color?
+    var expression: Expression = .prompt
 
-    /// The front face's expression: the logo's smile, or an agent state's
-    /// face from the Square faces set.
+    /// The face's expression: the logo's prompt, or an agent state's face
+    /// from the Square faces set.
     enum Expression {
-        case smile, working, waiting, done, error
+        case prompt, working, waiting, done, error
     }
 
     var body: some View {
@@ -28,59 +26,119 @@ struct KinTermMark: View {
             Self.draw(in: &context, size: size, front: front, expression: expression)
         }
         .aspectRatio(1, contentMode: .fit)
-        .compositingGroup()
         .accessibilityLabel("KinTerm")
     }
 
-    /// Draws the mark into a square of `size`. Units are 1/168 of the side:
-    /// each face is 120 square, the back one offset 48 up and to the right.
+    /// Draws the mark into a square of `size`. Units are 1/120 of the side.
+    /// `cornerRadius` is in those units; at 0 the face fills the square and
+    /// leaves its edge to whatever masks it, like Icon Composer.
     static func draw(
-        in context: inout GraphicsContext, size: CGSize, front: Color, expression: Expression = .smile
+        in context: inout GraphicsContext, size: CGSize, front: Color?, expression: Expression = .prompt,
+        cornerRadius: CGFloat = 30
     ) {
         let side = min(size.width, size.height)
-        let unit = side / 168
+        let unit = side / 120
         let origin = CGPoint(x: (size.width - side) / 2, y: (size.height - side) / 2)
         func rect(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat) -> CGRect {
             CGRect(x: origin.x + x * unit, y: origin.y + y * unit, width: w * unit, height: h * unit)
         }
-        func face(_ r: CGRect, radius: CGFloat) -> Path {
-            Path(roundedRect: r, cornerRadius: radius * unit, style: .continuous)
+        func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: origin.x + x * unit, y: origin.y + y * unit)
+        }
+        let face = Path(roundedRect: rect(0, 0, 120, 120), cornerRadius: cornerRadius * unit, style: .continuous)
+
+        // The body: lit from above, darker toward the bottom.
+        let stops: [Gradient.Stop]
+        if let front {
+            let base = NSColor(front)
+            stops = [
+                .init(color: Color(nsColor: base.blended(withFraction: 0.3, of: .white) ?? base), location: 0),
+                .init(color: front, location: 0.55),
+                .init(color: Color(nsColor: base.blended(withFraction: 0.2, of: .black) ?? base), location: 1),
+            ]
+        } else {
+            stops = [
+                .init(color: Color(red: 0xf4 / 255, green: 0xf5 / 255, blue: 0xf7 / 255), location: 0),
+                .init(color: Color(red: 0xc9 / 255, green: 0xcc / 255, blue: 0xd2 / 255), location: 0.45),
+                .init(color: Color(red: 0xb7 / 255, green: 0xbb / 255, blue: 0xc2 / 255), location: 0.55),
+                .init(color: Color(red: 0x8e / 255, green: 0x93 / 255, blue: 0x9b / 255), location: 1),
+            ]
+        }
+        context.fill(face, with: .linearGradient(
+            Gradient(stops: stops), startPoint: point(0, 0), endPoint: point(0, 120)))
+
+        context.drawLayer { layer in
+            layer.clip(to: face)
+
+            // Brushed metal: fine horizontal streaks, the same every time.
+            if front == nil {
+                var seed: UInt32 = 7
+                func random() -> CGFloat {
+                    seed = seed &* 1_664_525 &+ 1_013_904_223
+                    return CGFloat(seed >> 8) / CGFloat(1 << 24)
+                }
+                var y: CGFloat = 0
+                while y < 120 {
+                    let light = random() < 0.5
+                    layer.fill(Path(rect(0, y, 120, 0.35)), with: .color(
+                        (light ? Color.white : Color.black).opacity(0.02 + random() * 0.07)))
+                    y += 0.5 + random() * 0.4
+                }
+            }
+
+            // The gloss: a reflection over the top half, inset from a
+            // rounded edge so the rim shows.
+            if cornerRadius > 0 {
+                layer.clip(to: Path(roundedRect: rect(2, 2, 116, 116), cornerRadius: (cornerRadius - 2) * unit,
+                                    style: .continuous))
+            }
+            var gloss = Path()
+            gloss.move(to: point(0, 0))
+            gloss.addLine(to: point(120, 0))
+            gloss.addLine(to: point(120, 38))
+            gloss.addCurve(to: point(0, 40), control1: point(90, 54), control2: point(30, 54))
+            gloss.closeSubpath()
+            layer.fill(gloss, with: .linearGradient(
+                Gradient(colors: [.white.opacity(front == nil ? 0.6 : 0.5), .white.opacity(0)]),
+                startPoint: point(0, 0), endPoint: point(0, 50)))
         }
 
-        // The sibling behind, looking off to the right.
-        context.fill(face(rect(48, 0, 120, 120), radius: 30), with: .color(KinTermBrand.teal))
-        for x in [114.0, 144.0] {
-            context.fill(
-                Path(roundedRect: rect(x - 4.5, 19, 9, 17), cornerRadius: 4.5 * unit),
-                with: .color(KinTermBrand.ink))
+        // A rim: bright along the top edge, shaded along the bottom.
+        if cornerRadius > 0 {
+            context.drawLayer { layer in
+                layer.clip(to: face)
+                layer.stroke(face, with: .linearGradient(
+                    Gradient(stops: [
+                        .init(color: .white.opacity(0.9), location: 0),
+                        .init(color: .white.opacity(0.15), location: 0.25),
+                        .init(color: .black.opacity(0.05), location: 0.8),
+                        .init(color: .black.opacity(0.35), location: 1),
+                    ]), startPoint: point(0, 0), endPoint: point(0, 120)),
+                    lineWidth: 4 * unit)
+            }
         }
 
-        // A gap between the two faces, cut out so it works on any background.
-        var cut = context
-        cut.blendMode = .destinationOut
-        cut.fill(face(rect(-8, 40, 136, 136), radius: 38), with: .color(.black))
-
-        // The face in front.
-        context.fill(face(rect(0, 48, 120, 120), radius: 30), with: .color(front))
-        let ink = GraphicsContext.Shading.color(KinTermBrand.ink)
-        guard expression == .smile else {
-            drawExpression(expression, in: &context, origin: CGPoint(x: origin.x, y: origin.y + 48 * unit),
-                           scale: 3 * unit, ink: ink)
-            return
+        // The features, pressed in: a light edge under each.
+        context.drawLayer { layer in
+            layer.addFilter(.shadow(color: .white.opacity(0.45), radius: 0.3 * unit, x: 0, y: 1.6 * unit))
+            let ink = GraphicsContext.Shading.color(KinTermBrand.ink)
+            guard expression == .prompt else {
+                drawExpression(expression, in: &layer, origin: origin, scale: 3 * unit, ink: ink)
+                return
+            }
+            var chevron = Path()
+            chevron.move(to: point(29, 37))
+            chevron.addLine(to: point(43, 47.5))
+            chevron.addLine(to: point(29, 58))
+            layer.stroke(chevron, with: .color(KinTermBrand.blue),
+                         style: StrokeStyle(lineWidth: 7.5 * unit, lineCap: .round, lineJoin: .round))
+            layer.fill(Path(roundedRect: rect(73, 44, 22, 7.5), cornerRadius: 3.75 * unit), with: ink)
+            layer.fill(Path(roundedRect: rect(44, 78, 32, 7.5), cornerRadius: 3.75 * unit), with: ink)
         }
-        for x in [36.0, 84.0] {
-            context.fill(Path(ellipseIn: rect(x - 7, 84, 14, 23)), with: ink)
-        }
-        var smile = Path()
-        smile.move(to: CGPoint(x: origin.x + 40 * unit, y: origin.y + 127 * unit))
-        smile.addQuadCurve(
-            to: CGPoint(x: origin.x + 80 * unit, y: origin.y + 127 * unit),
-            control: CGPoint(x: origin.x + 60 * unit, y: origin.y + 143 * unit))
-        context.stroke(smile, with: ink, style: StrokeStyle(lineWidth: 8.5 * unit, lineCap: .round))
     }
 
     /// A state's face from the Square faces set (`drawSquare`), still, on the
-    /// front face. Units are its 40x40 grid: `origin` is the face's top left
+    /// mark. Units are its 40x40 grid: `origin` is the face's top left
     /// and `scale` the size of one unit.
     private static func drawExpression(
         _ expression: Expression, in context: inout GraphicsContext, origin: CGPoint, scale: CGFloat,
@@ -98,7 +156,7 @@ struct KinTermMark: View {
         let line = StrokeStyle(lineWidth: 2.5 * scale, lineCap: .round)
 
         switch expression {
-        case .smile:
+        case .prompt:
             break
 
         case .working:
@@ -147,34 +205,26 @@ struct KinTermMark: View {
     }
 }
 
-/// The app icon: the mark on a dark tile, inside the macOS icon grid
+/// The app icon: the mark alone, with a shadow, inside the macOS icon grid
 /// (an 824 tile in a 1024 canvas).
 struct KinTermAppIcon: View {
-    var front: Color = KinTermBrand.blue
-    var expression: KinTermMark.Expression = .smile
+    var front: Color?
+    var expression: KinTermMark.Expression = .prompt
 
     var body: some View {
         GeometryReader { geo in
             let side = min(geo.size.width, geo.size.height)
-            let tile = side * 824 / 1024
-            ZStack {
-                RoundedRectangle(cornerRadius: tile * 0.225, style: .continuous)
-                    .fill(KinTermBrand.tile)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: tile * 0.225, style: .continuous)
-                            .strokeBorder(KinTermBrand.tileEdge, lineWidth: max(1, side / 256)))
-                    .frame(width: tile, height: tile)
-                KinTermMark(front: front, expression: expression)
-                    .frame(width: tile * 0.74, height: tile * 0.74)
-            }
-            .frame(width: side, height: side)
+            KinTermMark(front: front, expression: expression)
+                .frame(width: side * 824 / 1024, height: side * 824 / 1024)
+                .shadow(color: .black.opacity(0.35), radius: side * 0.02, y: side * 0.012)
+                .frame(width: side, height: side)
         }
         .aspectRatio(1, contentMode: .fit)
     }
 
     /// The icon as an image, for the dock.
     @MainActor
-    static func image(front: Color, expression: KinTermMark.Expression = .smile, side: CGFloat = 512) -> NSImage? {
+    static func image(front: Color?, expression: KinTermMark.Expression = .prompt, side: CGFloat = 512) -> NSImage? {
         let renderer = ImageRenderer(
             content: KinTermAppIcon(front: front, expression: expression).frame(width: side, height: side))
         renderer.scale = 2

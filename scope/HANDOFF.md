@@ -52,9 +52,12 @@ internals keep their names so upstream merges still work:
   docs and man pages generated from `src/`.
 - Brand: `macos/Sources/Features/Branding/KinTermMark.swift` (mark, app
   icon, wordmark), `images/KinTerm.icon` (app icon), `images/kinterm/`
-  (README images); regenerate with `scripts/render-brand.swift`. The dock
-  icon is a status light (`AgentSummary.updateDockIcon`): the front face
-  takes the state's color and its Square faces expression.
+  (README images), `site/icon.png`; regenerate with
+  `scripts/render-brand.swift`. The mark is one glossy face: brushed
+  aluminium with a blue `>` prompt for eyes. The site draws the same faces
+  in `markInner` in `site/index.html`. The dock icon is a status light
+  (`AgentSummary.updateDockIcon`): the face takes the state's color and its
+  Square faces expression.
 - Setup Assistant (`Features/Onboarding/`): a first-launch wizard for face
   set and size, tab bar position, the Claude Code hook (per `~/.claude*`
   folder, via `AgentHookInstaller`, which the app bundles the hook for, so

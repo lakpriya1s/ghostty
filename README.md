@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="images/kinterm/icon.png" alt="KinTerm app icon: two square faces, a blue one in front with a smile and a teal sibling peeking over its shoulder" width="128">
+<img src="images/kinterm/icon.png" alt="KinTerm app icon: a glossy brushed-aluminium face with a blue prompt for eyes" width="128">
 
 # KinTerm
 

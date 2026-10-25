@@ -169,7 +169,7 @@ final class AgentSummary: NSObject, NSMenuDelegate {
     /// The state the dock icon shows, so it's only redrawn when that changes.
     private var dockIconState: Ghostty.Action.ProgramStatus.State?
 
-    /// The app icon is a status light: its front face takes the color and
+    /// The app icon is a status light: its face takes the color and
     /// expression of the agent that needs the user most. Idle agents leave the normal icon, as
     /// does a custom `macos-icon`.
     private func updateDockIcon() {
@@ -195,7 +195,7 @@ final class AgentSummary: NSObject, NSMenuDelegate {
         case .blocked: return .waiting
         case .done: return .done
         case .error: return .error
-        case .idle, .clear: return .smile
+        case .idle, .clear: return .prompt
         }
     }
 
