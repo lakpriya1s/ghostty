@@ -76,6 +76,9 @@ final class TerminalRestorableState: TerminalRestorable {
     var titleOverride: String? {
         internalState.titleOverride
     }
+    var customTabColor: NSColor? {
+        internalState.customTabColor.flatMap(NSColor.init(hex:))
+    }
 
     /// Internal State we use to perform unit tests
     ///
@@ -166,6 +169,9 @@ class TerminalWindowRestoration: NSObject, NSWindowRestoration {
         // Restore our tab color and avoid unnecessary `invalidateRestorableState` calls
         if let tabColor = state.tabColor {
             (window as? TerminalWindow)?.tabColor = tabColor
+        }
+        if let customTabColor = state.customTabColor {
+            (window as? TerminalWindow)?.customTabColor = customTabColor
         }
 
         // Restore the tab title override

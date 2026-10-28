@@ -183,3 +183,36 @@ private struct TabColorSwatch: View {
         .help(color.localizedName)
     }
 }
+
+// MARK: - Custom Color
+
+/// Opens the system color panel to pick a color outside the palette. The
+/// panel is shared by the whole app, so each pick replaces the handler of
+/// the one before it.
+final class CustomColorPicker: NSObject {
+    static let shared = CustomColorPicker()
+
+    private var onChange: ((NSColor) -> Void)?
+
+    /// Show the panel starting at `initial` and call `onChange` with every
+    /// color the user moves to.
+    func pick(initial: NSColor?, onChange: @escaping (NSColor) -> Void) {
+        let panel = NSColorPanel.shared
+
+        // Setting the starting color fires the action, which must not
+        // reach the previous handler.
+        self.onChange = nil
+        panel.showsAlpha = false
+        panel.isContinuous = true
+        panel.setTarget(self)
+        panel.setAction(#selector(colorChanged(_:)))
+        if let initial { panel.color = initial }
+        self.onChange = onChange
+
+        panel.makeKeyAndOrderFront(nil)
+    }
+
+    @objc private func colorChanged(_ sender: NSColorPanel) {
+        onChange?(sender.color)
+    }
+}

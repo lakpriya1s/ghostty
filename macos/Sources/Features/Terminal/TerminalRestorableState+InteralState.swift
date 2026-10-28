@@ -15,6 +15,11 @@ extension TerminalRestorableState {
         let effectiveFullscreenMode: FullscreenMode?
         let tabColor: TerminalTabColor?
         let titleOverride: String?
+
+        // MARK: - KinTerm
+
+        /// A custom tab color as "#RRGGBB". Older state doesn't have it.
+        let customTabColor: String?
     }
 }
 
@@ -26,6 +31,7 @@ extension TerminalRestorableState.InternalState where ViewType == Ghostty.Surfac
             effectiveFullscreenMode: controller.fullscreenStyle?.fullscreenMode,
             tabColor: (controller.window as? TerminalWindow)?.tabColor,
             titleOverride: controller.titleOverride,
+            customTabColor: (controller.window as? TerminalWindow)?.customTabColor?.hexString,
         )
     }
 }

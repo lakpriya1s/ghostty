@@ -596,11 +596,7 @@ private struct AgentAccountMenuItem: View {
         }
         .contextMenu {
             Button("Rename…", action: rename)
-            Menu("Color") {
-                ForEach(AgentAccountStore.colorNames, id: \.color) { option in
-                    Button(option.name) { AgentAccountStore.shared.setColor(option.color, for: account.id) }
-                }
-            }
+            AgentAccountColorMenu(account: account, title: "Color")
             Divider()
             Button("Remove") { AgentAccountStore.shared.remove(account.id) }
         }
