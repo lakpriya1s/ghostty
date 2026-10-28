@@ -33,11 +33,17 @@ final class AgentAccountStore: ObservableObject {
 
     /// Ring colors for new accounts, in order. The first two are the design's
     /// Work and Personal colors. None of them is a face's state color.
-    static let palette: [UInt32] = [0x8b7cf6, 0x2dd4bf, 0xf472b6, 0xd4a373, 0xa5b4fc, 0xe2e8f0]
+    static let palette: [UInt32] = colorNames.map(\.color)
 
+    /// The colors an account can be given by name. Any other color can be
+    /// picked from the color panel.
     static let colorNames: [(name: String, color: UInt32)] = [
         ("Violet", 0x8b7cf6), ("Teal", 0x2dd4bf), ("Pink", 0xf472b6),
         ("Sand", 0xd4a373), ("Lavender", 0xa5b4fc), ("White", 0xe2e8f0),
+        ("Indigo", 0x6366f1), ("Fuchsia", 0xd946ef), ("Cyan", 0x22d3ee),
+        ("Lime", 0xa3e635), ("Mint", 0x6ee7b7), ("Peach", 0xfdba74),
+        ("Copper", 0xb87333), ("Plum", 0x9d4edd), ("Slate", 0x94a3b8),
+        ("Olive", 0x9ca35c),
     ]
 
     private static let key = "AgentAccounts"

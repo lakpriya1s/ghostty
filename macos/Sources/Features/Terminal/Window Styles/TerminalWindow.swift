@@ -27,7 +27,7 @@ class TerminalWindow: NSWindow {
 
     /// Visual indicator that mirrors the selected tab color.
     private lazy var tabColorIndicator: NSHostingView<TabColorIndicatorView> = {
-        let view = NSHostingView(rootView: TabColorIndicatorView(tabColor: tabColor))
+        let view = NSHostingView(rootView: TabColorIndicatorView(color: effectiveTabColor))
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
@@ -71,9 +71,40 @@ class TerminalWindow: NSWindow {
     var tabColor: TerminalTabColor = .none {
         didSet {
             guard tabColor != oldValue else { return }
-            tabColorIndicator.rootView = TabColorIndicatorView(tabColor: tabColor)
-            invalidateRestorableState()
+            tabColorDidChange()
         }
+    }
+
+    /// A color picked with the color panel instead of from the palette.
+    /// While set, the tab shows it in place of `tabColor`.
+    var customTabColor: NSColor? {
+        didSet {
+            guard customTabColor != oldValue else { return }
+            tabColorDidChange()
+        }
+    }
+
+    /// The color the tab shows, if any.
+    var effectiveTabColor: NSColor? {
+        customTabColor ?? tabColor.displayColor
+    }
+
+    /// Pick a palette color, clearing any custom one.
+    func setTabColor(_ color: TerminalTabColor) {
+        customTabColor = nil
+        tabColor = color
+    }
+
+    /// Pick a custom color, clearing any palette one.
+    func setTabColor(custom color: NSColor) {
+        tabColor = .none
+        customTabColor = color
+    }
+
+    private func tabColorDidChange() {
+        tabColorIndicator.rootView = TabColorIndicatorView(color: effectiveTabColor)
+        invalidateRestorableState()
+        AgentTabBarModel.setNeedsRefresh()
     }
 
     /// The most urgent program status in this tab, shown as a face on the tab
@@ -237,7 +268,7 @@ class TerminalWindow: NSWindow {
         // Setup the accessory view for tabs that shows our keyboard shortcuts,
         // zoomed state, etc. Note I tried to use SwiftUI here but ran into issues
         // where buttons were not clickable on macOS 15.
-        tabColorIndicator.rootView = TabColorIndicatorView(tabColor: tabColor)
+        tabColorIndicator.rootView = TabColorIndicatorView(color: effectiveTabColor)
 
         let stackView = NSStackView()
         stackView.orientation = .horizontal
@@ -818,10 +849,10 @@ extension TerminalWindow {
 /// the user-assigned tab color. When no color is set, the view is hidden.
 private struct TabColorIndicatorView: View {
     /// The tab color to display.
-    let tabColor: TerminalTabColor
+    let color: NSColor?
 
     var body: some View {
-        if let color = tabColor.displayColor {
+        if let color {
             Circle()
                 .fill(Color(color))
                 .frame(width: 6, height: 6)
@@ -914,7 +945,7 @@ extension TerminalWindow {
         paletteItem.view = makeTabColorPaletteView(
             selectedColor: (target?.window as? TerminalWindow)?.tabColor ?? .none
         ) { [weak target] color in
-            (target?.window as? TerminalWindow)?.tabColor = color
+            (target?.window as? TerminalWindow)?.setTabColor(color)
         }
         menu.addItem(paletteItem)
     }

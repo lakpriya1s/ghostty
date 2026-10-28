@@ -281,6 +281,9 @@ struct AgentTab: Identifiable, Equatable {
 
     /// Shells the agents in this tab have left running in the background.
     let shells: Int
+
+    /// The color the user gave this tab, if any.
+    let color: Color?
 }
 
 /// The tabs of one window's tab group, kept up to date for the agent tab bar.
@@ -364,7 +367,8 @@ final class AgentTabBarModel: ObservableObject {
                 account: account,
                 subagents: tabController?.subagentCount ?? 0,
                 agents: tabController?.agentCount ?? 0,
-                shells: tabController?.shellCount ?? 0
+                shells: tabController?.shellCount ?? 0,
+                color: (tabWindow as? TerminalWindow)?.effectiveTabColor.map { Color(nsColor: $0) }
             )
         }
 
@@ -388,6 +392,18 @@ final class AgentTabBarModel: ObservableObject {
     func close(_ tab: AgentTab) {
         guard let window = windows[tab.id]?.value else { return }
         (window.windowController as? TerminalController)?.closeTab(nil)
+    }
+
+    /// Ask for a new title. The prompt is a sheet on the tab's window, so
+    /// the tab is selected first.
+    func rename(_ tab: AgentTab) {
+        guard let window = windows[tab.id]?.value else { return }
+        select(tab)
+        (window.windowController as? BaseTerminalController)?.promptTabTitle()
+    }
+
+    func terminalWindow(for tab: AgentTab) -> TerminalWindow? {
+        windows[tab.id]?.value as? TerminalWindow
     }
 }
 
@@ -662,21 +678,89 @@ private struct AgentSubagentBadge: View {
     }
 }
 
-/// Choose the ring color of an account, from a tab's context menu.
-private struct AgentAccountColorMenu: View {
+/// Choose the color of an account: one of the named colors, or any color
+/// from the system color panel.
+struct AgentAccountColorMenu: View {
     let account: AgentAccount
+    var title: String?
 
     var body: some View {
-        Menu("Account Color (\(account.name))") {
+        Menu(title ?? "Account Color (\(account.name))") {
             ForEach(AgentAccountStore.colorNames, id: \.color) { option in
                 Button {
                     AgentAccountStore.shared.setColor(option.color, for: account.id)
                 } label: {
-                    if option.color == account.color {
-                        Label(option.name, systemImage: "checkmark")
-                    } else {
+                    Label {
                         Text(option.name)
+                    } icon: {
+                        Image(nsImage: Self.swatch(option.color, selected: option.color == account.color))
                     }
+                }
+            }
+            Divider()
+            Button {
+                CustomColorPicker.shared.pick(initial: NSColor(account.swiftUIColor)) { color in
+                    guard let rgb = color.usingColorSpace(.sRGB) else { return }
+                    let hex = UInt32((rgb.redComponent * 255).rounded()) << 16
+                        | UInt32((rgb.greenComponent * 255).rounded()) << 8
+                        | UInt32((rgb.blueComponent * 255).rounded())
+                    AgentAccountStore.shared.setColor(hex, for: account.id)
+                }
+            } label: {
+                if AgentAccountStore.colorNames.contains(where: { $0.color == account.color }) {
+                    Text("Custom Color…")
+                } else {
+                    Label("Custom Color…", systemImage: "checkmark")
+                }
+            }
+        }
+    }
+
+    /// A filled circle in `color`, ringed when it's the account's color.
+    private static func swatch(_ color: UInt32, selected: Bool) -> NSImage {
+        NSImage(size: NSSize(width: 18, height: 18), flipped: false) { rect in
+            NSColor(Color(agentHex: color)).setFill()
+            NSBezierPath(ovalIn: rect.insetBy(dx: selected ? 4 : 2, dy: selected ? 4 : 2)).fill()
+            if selected {
+                let ring = NSBezierPath(ovalIn: rect.insetBy(dx: 1, dy: 1))
+                ring.lineWidth = 1.5
+                NSColor.labelColor.setStroke()
+                ring.stroke()
+            }
+            return true
+        }
+    }
+}
+
+/// Choose a tab's color: one from the palette, or any color from the
+/// system color panel.
+private struct AgentTabColorMenu: View {
+    let window: TerminalWindow
+
+    var body: some View {
+        Menu("Tab Color") {
+            ForEach(TerminalTabColor.allCases, id: \.self) { color in
+                Button {
+                    window.setTabColor(color)
+                } label: {
+                    Label {
+                        Text(color.localizedName)
+                    } icon: {
+                        Image(nsImage: color.swatchImage(
+                            selected: window.customTabColor == nil && window.tabColor == color))
+                    }
+                }
+            }
+            Divider()
+            Button {
+                CustomColorPicker.shared.pick(initial: window.effectiveTabColor) { [weak window] color in
+                    window?.setTabColor(custom: color)
+                }
+            } label: {
+                if window.customTabColor != nil {
+                    Label("Custom Color…", systemImage: "checkmark")
+                } else {
+                    Text("Custom Color…")
                 }
             }
         }
@@ -730,13 +814,20 @@ private struct AgentTabButton: View {
     /// The tab's background. With an account and the background style, the
     /// usual background gets a light tint of the account color, so the face
     /// stays the loudest thing and a selected tab still reads as selected.
-    /// Otherwise the design's gray highlight.
+    /// Without one, a tab color the user picked tints it instead; it always
+    /// outlines the tab. Otherwise the design's gray highlight.
     private var background: Color {
         if settings.accountStyle == .background, let account = tab.account {
             if tab.isSelected {
-                return AgentTabBarColors.blend(AgentTabBarColors.selected, account.swiftUIColor, 0.16)
+                return AgentTabBarColors.blend(AgentTabBarColors.selected, account.swiftUIColor, 0.24)
             }
-            return AgentTabBarColors.blend(AgentTabBarColors.bar, account.swiftUIColor, hovering ? 0.14 : 0.08)
+            return AgentTabBarColors.blend(AgentTabBarColors.bar, account.swiftUIColor, hovering ? 0.2 : 0.14)
+        }
+        if let color = tab.color {
+            if tab.isSelected {
+                return AgentTabBarColors.blend(AgentTabBarColors.selected, color, 0.24)
+            }
+            return AgentTabBarColors.blend(AgentTabBarColors.bar, color, hovering ? 0.2 : 0.14)
         }
         if tab.isSelected { return AgentTabBarColors.selected }
         if hovering { return AgentTabBarColors.hovered }
@@ -776,6 +867,11 @@ private struct AgentTabButton: View {
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(background))
+            .overlay(
+                // The tab color outlines the tab, so it shows alongside the
+                // account tint.
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(tab.color?.opacity(tab.isSelected ? 0.9 : 0.55) ?? .clear, lineWidth: 1.5))
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
@@ -802,6 +898,11 @@ private struct AgentTabButton: View {
             AgentTabCardPanel.shared.update(AgentTabCard(tab: newTab), in: window)
         }
         .contextMenu {
+            Button("Rename Tab…") { model.rename(tab) }
+            if let window = model.terminalWindow(for: tab) {
+                AgentTabColorMenu(window: window)
+            }
+            Divider()
             Button("Close Tab") { model.close(tab) }
             if let account = tab.account {
                 Divider()
