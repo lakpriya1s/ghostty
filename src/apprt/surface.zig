@@ -69,6 +69,9 @@ pub const Message = union(enum) {
         /// How much of the program's context window is used, 0-100.
         context: ?u8,
 
+        /// How many shells the program has left running in the background.
+        shells: ?u8,
+
         /// Machine-readable program name, e.g. `claude-code`.
         app: [32:0]u8,
 
@@ -94,6 +97,7 @@ pub const Message = union(enum) {
                 .kind = report.readOption(.kind),
                 .progress = report.readOption(.progress),
                 .context = report.readOption(.context),
+                .shells = report.readOption(.shells),
                 .app = undefined,
                 .title = undefined,
                 .msg = undefined,
@@ -411,7 +415,7 @@ test "ProgramStatus init" {
 
     var p: terminal.osc.Parser = .init(testing.allocator);
     defer p.deinit();
-    p.nextSlice("7501;state=blocked:kind=permission:app=claude-code:account=.claude-work:context=37:last=UmVhZHk=:msg=TmVlZHMgcGVybWlzc2lvbjogQmFzaChucG0gdGVzdCk=");
+    p.nextSlice("7501;state=blocked:kind=permission:app=claude-code:account=.claude-work:context=37:shells=3:last=UmVhZHk=:msg=TmVlZHMgcGVybWlzc2lvbjogQmFzaChucG0gdGVzdCk=");
     const report = p.end('\x1b').?.program_status.report;
 
     const status: Message.ProgramStatus = .init(report);
@@ -422,6 +426,7 @@ test "ProgramStatus init" {
     try testing.expectEqualStrings("", std.mem.sliceTo(&status.title, 0));
     try testing.expectEqualStrings(".claude-work", std.mem.sliceTo(&status.account, 0));
     try testing.expectEqual(37, status.context.?);
+    try testing.expectEqual(3, status.shells.?);
     try testing.expectEqualStrings("Ready", std.mem.sliceTo(&status.last, 0));
     try testing.expectEqualStrings("", std.mem.sliceTo(&status.id, 0));
 

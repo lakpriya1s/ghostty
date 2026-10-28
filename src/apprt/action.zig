@@ -812,6 +812,7 @@ pub const ProgramStatus = struct {
     kind: ?terminal.osc.Command.ProgramStatus.Kind = null,
     progress: ?u8 = null,
     context: ?u8 = null,
+    shells: ?u8 = null,
     app: [:0]const u8 = "",
     title: [:0]const u8 = "",
     msg: [:0]const u8 = "",
@@ -845,6 +846,8 @@ pub const ProgramStatus = struct {
         progress: i8,
         /// -1 if no context usage was reported, otherwise 0-100.
         context: i8,
+        /// -1 if no shell count was reported, otherwise 0-100.
+        shells: i8,
         app: [*:0]const u8,
         title: [*:0]const u8,
         msg: [*:0]const u8,
@@ -863,6 +866,7 @@ pub const ProgramStatus = struct {
             } else .none,
             .progress = if (self.progress) |progress| @intCast(@min(progress, 100)) else -1,
             .context = if (self.context) |context| @intCast(@min(context, 100)) else -1,
+            .shells = if (self.shells) |shells| @intCast(@min(shells, 100)) else -1,
             .app = self.app.ptr,
             .title = self.title.ptr,
             .msg = self.msg.ptr,

@@ -22,8 +22,11 @@ func write<V: View>(_ view: V, size: CGSize, scale: CGFloat = 1, to path: String
 struct Render {
 @MainActor static func main() {
     let out = CommandLine.arguments[1]
-    // Icon Composer layer: the mark alone, at the size it sits in the icon.
-    write(KinTermMark(), size: CGSize(width: 512, height: 512), scale: 2, to: "\(out)/KinTerm.icon/Assets/mark.png")
+    // Icon Composer layer: the face to the edges; macOS rounds the icon itself.
+    let layer = Canvas { context, size in
+        KinTermMark.draw(in: &context, size: size, front: nil, cornerRadius: 0)
+    }
+    write(layer, size: CGSize(width: 512, height: 512), scale: 2, to: "\(out)/KinTerm.icon/Assets/mark.png")
     // AppIconImage, used in Settings, error screens and the dock tile plugin.
     let set = "\(out)/../macos/Assets.xcassets/AppIconImage.imageset"
     write(KinTermAppIcon(), size: CGSize(width: 256, height: 256), to: "\(set)/macOS-AppIcon-256px-128pt@2x.png")
@@ -31,6 +34,8 @@ struct Render {
     write(KinTermAppIcon(), size: CGSize(width: 1024, height: 1024), to: "\(set)/macOS-AppIcon-1024px.png")
     // Brand images for the README.
     write(KinTermAppIcon(), size: CGSize(width: 256, height: 256), scale: 2, to: "\(out)/kinterm/icon.png")
+    // The web page's favicon and touch icon.
+    write(KinTermAppIcon(), size: CGSize(width: 256, height: 256), scale: 2, to: "\(out)/../site/icon.png")
     let states: [(String, Color, KinTermMark.Expression)] = [
         ("working", KinTermBrand.blue, .working),
         ("needs-you", Color(red: 0xf5/255, green: 0xa5/255, blue: 0x24/255), .waiting),

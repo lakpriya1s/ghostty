@@ -297,7 +297,10 @@ private struct AgentsPanelRow: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 // The design draws a 40pt face scaled to 0.6 in a 30pt box.
-                AgentFaceView(state: row.status.state, size: 24, background: hovering || selected ? PanelColors.rowHover : PanelColors.background)
+                AgentFaceView(
+                    state: row.status.state, size: 24,
+                    background: hovering || selected ? PanelColors.rowHover : PanelColors.background,
+                    agents: row.controller.agentCount, shells: row.controller.shellCount)
                     .frame(width: columns.face, height: columns.face)
 
                 VStack(alignment: .leading, spacing: 1) {

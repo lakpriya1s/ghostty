@@ -6,7 +6,7 @@ import UserNotifications
 /// A summary of the agents in every window, shown outside the windows: a
 /// count on the dock icon and an item in the menu bar. See
 /// scope/designs/04-notifications.md.
-final class AgentSummary {
+final class AgentSummary: NSObject, NSMenuDelegate {
     static let shared = AgentSummary()
 
     /// One tab with an agent in it.
@@ -23,6 +23,20 @@ final class AgentSummary {
     }
 
     private var statusItem: NSStatusItem?
+
+    /// The status item's menu. Kept for the item's life and filled as it
+    /// opens: swapping or removing the menu while it's open orphans it, and
+    /// AppKit leaves it stranded at the screen edge.
+    private lazy var statusMenu: NSMenu = {
+        let menu = NSMenu()
+        menu.delegate = self
+        return menu
+    }()
+
+    /// While the menu is open the status item is left alone, and caught up
+    /// when it closes.
+    private var statusMenuOpen = false
+
     private var cancellables: Set<AnyCancellable> = []
 
     /// Start following changes. Safe to call more than once.
@@ -155,7 +169,7 @@ final class AgentSummary {
     /// The state the dock icon shows, so it's only redrawn when that changes.
     private var dockIconState: Ghostty.Action.ProgramStatus.State?
 
-    /// The app icon is a status light: its front face takes the color and
+    /// The app icon is a status light: its face takes the color and
     /// expression of the agent that needs the user most. Idle agents leave the normal icon, as
     /// does a custom `macos-icon`.
     private func updateDockIcon() {
@@ -181,13 +195,14 @@ final class AgentSummary {
         case .blocked: return .waiting
         case .done: return .done
         case .error: return .error
-        case .idle, .clear: return .smile
+        case .idle, .clear: return .prompt
         }
     }
 
     // MARK: Menu bar
 
     private func updateStatusItem() {
+        guard !statusMenuOpen else { return }
         let settings = AgentTabBarSettings.shared
         guard settings.showsMenuBarSummary, !entries.isEmpty else {
             if let statusItem { NSStatusBar.system.removeStatusItem(statusItem) }
@@ -199,7 +214,23 @@ final class AgentSummary {
         statusItem = item
         item.button?.attributedTitle = title(style: settings.menuBarStyle)
         item.button?.toolTip = title(style: .full).string
-        item.menu = menu()
+        if item.menu !== statusMenu { item.menu = statusMenu }
+    }
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        guard menu === statusMenu else { return }
+        fill(menu)
+    }
+
+    func menuWillOpen(_ menu: NSMenu) {
+        if menu === statusMenu { statusMenuOpen = true }
+    }
+
+    func menuDidClose(_ menu: NSMenu) {
+        guard menu === statusMenu else { return }
+        statusMenuOpen = false
+        // After the close, so the item isn't removed under the closing menu.
+        DispatchQueue.main.async { [weak self] in self?.updateStatusItem() }
     }
 
     /// With each dot in its state's color, only states that have agents:
@@ -241,8 +272,8 @@ final class AgentSummary {
 
     /// One card per agent, most urgent first. Choosing one jumps to its tab
     /// and split.
-    private func menu() -> NSMenu {
-        let menu = NSMenu()
+    private func fill(_ menu: NSMenu) {
+        menu.removeAllItems()
         for entry in entries {
             let row = NSMenuItem()
             let controller = entry.controller
@@ -261,7 +292,6 @@ final class AgentSummary {
         style.submenu = menuBarMenu(tracked: false)
         style.toolTip = "Also in View › Agents in Menu Bar"
         menu.addItem(style)
-        return menu
     }
 
     /// Bring a tab forward and focus the split whose agent it shows.
@@ -292,9 +322,11 @@ private struct AgentSummaryCard: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
-            // Still: the menu is open only briefly, and a moving face in a
-            // menu would distract more than help.
-            AgentFaceView(state: status.state, size: 26, background: .clear, motion: .none)
+            // Moving, as in the tabs: the menu is only open while someone
+            // is looking at it.
+            AgentFaceView(
+                state: status.state, size: 26, background: .clear, motion: .all,
+                agents: entry.controller.agentCount, shells: entry.controller.shellCount)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
@@ -302,11 +334,14 @@ private struct AgentSummaryCard: View {
                     .lineLimit(1)
                     .truncationMode(.middle)
 
-                (Text(status.stateLabel)
-                    .foregroundColor(AgentFaceView.color(for: status.state))
-                    .fontWeight(.medium)
-                 + Text(" · \(elapsed)").foregroundColor(.secondary))
-                    .font(.system(size: 11.5))
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    (Text(status.stateLabel)
+                        .foregroundColor(AgentFaceView.color(for: status.state))
+                        .fontWeight(.medium)
+                     + Text(" · \(elapsed(now: context.date))").foregroundColor(.secondary))
+                        .font(.system(size: 11.5))
+                        .monospacedDigit()
+                }
 
                 if let msg = status.msg {
                     Text(msg)
@@ -352,8 +387,8 @@ private struct AgentSummaryCard: View {
     }
 
     /// "2m 14s" working, "1m" otherwise, as in the Agents panel.
-    private var elapsed: String {
-        AgentTime.duration(from: status.since, to: Date(), seconds: status.state == .working)
+    private func elapsed(now: Date) -> String {
+        AgentTime.duration(from: status.since, to: now, seconds: status.state == .working)
     }
 
     /// "work · ~/code/api · feat/nav".

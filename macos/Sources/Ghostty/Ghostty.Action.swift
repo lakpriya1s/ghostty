@@ -191,6 +191,10 @@ extension Ghostty.Action {
         /// How much of the program's context window is used, 0-100.
         var context: UInt8?
 
+        /// How many shells the program has left running in the background,
+        /// such as a dev server.
+        var shells: UInt8?
+
         /// The last thing the program said to the user, e.g. the agent's
         /// last reply.
         var last: String?
@@ -289,6 +293,7 @@ extension Ghostty.Action.ProgramStatus {
         self.msg = string(c.msg)
         self.account = string(c.account)
         self.context = c.context >= 0 ? UInt8(c.context) : nil
+        self.shells = c.shells >= 0 ? UInt8(c.shells) : nil
         self.last = string(c.last)
         self.id = string(c.id)
     }

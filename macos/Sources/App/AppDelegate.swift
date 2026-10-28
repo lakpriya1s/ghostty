@@ -244,6 +244,7 @@ class AppDelegate: NSObject,
         // Follow agents in every tab for the dock badge and menu bar summary.
         AgentSummary.shared.start()
         OnboardingController.shared.start()
+        AgentHookInstaller.updateInstalledHook()
 
         // Setup a local event monitor for app-level keyboard shortcuts. See
         // localEventHandler for more info why.
@@ -1050,7 +1051,7 @@ class AppDelegate: NSObject,
     }
 
     @IBAction func showHelp(_ sender: Any) {
-        guard let url = URL(string: "https://ghostty.org/docs") else { return }
+        guard let url = URL(string: "https://github.com/lakpriya1s/kinterm#readme") else { return }
         NSWorkspace.shared.open(url)
     }
 

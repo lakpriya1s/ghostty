@@ -1663,7 +1663,7 @@ extension Ghostty {
                     surfaceView.updateProgramStatus(.init(
                         state: .clear, kind: nil, progress: nil,
                         app: nil, title: nil, msg: nil, account: nil,
-                        context: nil, last: nil, id: nil))
+                        context: nil, shells: nil, last: nil, id: nil))
                 }
 
                 // Determine if we even care about command finish notifications

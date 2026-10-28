@@ -940,6 +940,8 @@ typedef struct {
   int8_t progress;
   // -1 if no context usage was reported, otherwise 0-100.
   int8_t context;
+  // -1 if no background shell count was reported, otherwise 0-100.
+  int8_t shells;
   // Machine-readable program name, e.g. "claude-code". May be empty.
   const char* app;
   // Short human-readable label. May be empty.

@@ -1195,6 +1195,7 @@ pub fn handleMessage(self: *Surface, msg: Message) !void {
                     .kind = v.kind,
                     .progress = v.progress,
                     .context = v.context,
+                    .shells = v.shells,
                     .app = std.mem.sliceTo(&v.app, 0),
                     .title = std.mem.sliceTo(&v.title, 0),
                     .msg = std.mem.sliceTo(&v.msg, 0),

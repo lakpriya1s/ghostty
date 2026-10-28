@@ -11,7 +11,7 @@
 <meta property="og:url" content="https://lakpriya.com/kinterm/">
 <meta property="og:title" content="KinTerm · The terminal for AI coding agents">
 <meta property="og:description" content="Run Claude Code in every tab. Each tab's face shows what its agent is doing: working, done or waiting on you. Free and open source for macOS.">
-<meta property="og:image" content="https://lakpriya.com/kinterm/og.png?v=1">
+<meta property="og:image" content="https://lakpriya.com/kinterm/og.png?v=3">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="KinTerm, the terminal for AI coding agents, with its five agent faces">
@@ -19,7 +19,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="KinTerm · The terminal for AI coding agents">
 <meta name="twitter:description" content="Every tab is a face that shows what its agent is doing. Free and open source for macOS.">
-<meta name="twitter:image" content="https://lakpriya.com/kinterm/og.png?v=1">
+<meta name="twitter:image" content="https://lakpriya.com/kinterm/og.png?v=3">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -28,7 +28,7 @@
   "description": "The terminal for AI coding agents. Every tab is a face that shows what its agent is doing: working, done or waiting on you.",
   "url": "https://lakpriya.com/kinterm/",
   "downloadUrl": "https://github.com/lakpriya1s/kinterm/releases/latest/download/KinTerm.dmg",
-  "image": "https://lakpriya.com/kinterm/og.png?v=1",
+  "image": "https://lakpriya.com/kinterm/og.png?v=3",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "macOS 13 or later",
   "license": "https://opensource.org/licenses/MIT",
@@ -840,7 +840,6 @@ function setFace(el, state) {
 const refreshFaces = () => $$('.fx[data-face]').forEach(el => setFace(el, el.dataset.face));
 
 /* ── the mark ── */
-let uid = 0;
 const INK = '#15161b';
 const EXPR = {
   idle: `<rect x="10" y="18" width="7" height="2.5" rx="1.25"/><rect x="23" y="18" width="7" height="2.5" rx="1.25"/><rect x="17" y="27" width="6" height="2.5" rx="1.25"/>`,
@@ -849,19 +848,33 @@ const EXPR = {
   done: `<path d="M9.25 19v-.5a3.25 3.25 0 0 1 6.5 0v.5M24.25 19v-.5a3.25 3.25 0 0 1 6.5 0v.5M26.75 22a6.75 6.75 0 0 1-13.5 0" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>`,
   error: `<path d="M10.05 13.8l6.4 6.4M16.45 13.8l-6.4 6.4M24.05 13.8l6.4 6.4M30.45 13.8l-6.4 6.4M15.25 33a4.75 4.75 0 0 1 9.5 0" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>`,
 };
-const SMILE = `<g class="feyes"><g class="blinker"><ellipse cx="36" cy="95.5" rx="7" ry="11.5"/><ellipse cx="84" cy="95.5" rx="7" ry="11.5"/></g></g><path d="M40 127Q60 143 80 127" fill="none" stroke="${INK}" stroke-width="8.5" stroke-linecap="round"/>`;
-const exprSVG = e => e === 'smile' ? SMILE : `<g transform="translate(0 48) scale(3)">${EXPR[e]}</g>`;
+// The brand face: a blue prompt for eyes.
+const PROMPT = `<path d="M29 37L43 47.5L29 58" fill="none" stroke="#5ca0ff" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="73" y="44" width="22" height="7.5" rx="3.75"/><rect x="44" y="78" width="32" height="7.5" rx="3.75"/>`;
+const exprSVG = e => e === 'prompt' ? PROMPT : `<g transform="scale(3)">${EXPR[e]}</g>`;
+// A color mixed toward another by f.
+const mix = (a, b, f) => '#' + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - f) + parseInt(b.substr(i, 2), 16) * f).toString(16).padStart(2, '0')).join('');
 
-function markInner(expr = 'smile') {
+// One glossy agent face, 120 square: lit from above, a reflection over the
+// top half, a rim, and the features pressed in. The brand face is silver.
+let uid = 0;
+function markInner(expr = 'prompt') {
   const id = 'km' + (++uid);
-  const fill = expr === 'smile' ? '#5ca0ff' : C[expr];
-  return `<defs><mask id="${id}" maskUnits="userSpaceOnUse" x="-10" y="-10" width="190" height="190"><rect x="-10" y="-10" width="190" height="190" fill="#fff"/><rect x="-8" y="40" width="136" height="136" rx="38" fill="#000"/></mask></defs>`
-    + `<g mask="url(#${id})"><rect x="48" y="0" width="120" height="120" rx="30" fill="#2fd3b8"/><g class="beyes"><g class="blinker"><rect x="109.5" y="19" width="9" height="17" rx="4.5" fill="${INK}"/><rect x="139.5" y="19" width="9" height="17" rx="4.5" fill="${INK}"/></g></g></g>`
-    + `<rect class="front" x="0" y="48" width="120" height="120" rx="30" fill="${fill}"/><g class="expr" fill="${INK}">${exprSVG(expr)}</g>`;
+  const c = expr === 'prompt' ? '#c9ccd2' : C[expr];
+  const stops = [[0, mix(c, '#ffffff', .3)], [.55, c], [1, mix(c, '#000000', .2)]];
+  const face = 'x="0" y="0" width="120" height="120" rx="30"';
+  return `<defs><linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1">${stops.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('')}</linearGradient>`
+    + `<linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`
+    + `<linearGradient id="${id}r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".25" stop-color="#fff" stop-opacity=".15"/><stop offset=".8" stop-color="#000" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient>`
+    + `<clipPath id="${id}c"><rect ${face}/></clipPath>`
+    + `<filter id="${id}e" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1.6" stdDeviation=".3" flood-color="#fff" flood-opacity=".45"/></filter>`
+    + `</defs><rect class="front" ${face} fill="url(#${id}b)"/>`
+    + `<path d="M30 2h60a28 28 0 0 1 28 28v8C90 54 30 54 2 40V30A28 28 0 0 1 30 2z" fill="url(#${id}g)"/>`
+    + `<rect ${face} fill="none" stroke="url(#${id}r)" stroke-width="4" clip-path="url(#${id}c)"/>`
+    + `<g class="expr" fill="${INK}" filter="url(#${id}e)">${exprSVG(expr)}</g>`;
 }
-const markSVG = expr => `<svg viewBox="0 0 168 168" aria-hidden="true">${markInner(expr)}</svg>`;
-// The app icon: the mark on a dark tile, 74% of the tile.
-const iconSVG = expr => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true"><rect x="1" y="1" width="98" height="98" rx="22.5" fill="#1b1c21" stroke="#2c2e35" stroke-width="1.2"/><g transform="translate(13 13) scale(${74 / 168})">${markInner(expr)}</g></svg>`;
+const markSVG = expr => `<svg viewBox="0 0 120 120" aria-hidden="true">${markInner(expr)}</svg>`;
+// The app icon: the mark alone, inside the macOS icon grid (82.4% of the icon).
+const iconSVG = expr => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(8.8 8.8) scale(${82.4 / 120})">${markInner(expr)}</g></svg>`;
 $$('[data-mark]').forEach(el => { el.innerHTML = markSVG(); el.firstChild.style.cssText = 'width:26px;height:26px;display:block'; });
 
 /* favicon + title follow the story */
@@ -1027,7 +1040,7 @@ $('#dockIcon').insertAdjacentHTML('afterbegin', iconSVG());
 // An agent notification, as the app sends it: titled after the tab, the
 // agent's message as the body, and its face in that state as the image.
 function noteHTML(title, body, state) {
-  return `<div class="mn"><span class="mn-app">${iconSVG('smile')}</span><div class="mn-txt"><b>${title}</b><span>${body}</span></div>`
+  return `<div class="mn"><span class="mn-app">${iconSVG('prompt')}</span><div class="mn-txt"><b>${title}</b><span>${body}</span></div>`
     + `<div class="mn-side"><small>now</small><span class="mn-att">${face(state).outerHTML}</span></div></div>`;
 }
 $('#banner').innerHTML = noteHTML('Fix session refresh bug finished', 'Sessions now refresh before they expire. · took 4m 02s', 'done');
@@ -1092,7 +1105,7 @@ function onScroll() {
   if (inView !== storyInView) {
     storyInView = inView;
     if (inView) $('#macNote').classList.add('on');
-    if (!inView) { setFavicon('smile'); document.title = baseTitle; }
+    if (!inView) { setFavicon('prompt'); document.title = baseTitle; }
     else { setFavicon(storyFace); document.title = `${LABEL[storyFace]} · KinTerm`; }
   }
   if (r.top <= innerHeight * .5) setBeat(Math.floor(p * BEATS.length));
@@ -1378,10 +1391,10 @@ const ACC = { Work: '#2dd4bf', Personal: '#8b7cf6', Client: '#f472b6' };
 /* ── end ── */
 (function endIcon() {
   const host = $('#endIcon');
-  host.innerHTML = iconSVG('smile');
+  host.innerHTML = iconSVG('prompt');
   // Happy to see you when you get here.
   new IntersectionObserver(([e]) => {
-    host.innerHTML = iconSVG(e.isIntersecting ? 'done' : 'smile');
+    host.innerHTML = iconSVG(e.isIntersecting ? 'done' : 'prompt');
   }, { threshold: .6 }).observe(host);
 })();
 
@@ -1411,10 +1424,10 @@ wake();
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { setFavicon('waiting'); document.title = '? Your agents miss you'; }
   else if (storyInView) { setFavicon(storyFace); document.title = `${LABEL[storyFace]} · KinTerm`; }
-  else { setFavicon('smile'); document.title = baseTitle; }
+  else { setFavicon('prompt'); document.title = baseTitle; }
 });
 
-setFavicon('smile');
+setFavicon('prompt');
 refreshFaces();
 onScroll();
 })();
