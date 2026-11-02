@@ -1,0 +1,167 @@
+import SwiftUI
+
+/// Every tab of a window as a tile in one grid. Each tile is the tab's own
+/// split tree, live and interactive, under a small header with the tab's
+/// face, title and buttons. See `TerminalGridModel`.
+struct TerminalGridView: View {
+    /// The tabs, in tab order.
+    let controllers: [BaseTerminalController]
+
+    /// The host window's tab bar model, for each tab's title, face, color
+    /// and shortcut. Nil when the window has no agent tab bar.
+    let tabBar: AgentTabBarModel?
+
+    /// The terminal with the keyboard, anywhere in the grid.
+    let focusedSurface: Ghostty.SurfaceView?
+
+    private static let gap: CGFloat = 6
+
+    var body: some View {
+        let count = controllers.count
+        // As square as possible, wider than tall: 2 → 2×1, 3–4 → 2×2,
+        // 5–6 → 3×2, 7–9 → 3×3.
+        let columns = max(1, Int(Double(count).squareRoot().rounded(.up)))
+        let rows = max(1, (count + columns - 1) / columns)
+
+        VStack(spacing: Self.gap) {
+            ForEach(0..<rows, id: \.self) { row in
+                HStack(spacing: Self.gap) {
+                    ForEach(controllers[(row * columns)..<min(count, (row + 1) * columns)], id: \.self) { controller in
+                        TerminalGridTile(
+                            controller: controller,
+                            tab: tab(for: controller),
+                            isFocused: focusedSurface.map { controller.surfaceTree.contains($0) } ?? false)
+                    }
+                }
+            }
+        }
+        .padding(Self.gap)
+        .background(AgentTabBarColors.bar)
+    }
+
+    private func tab(for controller: BaseTerminalController) -> AgentTab? {
+        guard let window = controller.window else { return nil }
+        return tabBar?.tabs.first { $0.id == ObjectIdentifier(window) }
+    }
+}
+
+/// One tab in the grid.
+private struct TerminalGridTile: View {
+    @EnvironmentObject var ghostty: Ghostty.App
+    @ObservedObject var controller: BaseTerminalController
+    let tab: AgentTab?
+    let isFocused: Bool
+
+    private var accent: Color { tab?.color ?? Color.accentColor }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            TerminalGridTileHeader(
+                title: tab?.title ?? controller.window?.title ?? "",
+                status: tab?.status,
+                shortcut: tab?.shortcut,
+                color: tab?.color,
+                isFocused: isFocused,
+                onFocus: { TerminalGridModel.shared.focus(controller) },
+                onExpand: expand,
+                onClose: { (controller as? TerminalController)?.closeTab(nil) })
+
+            TerminalSplitTreeView(
+                tree: controller.surfaceTree,
+                action: { controller.performSplitAction($0) })
+                .overlay {
+                    // Dim the tiles without the keyboard, like unfocused splits.
+                    if !isFocused, ghostty.config.unfocusedSplitOpacity > 0 {
+                        Rectangle()
+                            .fill(ghostty.config.unfocusedSplitFill)
+                            .opacity(ghostty.config.unfocusedSplitOpacity)
+                            .allowsHitTesting(false)
+                    }
+                }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .strokeBorder(isFocused ? accent : AgentTabBarColors.border, lineWidth: isFocused ? 2 : 1)
+                .allowsHitTesting(false))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(tab?.title ?? "Tab")
+    }
+
+    /// Back to tabs, with this one selected.
+    private func expand() {
+        guard let window = controller.window else { return }
+        TerminalGridModel.shared.exit(for: window, selecting: controller)
+    }
+}
+
+private struct TerminalGridTileHeader: View {
+    let title: String
+    let status: Ghostty.Action.ProgramStatus?
+    let shortcut: String?
+    let color: Color?
+    let isFocused: Bool
+    let onFocus: () -> Void
+    let onExpand: () -> Void
+    let onClose: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if let color {
+                Circle().fill(color).frame(width: 7, height: 7)
+            }
+
+            AgentTabFaceView(status: status)
+
+            Text(title.isEmpty ? "Terminal" : title)
+                .font(.system(size: 11, weight: isFocused ? .semibold : .regular))
+                .foregroundColor(isFocused ? AgentTabBarColors.cardTitle : AgentTabBarColors.cardMuted)
+                .lineLimit(1)
+                .truncationMode(.middle)
+
+            Spacer(minLength: 4)
+
+            if let shortcut, !shortcut.isEmpty {
+                Text(shortcut)
+                    .font(.system(size: 10))
+                    .foregroundColor(AgentTabBarColors.cardMuted)
+            }
+
+            TerminalGridHeaderButton(symbol: "arrow.up.left.and.arrow.down.right", help: "Show This Tab Only", action: onExpand)
+            TerminalGridHeaderButton(symbol: "xmark", help: "Close Tab", action: onClose)
+                .opacity(hovering ? 1 : 0.5)
+        }
+        .padding(.horizontal, 8)
+        .frame(height: 24)
+        .background(isFocused ? AgentTabBarColors.selected : AgentTabBarColors.card)
+        .contentShape(Rectangle())
+        .onHover { hovering = $0 }
+        .onTapGesture(count: 2, perform: onExpand)
+        .onTapGesture(count: 1, perform: onFocus)
+        .help("Double-click to show only this tab")
+    }
+}
+
+private struct TerminalGridHeaderButton: View {
+    let symbol: String
+    let help: String
+    let action: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 9, weight: .semibold))
+                .foregroundColor(hovering ? AgentTabBarColors.cardTitle : AgentTabBarColors.cardMuted)
+                .frame(width: 16, height: 16)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(help)
+        .accessibilityLabel(help)
+    }
+}

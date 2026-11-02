@@ -38,10 +38,15 @@ protocol TerminalViewModel: ObservableObject {
 
     /// The agent tab bar's model, or nil to not show the agent tab bar.
     var agentTabBar: AgentTabBarModel? { get }
+
+    /// The window whose tabs can be shown as a grid, or nil if this view
+    /// doesn't support Grid View. See `TerminalGridModel`.
+    var gridWindow: NSWindow? { get }
 }
 
 extension TerminalViewModel {
     var agentTabBar: AgentTabBarModel? { nil }
+    var gridWindow: NSWindow? { nil }
 }
 
 /// The main terminal view. This terminal view supports splits.
@@ -53,6 +58,9 @@ struct TerminalView<ViewModel: TerminalViewModel>: View {
 
     // An optional delegate to receive information about terminal changes.
     weak var delegate: (any TerminalViewDelegate)?
+
+    // Whether this window shows its own terminals, every tab's, or none.
+    @ObservedObject private var grid = TerminalGridModel.shared
 
     /// The most recently focused surface, equal to `focusedSurface` when it is non-nil.
     @State private var lastFocusedSurface: Weak<Ghostty.SurfaceView>?
@@ -87,9 +95,7 @@ struct TerminalView<ViewModel: TerminalViewModel>: View {
                             DebugBuildWarningView()
                         }
 
-                        TerminalSplitTreeView(
-                            tree: viewModel.surfaceTree,
-                            action: { delegate?.performSplitAction($0) })
+                        terminals
                             .environmentObject(ghostty)
                             .ghosttyLastFocusedSurface(lastFocusedSurface)
                             .focused($focused)
@@ -97,16 +103,19 @@ struct TerminalView<ViewModel: TerminalViewModel>: View {
                             .onChange(of: focusedSurface) { newValue in
                                 // We want to keep track of our last focused surface so even if
                                 // we lose focus we keep this set to the last non-nil value.
-                                if newValue != nil {
+                                if let newValue {
                                     lastFocusedSurface = .init(newValue)
-                                    self.delegate?.focusedSurfaceDidChange(to: newValue)
+                                    focusedSurfaceDidChange(to: newValue)
                                 }
                             }
                             .onChange(of: pwdURL) { newValue in
+                                // In a grid the focused terminal may be another tab's.
+                                guard !focusedSurfaceIsOtherTab else { return }
                                 self.delegate?.pwdDidChange(to: newValue)
                             }
                             .onChange(of: cellSize) { newValue in
-                                guard let size = newValue else { return }
+                                // Resizing in cell steps only makes sense for one terminal.
+                                guard case .normal = layout, let size = newValue else { return }
                                 self.delegate?.cellSizeDidChange(to: size)
                             }
                             .frame(idealWidth: lastFocusedSurface?.value?.initialSize?.width,
@@ -133,6 +142,55 @@ struct TerminalView<ViewModel: TerminalViewModel>: View {
             }
             .frame(maxWidth: .greatestFiniteMagnitude, maxHeight: .greatestFiniteMagnitude)
         }
+    }
+}
+
+extension TerminalView {
+    private var layout: TerminalGridModel.Layout {
+        grid.layout(for: viewModel.gridWindow)
+    }
+
+    /// The window's own split tree, every tab's in a grid, or nothing while
+    /// another tab's grid shows this one.
+    @ViewBuilder
+    private var terminals: some View {
+        switch layout {
+        case .normal:
+            TerminalSplitTreeView(
+                tree: viewModel.surfaceTree,
+                action: { delegate?.performSplitAction($0) })
+
+        case .host(let controllers):
+            TerminalGridView(
+                controllers: controllers,
+                tabBar: viewModel.agentTabBar,
+                focusedSurface: focusedSurface ?? lastFocusedSurface?.value)
+
+        case .hidden:
+            Color(nsColor: .windowBackgroundColor)
+        }
+    }
+
+    /// Whether the focused terminal belongs to another tab, which happens
+    /// when this window hosts a grid.
+    private var focusedSurfaceIsOtherTab: Bool {
+        guard let surface = focusedSurface,
+              let owner = BaseTerminalController.controller(owning: surface) else { return false }
+        return owner !== (delegate as AnyObject?)
+    }
+
+    /// Tell the tab that owns the focused terminal. That's this window's
+    /// controller, except in a grid where it can be any tab.
+    private func focusedSurfaceDidChange(to surface: Ghostty.SurfaceView) {
+        if let owner = BaseTerminalController.controller(owning: surface),
+           owner !== (delegate as AnyObject?) {
+            owner.focusedSurfaceDidChange(to: surface)
+        } else {
+            delegate?.focusedSurfaceDidChange(to: surface)
+        }
+
+        // The tab bar marks the focused tile's tab while in a grid.
+        if case .host = layout { AgentTabBarModel.setNeedsRefresh() }
     }
 }
 
