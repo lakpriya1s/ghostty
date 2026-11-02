@@ -303,6 +303,9 @@ final class AgentTabBarModel: ObservableObject {
     /// the window can't be seen.
     @Published private(set) var faceMotion: AgentFaceView.Motion = .all
 
+    /// Whether the window shows its tabs in a grid. See `TerminalGridModel`.
+    @Published private(set) var gridActive = false
+
     private weak var controller: BaseTerminalController?
     private var windows: [ObjectIdentifier: Weak<NSWindow>] = [:]
     private var cancellables: Set<AnyCancellable> = []
@@ -348,7 +351,13 @@ final class AgentTabBarModel: ObservableObject {
 
         // A window that closes is still in its tab group while it closes.
         let all = (window.tabbedWindows ?? [window]).filter { $0.isVisible || $0 === window }
-        let selected = window.tabGroup?.selectedWindow ?? window
+        // In a grid every tab is on screen, so the one marked is the one
+        // with the keyboard.
+        let grid = TerminalGridModel.shared
+        let gridActive = grid.isActive(for: window)
+        let selected = (gridActive ? grid.focusedController(in: window)?.window : nil)
+            ?? window.tabGroup?.selectedWindow ?? window
+        if gridActive != self.gridActive { self.gridActive = gridActive }
         windows = Dictionary(uniqueKeysWithValues: all.map { (ObjectIdentifier($0), Weak($0)) })
         let newTabs = all.map { tabWindow in
             let tabController = tabWindow.windowController as? BaseTerminalController
@@ -385,8 +394,21 @@ final class AgentTabBarModel: ObservableObject {
 
     func select(_ tab: AgentTab) {
         guard let window = windows[tab.id]?.value else { return }
+
+        // In a grid the tab is already on screen: just give it the keyboard.
+        if TerminalGridModel.shared.isActive(for: window),
+           let controller = window.windowController as? BaseTerminalController {
+            TerminalGridModel.shared.focus(controller)
+            return
+        }
+
         window.tabGroup?.selectedWindow = window
         window.makeKeyAndOrderFront(nil)
+    }
+
+    /// Show the tabs in a grid, or go back to tabs.
+    func toggleGrid() {
+        TerminalGridModel.shared.toggle(for: window)
     }
 
     func close(_ tab: AgentTab) {
@@ -499,7 +521,8 @@ struct AgentTabBar: View {
     /// gets the rest.
     private var facesWidth: CGFloat {
         let count = CGFloat(model.tabs.count)
-        return 20 + count * (button + 6) + 4 + (slot * 0.7).rounded()
+        let grid = model.tabs.count > 1 || model.gridActive ? 6 + (slot * 0.7).rounded() : 0
+        return 20 + count * (button + 6) + 4 + (slot * 0.7).rounded() + grid
     }
 
     var body: some View {
@@ -557,6 +580,12 @@ struct AgentTabBar: View {
                     AgentMenuPanel.shared.toggle(for: controller, barEdge: edge, anchor: anchor)
                 }
                 .padding(vertical ? .top : .leading, 4)
+
+                if model.tabs.count > 1 || model.gridActive {
+                    AgentGridButton(size: (slot * 0.7).rounded(), active: model.gridActive) {
+                        model.toggleGrid()
+                    }
+                }
             }
             .padding(vertical
                 ? EdgeInsets(top: 12, leading: 8, bottom: 12, trailing: 8)
@@ -794,6 +823,34 @@ private struct AgentNewTabButton: View {
         .onHover { hovering = $0 }
         .background(AgentScreenAnchorView(anchor: anchor))
         .accessibilityLabel("New Tab Menu")
+    }
+}
+
+/// Shows every tab at once in a grid, or goes back to tabs.
+private struct AgentGridButton: View {
+    let size: CGFloat
+    let active: Bool
+    let action: () -> Void
+
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: active ? "rectangle.inset.filled" : "square.grid.2x2")
+                .font(.system(size: size * 0.42, weight: .regular))
+                .foregroundColor(hovering || active ? AgentTabBarColors.plusTextHovered : AgentTabBarColors.plusText)
+                .frame(width: size, height: size)
+                .background(Circle().fill(active ? AgentTabBarColors.selected : .clear))
+                .overlay(
+                    Circle().strokeBorder(
+                        hovering || active ? AgentTabBarColors.plusBorderHovered : AgentTabBarColors.plusBorder,
+                        lineWidth: 1.5))
+                .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .help(active ? "Back to Tabs (⌘⇧E)" : "Show All Tabs in a Grid (⌘⇧E)")
+        .accessibilityLabel(active ? "Back to Tabs" : "Show All Tabs in a Grid")
     }
 }
 

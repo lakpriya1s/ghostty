@@ -9,6 +9,7 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
     /// The tabs of this window's tab group, drawn by the agent tab bar.
     private lazy var agentTabBarModel = AgentTabBarModel(controller: self)
     override var agentTabBar: AgentTabBarModel? { agentTabBarModel }
+    override var gridWindow: NSWindow? { window }
 
     override var windowNibName: NSNib.Name? {
         let defaultValue = "Terminal"
@@ -1140,6 +1141,7 @@ class TerminalController: BaseTerminalController, TabGroupCloseCoordinator.Contr
         agentTabBar?.refresh()
         AgentLauncher.installShortcuts()
         AgentsPanel.installShortcuts()
+        TerminalGridModel.shared.installMenuItem()
 
         // If we have a default size, we want to apply it.
         if let defaultSize {

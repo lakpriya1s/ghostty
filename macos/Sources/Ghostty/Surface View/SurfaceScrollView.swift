@@ -164,11 +164,19 @@ class SurfaceScrollView: NSView {
     // surface view if we have the "hidden" titlebar style.
     override var safeAreaInsets: NSEdgeInsets { return NSEdgeInsetsZero }
 
+    /// Whether the surface view is still ours. Grid View (see
+    /// `TerminalGridModel`) moves a surface into a new scroll view while
+    /// this one may linger; an old one must leave the surface alone.
+    private var ownsSurface: Bool {
+        surfaceView.superview === documentView
+    }
+
     override func layout() {
         super.layout()
 
         // Fill entire bounds with scroll view
         scrollView.frame = bounds
+        guard ownsSurface else { return }
         surfaceView.frame.size = scrollView.bounds.size
 
         // We only set the width of the documentView here, as the height depends
@@ -198,6 +206,7 @@ class SurfaceScrollView: NSView {
     /// actual terminal rendering) always fills exactly the visible portion of the document view,
     /// so the renderer only needs to render what's currently on screen.
     private func synchronizeSurfaceView() {
+        guard ownsSurface else { return }
         let visibleRect = scrollView.contentView.documentVisibleRect
         surfaceView.frame.origin = visibleRect.origin
     }
@@ -206,6 +215,7 @@ class SurfaceScrollView: NSView {
     /// frame because we do want to render the whole thing, but it will prevent our
     /// rows/cols from going into the non-content area.
     private func synchronizeCoreSurface() {
+        guard ownsSurface else { return }
         // Only update the pty if we have a valid (non-zero) content size. The content size
         // can be zero when this is added early to a view, or to an invisible hierarchy.
         // Practically, this happened in the quick terminal.
@@ -265,6 +275,7 @@ class SurfaceScrollView: NSView {
     /// Converts the current scroll position to a row number and sends a `scroll_to_row` action
     /// to the terminal core. Only sends actions when the row changes to avoid IPC spam.
     private func handleLiveScroll() {
+        guard ownsSurface else { return }
         // If our cell height is currently zero then we avoid a div by zero below
         // and just don't scroll (there's no where to scroll anyways). This can
         // happen with a tiny terminal.
@@ -300,6 +311,7 @@ class SurfaceScrollView: NSView {
         guard let scrollbar = notification.userInfo?[SwiftUI.Notification.Name.ScrollbarKey] as? Ghostty.Action.Scrollbar else {
             return
         }
+        guard ownsSurface else { return }
         surfaceView.scrollbar = scrollbar
         synchronizeScrollView()
     }

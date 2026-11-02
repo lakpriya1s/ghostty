@@ -125,6 +125,9 @@ class BaseTerminalController: NSWindowController,
     /// TerminalViewModel, or the protocol's default (nil) is always used.
     var agentTabBar: AgentTabBarModel? { nil }
 
+    /// Only windows with tabs support Grid View. See `TerminalGridModel`.
+    var gridWindow: NSWindow? { nil }
+
     /// Cancellable for clipboard confirmation requests from surfaces in this controller.
     private var clipboardConfirmationCancellable: AnyCancellable?
 
@@ -380,8 +383,9 @@ class BaseTerminalController: NSWindowController,
         var newlyFocused: Ghostty.SurfaceView?
         for surfaceView in surfaceTree {
             // Our focus state requires that this window is key and our currently
-            // focused surface is the surface in this view.
-            let focused: Bool = (window?.isKeyWindow ?? false) &&
+            // focused surface is the surface in this view. The window is the
+            // one the surface is in, which in Grid View can be another tab's.
+            let focused: Bool = (surfaceView.window?.isKeyWindow ?? false) &&
                 surfaceView == focusedSurface &&
                 surfaceView.isFirstResponder
             surfaceView.focusDidChange(focused)
@@ -1311,9 +1315,11 @@ class BaseTerminalController: NSWindowController,
         syncSurfaceTreeOcclusionState()
     }
 
-    private func syncSurfaceTreeOcclusionState() {
-        let visible = self.window?.occlusionState.contains(.visible) ?? false
+    func syncSurfaceTreeOcclusionState() {
         for view in surfaceTree {
+            // The window the surface is in, which in Grid View can be
+            // another tab's.
+            let visible = (view.window ?? self.window)?.occlusionState.contains(.visible) ?? false
             if let surface = view.surface, view.isWindowVisible != visible {
                 ghostty_surface_set_occlusion(surface, visible)
                 view.isWindowVisible = visible
